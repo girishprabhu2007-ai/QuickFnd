@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { use, useMemo, useState } from "react";
+import { use, useState } from "react";
 import { getAIToolBySlug, getRelatedAITools } from "@/lib/data/ai-tools";
 
 export default function AIToolPage({
@@ -12,6 +12,9 @@ export default function AIToolPage({
   const { slug } = use(params);
   const tool = getAIToolBySlug(slug);
   const relatedTools = getRelatedAITools(slug);
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const [promptGoal, setPromptGoal] = useState("");
   const [promptStyle, setPromptStyle] = useState("Professional");
@@ -26,55 +29,38 @@ export default function AIToolPage({
   const [blogAudience, setBlogAudience] = useState("");
   const [generatedOutline, setGeneratedOutline] = useState("");
 
-  const promptTemplate = useMemo(() => {
-    if (!promptGoal.trim()) return "";
-    return `Act as an expert assistant. Help me with: ${promptGoal}. Use a ${promptStyle.toLowerCase()} tone. Provide a clear, detailed, and actionable response.`;
-  }, [promptGoal, promptStyle]);
+  async function callAI(toolName: string, input: Record<string, string>) {
+    try {
+      setLoading(true);
+      setError("");
 
-  const emailTemplate = useMemo(() => {
-    if (!emailPurpose.trim()) return "";
-    return `Subject: ${emailPurpose}
+      const response = await fetch("/api/ai/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tool: toolName,
+          input,
+        }),
+      });
 
-Hi ${emailRecipient || "[Recipient Name]"},
+      const data = await response.json();
 
-I hope you're doing well.
+      if (!response.ok) {
+        throw new Error(data.error || "Something went wrong.");
+      }
 
-I'm reaching out regarding ${emailPurpose.toLowerCase()}. I wanted to connect with you in a ${emailTone.toLowerCase()} manner and share the relevant details clearly.
-
-[Add your main message here.]
-
-Please let me know your thoughts.
-
-Best regards,
-[Your Name]`;
-  }, [emailPurpose, emailTone, emailRecipient]);
-
-  const blogOutlineTemplate = useMemo(() => {
-    if (!blogTopic.trim()) return "";
-    return `Title: ${blogTopic}
-
-1. Introduction
-   - What ${blogTopic} means
-   - Why it matters
-
-2. Key Concepts
-   - Main idea 1
-   - Main idea 2
-   - Main idea 3
-
-3. Practical Applications
-   - How ${blogAudience || "readers"} can use it
-   - Common mistakes to avoid
-
-4. Best Practices
-   - Tips
-   - Tools
-   - Recommendations
-
-5. Conclusion
-   - Summary
-   - Next steps`;
-  }, [blogTopic, blogAudience]);
+      return data.result as string;
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to generate output.";
+      setError(message);
+      return "";
+    } finally {
+      setLoading(false);
+    }
+  }
 
   if (!tool) {
     return (
@@ -98,7 +84,9 @@ Best regards,
       return (
         <div className="max-w-4xl rounded-2xl bg-gray-900 p-6 shadow-lg">
           <div className="mb-4">
-            <label className="mb-2 block text-sm text-gray-400">What do you need a prompt for?</label>
+            <label className="mb-2 block text-sm text-gray-400">
+              What do you need a prompt for?
+            </label>
             <textarea
               value={promptGoal}
               onChange={(e) => setPromptGoal(e.target.value)}
@@ -122,10 +110,17 @@ Best regards,
           </div>
 
           <button
-            onClick={() => setGeneratedPrompt(promptTemplate)}
-            className="rounded-lg bg-blue-600 px-5 py-3 font-medium hover:bg-blue-700"
+            onClick={async () => {
+              const result = await callAI("ai-prompt-generator", {
+                goal: promptGoal,
+                style: promptStyle,
+              });
+              setGeneratedPrompt(result);
+            }}
+            className="rounded-lg bg-blue-600 px-5 py-3 font-medium hover:bg-blue-700 disabled:opacity-60"
+            disabled={loading}
           >
-            Generate Prompt
+            {loading ? "Generating..." : "Generate Prompt"}
           </button>
 
           <div className="mt-6 rounded-xl bg-gray-800 p-4">
@@ -176,10 +171,18 @@ Best regards,
           </div>
 
           <button
-            onClick={() => setGeneratedEmail(emailTemplate)}
-            className="rounded-lg bg-blue-600 px-5 py-3 font-medium hover:bg-blue-700"
+            onClick={async () => {
+              const result = await callAI("ai-email-writer", {
+                purpose: emailPurpose,
+                recipient: emailRecipient,
+                tone: emailTone,
+              });
+              setGeneratedEmail(result);
+            }}
+            className="rounded-lg bg-blue-600 px-5 py-3 font-medium hover:bg-blue-700 disabled:opacity-60"
+            disabled={loading}
           >
-            Generate Email Draft
+            {loading ? "Generating..." : "Generate Email Draft"}
           </button>
 
           <div className="mt-6 rounded-xl bg-gray-800 p-4">
@@ -216,10 +219,17 @@ Best regards,
           </div>
 
           <button
-            onClick={() => setGeneratedOutline(blogOutlineTemplate)}
-            className="rounded-lg bg-blue-600 px-5 py-3 font-medium hover:bg-blue-700"
+            onClick={async () => {
+              const result = await callAI("ai-blog-outline-generator", {
+                topic: blogTopic,
+                audience: blogAudience,
+              });
+              setGeneratedOutline(result);
+            }}
+            className="rounded-lg bg-blue-600 px-5 py-3 font-medium hover:bg-blue-700 disabled:opacity-60"
+            disabled={loading}
           >
-            Generate Blog Outline
+            {loading ? "Generating..." : "Generate Blog Outline"}
           </button>
 
           <div className="mt-6 rounded-xl bg-gray-800 p-4">
@@ -252,6 +262,12 @@ Best regards,
 
       <h1 className="mb-4 text-4xl font-bold">{tool.name}</h1>
       <p className="mb-8 max-w-2xl text-gray-400">{tool.description}</p>
+
+      {error && (
+        <div className="mb-6 max-w-4xl rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-300">
+          {error}
+        </div>
+      )}
 
       {renderUtility()}
 
