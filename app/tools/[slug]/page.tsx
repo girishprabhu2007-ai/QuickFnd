@@ -2,29 +2,7 @@
 
 import Link from "next/link";
 import { use, useMemo, useState } from "react";
-
-const tools: Record<string, { name: string; description: string }> = {
-  "password-generator": {
-    name: "Password Generator",
-    description: "Generate strong and secure passwords instantly.",
-  },
-  "json-formatter": {
-    name: "JSON Formatter",
-    description: "Format, validate, and minify JSON easily.",
-  },
-  "word-counter": {
-    name: "Word Counter",
-    description: "Count words, characters, sentences, and paragraphs instantly.",
-  },
-  "base64-encoder-decoder": {
-    name: "Base64 Encoder / Decoder",
-    description: "Encode plain text to Base64 or decode Base64 back to text.",
-  },
-  "uuid-generator": {
-    name: "UUID Generator",
-    description: "Generate random UUIDs instantly for apps and databases.",
-  },
-};
+import { getRelatedTools, getToolBySlug } from "@/lib/data/tools";
 
 export default function ToolDetailPage({
   params,
@@ -32,7 +10,8 @@ export default function ToolDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = use(params);
-  const tool = tools[slug];
+  const tool = getToolBySlug(slug);
+  const relatedTools = getRelatedTools(slug);
 
   const [password, setPassword] = useState("");
   const [length, setLength] = useState(12);
@@ -421,6 +400,26 @@ export default function ToolDetailPage({
             </div>
           </div>
         </div>
+      )}
+
+      {relatedTools.length > 0 && (
+        <section className="mt-12 max-w-4xl">
+          <h2 className="mb-4 text-2xl font-semibold">Related Tools</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {relatedTools.map((relatedTool) => (
+              <Link
+                key={relatedTool.slug}
+                href={`/tools/${relatedTool.slug}`}
+                className="rounded-xl bg-gray-900 p-4 transition hover:bg-gray-800"
+              >
+                <h3 className="font-semibold">{relatedTool.name}</h3>
+                <p className="mt-2 text-sm text-gray-400">
+                  {relatedTool.description}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
       )}
     </main>
   );

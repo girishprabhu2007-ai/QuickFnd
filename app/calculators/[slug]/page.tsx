@@ -2,21 +2,10 @@
 
 import Link from "next/link";
 import { use, useMemo, useState } from "react";
-
-const calculators: Record<string, { name: string; description: string }> = {
-  "emi-calculator": {
-    name: "EMI Calculator",
-    description: "Calculate monthly EMI payments for loans with ease.",
-  },
-  "age-calculator": {
-    name: "Age Calculator",
-    description: "Find your exact age based on your date of birth.",
-  },
-  "percentage-calculator": {
-    name: "Percentage Calculator",
-    description: "Calculate percentages for marks, discounts, and more.",
-  },
-};
+import {
+  getCalculatorBySlug,
+  getRelatedCalculators,
+} from "@/lib/data/calculators";
 
 export default function CalculatorDetailPage({
   params,
@@ -24,7 +13,8 @@ export default function CalculatorDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = use(params);
-  const calculator = calculators[slug];
+  const calculator = getCalculatorBySlug(slug);
+  const relatedCalculators = getRelatedCalculators(slug);
 
   const [birthDate, setBirthDate] = useState("");
   const [partValue, setPartValue] = useState("");
@@ -238,6 +228,26 @@ export default function CalculatorDetailPage({
             </div>
           </div>
         </div>
+      )}
+
+      {relatedCalculators.length > 0 && (
+        <section className="mt-12 max-w-4xl">
+          <h2 className="mb-4 text-2xl font-semibold">Related Calculators</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {relatedCalculators.map((relatedCalculator) => (
+              <Link
+                key={relatedCalculator.slug}
+                href={`/calculators/${relatedCalculator.slug}`}
+                className="rounded-xl bg-gray-900 p-4 transition hover:bg-gray-800"
+              >
+                <h3 className="font-semibold">{relatedCalculator.name}</h3>
+                <p className="mt-2 text-sm text-gray-400">
+                  {relatedCalculator.description}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
       )}
     </main>
   );

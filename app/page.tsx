@@ -2,81 +2,48 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { tools } from "@/lib/data/tools";
+import { calculators } from "@/lib/data/calculators";
+import { aiTools } from "@/lib/data/ai-tools";
 
 const searchableItems = [
-  {
+  ...tools.map((tool) => ({
     type: "Tool",
-    slug: "/tools/password-generator",
-    name: "Password Generator",
-    description: "Generate strong and secure passwords instantly.",
-  },
-  {
-    type: "Tool",
-    slug: "/tools/word-counter",
-    name: "Word Counter",
-    description: "Count words, characters, and paragraphs quickly.",
-  },
-  {
-    type: "Tool",
-    slug: "/tools/json-formatter",
-    name: "JSON Formatter",
-    description: "Format, validate, and minify JSON easily.",
-  },
-  {
-    type: "Tool",
-    slug: "/tools/base64-encoder-decoder",
-    name: "Base64 Encoder / Decoder",
-    description: "Encode or decode text using Base64.",
-  },
-  {
-    type: "Tool",
-    slug: "/tools/uuid-generator",
-    name: "UUID Generator",
-    description: "Generate unique UUIDs instantly.",
-  },
-  {
+    slug: `/tools/${tool.slug}`,
+    name: tool.name,
+    description: tool.description,
+  })),
+  ...calculators.map((calculator) => ({
     type: "Calculator",
-    slug: "/calculators/emi-calculator",
-    name: "EMI Calculator",
-    description: "Calculate monthly loan payments easily.",
-  },
-  {
-    type: "Calculator",
-    slug: "/calculators/age-calculator",
-    name: "Age Calculator",
-    description: "Find your exact age in years, months, and days.",
-  },
-  {
-    type: "Calculator",
-    slug: "/calculators/percentage-calculator",
-    name: "Percentage Calculator",
-    description: "Calculate percentages instantly.",
-  },
-  {
+    slug: `/calculators/${calculator.slug}`,
+    name: calculator.name,
+    description: calculator.description,
+  })),
+  ...aiTools.map((tool) => ({
     type: "AI Tool",
-    slug: "/ai-tools/chatgpt",
-    name: "ChatGPT",
-    description: "AI chatbot for writing, coding, and productivity.",
-  },
-  {
-    type: "AI Tool",
-    slug: "/ai-tools/midjourney",
-    name: "Midjourney",
-    description: "Generate AI images from text prompts.",
-  },
-  {
-    type: "AI Tool",
-    slug: "/ai-tools/notion-ai",
-    name: "Notion AI",
-    description: "AI assistant built into Notion.",
-  },
+    slug: `/ai-tools/${tool.slug}`,
+    name: tool.name,
+    description: tool.description,
+  })),
 ];
 
-const featuredTools = searchableItems.filter((item) => item.type === "Tool").slice(0, 3);
-const featuredCalculators = searchableItems
-  .filter((item) => item.type === "Calculator")
-  .slice(0, 3);
-const featuredAITools = searchableItems.filter((item) => item.type === "AI Tool").slice(0, 3);
+const featuredTools = tools.slice(0, 3).map((tool) => ({
+  slug: `/tools/${tool.slug}`,
+  name: tool.name,
+  description: tool.description,
+}));
+
+const featuredCalculators = calculators.slice(0, 3).map((calculator) => ({
+  slug: `/calculators/${calculator.slug}`,
+  name: calculator.name,
+  description: calculator.description,
+}));
+
+const featuredAITools = aiTools.slice(0, 3).map((tool) => ({
+  slug: `/ai-tools/${tool.slug}`,
+  name: tool.name,
+  description: tool.description,
+}));
 
 export default function Home() {
   const [query, setQuery] = useState("");

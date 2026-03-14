@@ -2,30 +2,7 @@
 
 import Link from "next/link";
 import { use } from "react";
-
-const aiTools: Record<
-  string,
-  {
-    name: string;
-    description: string;
-  }
-> = {
-  chatgpt: {
-    name: "ChatGPT",
-    description:
-      "ChatGPT is an AI chatbot designed for writing, coding, brainstorming, and answering questions.",
-  },
-  midjourney: {
-    name: "Midjourney",
-    description:
-      "Midjourney is an AI tool that generates stunning images from text prompts.",
-  },
-  "notion-ai": {
-    name: "Notion AI",
-    description:
-      "Notion AI helps automate writing, summarizing, and productivity tasks inside Notion.",
-  },
-};
+import { getAIToolBySlug, getRelatedAITools } from "@/lib/data/ai-tools";
 
 export default function AIToolPage({
   params,
@@ -33,7 +10,8 @@ export default function AIToolPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = use(params);
-  const tool = aiTools[slug];
+  const tool = getAIToolBySlug(slug);
+  const relatedTools = getRelatedAITools(slug);
 
   if (!tool) {
     return (
@@ -69,6 +47,26 @@ export default function AIToolPage({
           This is where the full review or listing for {tool.name} will go.
         </p>
       </div>
+
+      {relatedTools.length > 0 && (
+        <section className="mt-12 max-w-4xl">
+          <h2 className="mb-4 text-2xl font-semibold">Related AI Tools</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {relatedTools.map((relatedTool) => (
+              <Link
+                key={relatedTool.slug}
+                href={`/ai-tools/${relatedTool.slug}`}
+                className="rounded-xl bg-gray-900 p-4 transition hover:bg-gray-800"
+              >
+                <h3 className="font-semibold">{relatedTool.name}</h3>
+                <p className="mt-2 text-sm text-gray-400">
+                  {relatedTool.description}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   );
 }

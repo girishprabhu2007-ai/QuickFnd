@@ -1,49 +1,23 @@
-import Link from "next/link";
 import type { Metadata } from "next";
+import Link from "next/link";
+import { tools } from "@/lib/data/tools";
 
 export const metadata: Metadata = {
   title: "Tools",
-  description: "Browse online tools like password generators, word counters, JSON formatters, and more.",
+  description:
+    "Browse online tools like password generators, word counters, JSON formatters, and more.",
 };
-
-const tools = [
-  {
-    slug: "password-generator",
-    name: "Password Generator",
-    description: "Generate secure passwords instantly.",
-  },
-  {
-    slug: "json-formatter",
-    name: "JSON Formatter",
-    description: "Format, validate, and minify JSON easily.",
-  },
-  {
-    slug: "word-counter",
-    name: "Word Counter",
-    description: "Count words, characters, and paragraphs instantly.",
-  },
-  {
-    slug: "base64-encoder-decoder",
-    name: "Base64 Encoder / Decoder",
-    description: "Encode or decode text using Base64.",
-  },
-  {
-    slug: "uuid-generator",
-    name: "UUID Generator",
-    description: "Generate unique UUIDs instantly.",
-  },
-];
 
 export default function ToolsPage() {
   return (
-    <main className="min-h-screen bg-gray-950 text-white p-10">
-      <h1 className="text-4xl font-bold mb-6">Tools</h1>
+    <main className="min-h-screen bg-gray-950 p-10 text-white">
+      <h1 className="mb-6 text-4xl font-bold">Tools</h1>
 
-      <p className="text-gray-400 mb-10">
+      <p className="mb-10 text-gray-400">
         Browse powerful online utilities available on QuickFnd.
       </p>
 
-      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {tools.map((tool) => (
           <Link
             key={tool.slug}

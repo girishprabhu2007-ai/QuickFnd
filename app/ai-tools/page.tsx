@@ -1,38 +1,23 @@
-import Link from "next/link";
 import type { Metadata } from "next";
+import Link from "next/link";
+import { aiTools } from "@/lib/data/ai-tools";
 
 export const metadata: Metadata = {
   title: "AI Tools",
-  description: "Discover AI tools for writing, coding, design, productivity, and more.",
+  description:
+    "Discover AI tools for writing, coding, design, productivity, and more.",
 };
-const aiTools = [
-  {
-    slug: "chatgpt",
-    name: "ChatGPT",
-    description: "AI chatbot for writing, coding, and productivity.",
-  },
-  {
-    slug: "midjourney",
-    name: "Midjourney",
-    description: "Generate AI images from text prompts.",
-  },
-  {
-    slug: "notion-ai",
-    name: "Notion AI",
-    description: "AI assistant integrated into the Notion workspace.",
-  },
-];
 
 export default function AIToolsPage() {
   return (
-    <main className="min-h-screen bg-gray-950 text-white p-10">
-      <h1 className="text-4xl font-bold mb-6">AI Tools</h1>
+    <main className="min-h-screen bg-gray-950 p-10 text-white">
+      <h1 className="mb-6 text-4xl font-bold">AI Tools</h1>
 
-      <p className="text-gray-400 mb-10">
+      <p className="mb-10 text-gray-400">
         Discover powerful AI tools to boost productivity.
       </p>
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid gap-6 md:grid-cols-3">
         {aiTools.map((tool) => (
           <Link
             key={tool.slug}
