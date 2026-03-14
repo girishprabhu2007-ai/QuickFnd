@@ -1,18 +1,37 @@
 import { supabase } from "@/lib/supabase";
+import { getAdminUser } from "@/lib/admin-auth";
+import { normalizeGeneratedContent } from "@/lib/admin-content";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
+  const adminUser = await getAdminUser();
 
-  const { name, slug, description } = await req.json();
-
-  const { error } = await supabase
-    .from("tools")
-    .insert([{ name, slug, description }]);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!adminUser) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  return NextResponse.json({ success: true });
+  try {
+    const body = await req.json();
+    const { name, slug, description, related_slugs } = normalizeGeneratedContent(body);
 
+    if (!name || !slug || !description) {
+      return NextResponse.json(
+        { error: "Name, slug, and description are required." },
+        { status: 400 }
+      );
+    }
+
+    const { error } = await supabase.from("tools").insert([
+      { name, slug, description, related_slugs },
+    ]);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Add tool error:", error);
+    return NextResponse.json({ error: "Failed to add tool." }, { status: 500 });
+  }
 }

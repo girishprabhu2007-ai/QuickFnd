@@ -1,116 +1,47 @@
-"use client";
+import Link from "next/link";
+import { getCalculators } from "@/lib/db";
 
-import { useEffect, useState } from "react";
-
-type CalculatorItem = {
-  id: number;
-  name: string;
-  slug: string;
-  description: string;
-};
-
-export default function AdminCalculators() {
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [description, setDescription] = useState("");
-  const [items, setItems] = useState<CalculatorItem[]>([]);
-
-  async function loadItems() {
-    const response = await fetch("/api/admin/list-calculators");
-    const data = await response.json();
-    setItems(data.items || []);
-  }
-
-  async function addCalculator() {
-    await fetch("/api/admin/add-calculator", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ name, slug, description }),
-    });
-
-    setName("");
-    setSlug("");
-    setDescription("");
-    await loadItems();
-  }
-
-  async function deleteCalculator(id: number) {
-    await fetch("/api/admin/delete-calculator", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ id }),
-    });
-
-    await loadItems();
-  }
-
-  useEffect(() => {
-    loadItems();
-  }, []);
+export default async function CalculatorsPage() {
+  const calculators = await getCalculators();
 
   return (
-    <div className="grid gap-10 lg:grid-cols-2">
-      <div className="max-w-xl">
-        <h2 className="mb-6 text-xl font-semibold">Add Calculator</h2>
-
-        <input
-          className="mb-4 w-full rounded bg-gray-800 p-3"
-          placeholder="Calculator Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-
-        <input
-          className="mb-4 w-full rounded bg-gray-800 p-3"
-          placeholder="Slug"
-          value={slug}
-          onChange={(e) => setSlug(e.target.value)}
-        />
-
-        <textarea
-          className="mb-4 w-full rounded bg-gray-800 p-3"
-          placeholder="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-
-        <button
-          onClick={addCalculator}
-          className="rounded bg-blue-600 px-5 py-3 hover:bg-blue-700"
-        >
-          Add Calculator
-        </button>
-      </div>
-
-      <div>
-        <h2 className="mb-6 text-xl font-semibold">Existing Calculators</h2>
-
-        <div className="space-y-4">
-          {items.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-start justify-between gap-4 rounded-xl bg-gray-900 p-4"
-            >
-              <div>
-                <h3 className="font-semibold">{item.name}</h3>
-                <p className="text-sm text-gray-400">{item.slug}</p>
-                <p className="mt-2 text-sm text-gray-300">{item.description}</p>
-              </div>
-
-              <button
-                onClick={() => deleteCalculator(item.id)}
-                className="rounded bg-red-600 px-3 py-2 text-sm hover:bg-red-700"
-              >
-                Delete
-              </button>
-            </div>
-          ))}
+    <main className="min-h-screen bg-gray-950 px-6 py-12 text-white">
+      <section className="mx-auto max-w-6xl">
+        <div className="mb-10">
+          <p className="mb-3 text-sm uppercase tracking-[0.2em] text-blue-400">
+            QuickFnd Directory
+          </p>
+          <h1 className="text-4xl font-bold md:text-5xl">All Calculators</h1>
+          <p className="mt-4 max-w-3xl text-lg text-gray-400">
+            Explore calculators for finance, percentages, age, and other everyday
+            calculations in one place.
+          </p>
         </div>
-      </div>
-    </div>
+
+        {calculators.length === 0 ? (
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-8 text-gray-400">
+            No calculators available yet.
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {calculators.map((calculator) => (
+              <Link
+                key={calculator.slug}
+                href={`/calculators/${calculator.slug}`}
+                className="block rounded-2xl border border-gray-800 bg-gray-900 p-6 transition hover:border-gray-700 hover:bg-gray-800"
+              >
+                <h2 className="text-xl font-semibold">{calculator.name}</h2>
+                <p className="mt-3 text-sm leading-6 text-gray-400">
+                  {calculator.description}
+                </p>
+                <div className="mt-5 text-sm font-medium text-blue-400">
+                  Open calculator →
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+    </main>
   );
 }

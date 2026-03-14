@@ -1,116 +1,47 @@
-"use client";
+import Link from "next/link";
+import { getTools } from "@/lib/db";
 
-import { useEffect, useState } from "react";
-
-type ToolItem = {
-  id: number;
-  name: string;
-  slug: string;
-  description: string;
-};
-
-export default function AdminTools() {
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [description, setDescription] = useState("");
-  const [items, setItems] = useState<ToolItem[]>([]);
-
-  async function loadItems() {
-    const response = await fetch("/api/admin/list-tools");
-    const data = await response.json();
-    setItems(data.items || []);
-  }
-
-  async function addTool() {
-    await fetch("/api/admin/add-tool", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ name, slug, description }),
-    });
-
-    setName("");
-    setSlug("");
-    setDescription("");
-    await loadItems();
-  }
-
-  async function deleteTool(id: number) {
-    await fetch("/api/admin/delete-tool", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ id }),
-    });
-
-    await loadItems();
-  }
-
-  useEffect(() => {
-    loadItems();
-  }, []);
+export default async function ToolsPage() {
+  const tools = await getTools();
 
   return (
-    <div className="grid gap-10 lg:grid-cols-2">
-      <div className="max-w-xl">
-        <h2 className="mb-6 text-xl font-semibold">Add Tool</h2>
-
-        <input
-          className="mb-4 w-full rounded bg-gray-800 p-3"
-          placeholder="Tool Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-
-        <input
-          className="mb-4 w-full rounded bg-gray-800 p-3"
-          placeholder="Slug"
-          value={slug}
-          onChange={(e) => setSlug(e.target.value)}
-        />
-
-        <textarea
-          className="mb-4 w-full rounded bg-gray-800 p-3"
-          placeholder="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-
-        <button
-          onClick={addTool}
-          className="rounded bg-blue-600 px-5 py-3 hover:bg-blue-700"
-        >
-          Add Tool
-        </button>
-      </div>
-
-      <div>
-        <h2 className="mb-6 text-xl font-semibold">Existing Tools</h2>
-
-        <div className="space-y-4">
-          {items.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-start justify-between gap-4 rounded-xl bg-gray-900 p-4"
-            >
-              <div>
-                <h3 className="font-semibold">{item.name}</h3>
-                <p className="text-sm text-gray-400">{item.slug}</p>
-                <p className="mt-2 text-sm text-gray-300">{item.description}</p>
-              </div>
-
-              <button
-                onClick={() => deleteTool(item.id)}
-                className="rounded bg-red-600 px-3 py-2 text-sm hover:bg-red-700"
-              >
-                Delete
-              </button>
-            </div>
-          ))}
+    <main className="min-h-screen bg-gray-950 px-6 py-12 text-white">
+      <section className="mx-auto max-w-6xl">
+        <div className="mb-10">
+          <p className="mb-3 text-sm uppercase tracking-[0.2em] text-blue-400">
+            QuickFnd Directory
+          </p>
+          <h1 className="text-4xl font-bold md:text-5xl">All Tools</h1>
+          <p className="mt-4 max-w-3xl text-lg text-gray-400">
+            Browse useful online tools built to help with developer workflows,
+            formatting, productivity, and quick utility tasks.
+          </p>
         </div>
-      </div>
-    </div>
+
+        {tools.length === 0 ? (
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-8 text-gray-400">
+            No tools available yet.
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {tools.map((tool) => (
+              <Link
+                key={tool.slug}
+                href={`/tools/${tool.slug}`}
+                className="block rounded-2xl border border-gray-800 bg-gray-900 p-6 transition hover:border-gray-700 hover:bg-gray-800"
+              >
+                <h2 className="text-xl font-semibold">{tool.name}</h2>
+                <p className="mt-3 text-sm leading-6 text-gray-400">
+                  {tool.description}
+                </p>
+                <div className="mt-5 text-sm font-medium text-blue-400">
+                  Open tool →
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+    </main>
   );
 }

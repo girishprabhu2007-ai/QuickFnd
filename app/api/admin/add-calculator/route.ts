@@ -1,10 +1,15 @@
 import { supabase } from "@/lib/supabase";
+import { getAdminUser } from "@/lib/admin-auth";
+import { normalizeGeneratedContent } from "@/lib/admin-content";
 import { NextResponse } from "next/server";
-import {
-  normalizeGeneratedContent,
-} from "@/lib/admin-content";
 
 export async function POST(req: Request) {
+  const adminUser = await getAdminUser();
+
+  if (!adminUser) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
     const { name, slug, description, related_slugs } = normalizeGeneratedContent(body);
@@ -17,12 +22,7 @@ export async function POST(req: Request) {
     }
 
     const { error } = await supabase.from("calculators").insert([
-      {
-        name,
-        slug,
-        description,
-        related_slugs,
-      },
+      { name, slug, description, related_slugs },
     ]);
 
     if (error) {

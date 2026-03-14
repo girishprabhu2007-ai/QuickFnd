@@ -4,6 +4,7 @@ import {
   normalizeGeneratedContent,
   type AdminCategory,
 } from "@/lib/admin-content";
+import { getAdminUser } from "@/lib/admin-auth";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -43,6 +44,12 @@ export async function POST(req: Request) {
     const body = (await req.json()) as Partial<PublicToolInput & AdminContentInput>;
 
     if (body.mode === "admin-content") {
+      const adminUser = await getAdminUser();
+
+      if (!adminUser) {
+        return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+      }
+
       const topic = String(body.topic || "").trim();
       const category = body.category;
 

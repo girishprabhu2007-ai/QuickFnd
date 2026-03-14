@@ -1,7 +1,14 @@
 import { supabase } from "@/lib/supabase";
+import { getAdminUser } from "@/lib/admin-auth";
 import { NextResponse } from "next/server";
 
 export async function GET() {
+  const adminUser = await getAdminUser();
+
+  if (!adminUser) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
   const { data, error } = await supabase
     .from("tools")
     .select("*")

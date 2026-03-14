@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getAdminUser } from "@/lib/admin-auth";
 
 const navItems = [
   { href: "/admin", label: "Dashboard" },
@@ -8,11 +9,17 @@ const navItems = [
   { href: "/admin/ai-tools", label: "AI Tools" },
 ];
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const adminUser = await getAdminUser();
+
+  if (!adminUser) {
+    return <>{children}</>;
+  }
+
   return (
     <main className="min-h-screen bg-gray-950 p-6 text-white md:p-10">
       <div className="mx-auto max-w-7xl">
@@ -20,7 +27,7 @@ export default function AdminLayout({
           <div>
             <h1 className="text-3xl font-bold">QuickFnd Admin</h1>
             <p className="mt-2 text-sm text-gray-400">
-              Manage tools, calculators, AI tools, and automated generation.
+              Signed in as {adminUser.email}
             </p>
           </div>
 

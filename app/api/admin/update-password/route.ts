@@ -26,60 +26,77 @@ function createAuthClient() {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const email = String(body.email || "").trim().toLowerCase();
-    const password = String(body.password || "");
+    const { access_token, refresh_token, password } = await req.json();
 
-    if (!email || !password) {
+    const accessToken = String(access_token || "").trim();
+    const refreshToken = String(refresh_token || "").trim();
+    const nextPassword = String(password || "");
+
+    if (!accessToken || !refreshToken) {
       return NextResponse.json(
-        { error: "Email and password are required." },
+        { error: "Invalid or expired recovery session." },
+        { status: 400 }
+      );
+    }
+
+    if (nextPassword.length < 12) {
+      return NextResponse.json(
+        { error: "Password must be at least 12 characters long." },
         { status: 400 }
       );
     }
 
     const supabase = createAuthClient();
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
     });
 
-    if (error || !data.session || !data.user) {
+    if (sessionError || !sessionData.user) {
       return NextResponse.json(
-        { error: "Invalid email or password." },
+        { error: "Recovery session is invalid or expired." },
         { status: 401 }
       );
     }
 
-    if (!isAllowedAdminEmail(data.user.email)) {
+    if (!isAllowedAdminEmail(sessionData.user.email)) {
       return NextResponse.json(
         { error: "This account is not allowed to access admin." },
         { status: 403 }
       );
     }
 
-    const response = NextResponse.json({
-      success: true,
-      email: data.user.email,
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: nextPassword,
     });
+
+    if (updateError) {
+      return NextResponse.json(
+        { error: updateError.message },
+        { status: 500 }
+      );
+    }
+
+    const response = NextResponse.json({ success: true });
 
     response.cookies.set(
       ADMIN_ACCESS_COOKIE,
-      data.session.access_token,
+      sessionData.session?.access_token || accessToken,
       getAdminCookieOptions()
     );
 
     response.cookies.set(
       ADMIN_REFRESH_COOKIE,
-      data.session.refresh_token,
+      sessionData.session?.refresh_token || refreshToken,
       getAdminCookieOptions()
     );
 
     return response;
   } catch (error) {
-    console.error("Admin login error:", error);
+    console.error("Update password error:", error);
     return NextResponse.json(
-      { error: "Failed to log in." },
+      { error: "Failed to update password." },
       { status: 500 }
     );
   }
