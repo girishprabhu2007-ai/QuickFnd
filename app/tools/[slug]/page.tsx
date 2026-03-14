@@ -13,7 +13,7 @@ const tools: Record<string, { name: string; description: string }> = {
   },
   "word-counter": {
     name: "Word Counter",
-    description: "Count words, characters, and paragraphs instantly.",
+    description: "Count words, characters, sentences, and paragraphs instantly.",
   },
 };
 
@@ -32,6 +32,8 @@ export default function ToolDetailPage({
   const [includeNumbers, setIncludeNumbers] = useState(true);
   const [includeSymbols, setIncludeSymbols] = useState(true);
   const [copied, setCopied] = useState(false);
+
+  const [text, setText] = useState("");
 
   const passwordStrength = useMemo(() => {
     let score = 0;
@@ -79,6 +81,28 @@ export default function ToolDetailPage({
       setCopied(false);
     }, 1500);
   };
+
+  const stats = useMemo(() => {
+    const trimmed = text.trim();
+
+    const words = trimmed ? trimmed.split(/\s+/).length : 0;
+    const characters = text.length;
+    const charactersNoSpaces = text.replace(/\s/g, "").length;
+    const sentences = trimmed
+      ? trimmed.split(/[.!?]+/).filter((sentence) => sentence.trim().length > 0).length
+      : 0;
+    const paragraphs = trimmed
+      ? text.split(/\n\s*\n/).filter((paragraph) => paragraph.trim().length > 0).length
+      : 0;
+
+    return {
+      words,
+      characters,
+      charactersNoSpaces,
+      sentences,
+      paragraphs,
+    };
+  }, [text]);
 
   if (!tool) {
     return (
@@ -187,6 +211,52 @@ export default function ToolDetailPage({
               {passwordStrength}
             </p>
           </div>
+        </div>
+      )}
+
+      {slug === "word-counter" && (
+        <div className="max-w-4xl rounded-2xl bg-gray-900 p-6 shadow-lg">
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Type or paste your text here..."
+            className="mb-6 min-h-[220px] w-full rounded-xl bg-gray-800 p-4 text-white outline-none ring-1 ring-gray-700 placeholder:text-gray-500 focus:ring-blue-500"
+          />
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="rounded-xl bg-gray-800 p-4">
+              <p className="text-sm text-gray-400">Words</p>
+              <p className="mt-2 text-2xl font-bold">{stats.words}</p>
+            </div>
+
+            <div className="rounded-xl bg-gray-800 p-4">
+              <p className="text-sm text-gray-400">Characters</p>
+              <p className="mt-2 text-2xl font-bold">{stats.characters}</p>
+            </div>
+
+            <div className="rounded-xl bg-gray-800 p-4">
+              <p className="text-sm text-gray-400">No Spaces</p>
+              <p className="mt-2 text-2xl font-bold">{stats.charactersNoSpaces}</p>
+            </div>
+
+            <div className="rounded-xl bg-gray-800 p-4">
+              <p className="text-sm text-gray-400">Sentences</p>
+              <p className="mt-2 text-2xl font-bold">{stats.sentences}</p>
+            </div>
+
+            <div className="rounded-xl bg-gray-800 p-4">
+              <p className="text-sm text-gray-400">Paragraphs</p>
+              <p className="mt-2 text-2xl font-bold">{stats.paragraphs}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {slug !== "password-generator" && slug !== "word-counter" && (
+        <div className="max-w-3xl rounded-xl bg-gray-900 p-6">
+          <p className="text-lg text-gray-300">
+            This is where the actual {tool.name.toLowerCase()} interface will go.
+          </p>
         </div>
       )}
     </main>
