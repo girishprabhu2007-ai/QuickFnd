@@ -1,5 +1,10 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
+export const metadata: Metadata = {
+  title: "AI Tools",
+  description: "Discover AI tools for writing, coding, design, productivity, and more.",
+};
 const aiTools = [
   {
     slug: "chatgpt",

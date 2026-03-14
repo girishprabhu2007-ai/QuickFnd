@@ -1,4 +1,10 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Tools",
+  description: "Browse online tools like password generators, word counters, JSON formatters, and more.",
+};
 
 const tools = [
   {

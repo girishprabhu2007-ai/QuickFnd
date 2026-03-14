@@ -1,5 +1,10 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
+export const metadata: Metadata = {
+  title: "Calculators",
+  description: "Browse useful calculators including EMI, age, and percentage calculators.",
+};
 const calculators = [
   {
     slug: "emi-calculator",

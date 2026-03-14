@@ -3,8 +3,12 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "QuickFnd",
-  description: "Automated platform for tools, calculators, and AI resources.",
+  title: {
+    default: "QuickFnd",
+    template: "%s | QuickFnd",
+  },
+  description:
+    "QuickFnd is an all-in-one platform for online tools, calculators, and AI resources.",
 };
 
 export default function RootLayout({
@@ -22,16 +26,16 @@ export default function RootLayout({
             </Link>
 
             <div className="flex items-center gap-6 text-sm text-gray-300">
-              <Link href="/" className="hover:text-white transition">
+              <Link href="/" className="transition hover:text-white">
                 Home
               </Link>
-              <Link href="/tools" className="hover:text-white transition">
+              <Link href="/tools" className="transition hover:text-white">
                 Tools
               </Link>
-              <Link href="/calculators" className="hover:text-white transition">
+              <Link href="/calculators" className="transition hover:text-white">
                 Calculators
               </Link>
-              <Link href="/ai-tools" className="hover:text-white transition">
+              <Link href="/ai-tools" className="transition hover:text-white">
                 AI Tools
               </Link>
             </div>
@@ -40,7 +44,7 @@ export default function RootLayout({
 
         {children}
 
-        <footer className="border-t border-gray-800 mt-16">
+        <footer className="mt-16 border-t border-gray-800">
           <div className="mx-auto max-w-7xl px-6 py-6 text-sm text-gray-400">
             © 2026 QuickFnd. All rights reserved.
           </div>
