@@ -9,11 +9,19 @@ const tools: Record<string, { name: string; description: string }> = {
   },
   "json-formatter": {
     name: "JSON Formatter",
-    description: "Format and validate JSON easily.",
+    description: "Format, validate, and minify JSON easily.",
   },
   "word-counter": {
     name: "Word Counter",
     description: "Count words, characters, sentences, and paragraphs instantly.",
+  },
+  "base64-encoder-decoder": {
+    name: "Base64 Encoder / Decoder",
+    description: "Encode plain text to Base64 or decode Base64 back to text.",
+  },
+  "uuid-generator": {
+    name: "UUID Generator",
+    description: "Generate random UUIDs instantly for apps and databases.",
   },
 };
 
@@ -34,6 +42,16 @@ export default function ToolDetailPage({
   const [copied, setCopied] = useState(false);
 
   const [text, setText] = useState("");
+
+  const [jsonInput, setJsonInput] = useState("");
+  const [jsonOutput, setJsonOutput] = useState("");
+  const [jsonError, setJsonError] = useState("");
+
+  const [base64Input, setBase64Input] = useState("");
+  const [base64Output, setBase64Output] = useState("");
+  const [base64Error, setBase64Error] = useState("");
+
+  const [uuidValue, setUuidValue] = useState("");
 
   const passwordStrength = useMemo(() => {
     let score = 0;
@@ -73,18 +91,13 @@ export default function ToolDetailPage({
 
   const copyPassword = async () => {
     if (!password || password === "Please select at least one option.") return;
-
     await navigator.clipboard.writeText(password);
     setCopied(true);
-
-    setTimeout(() => {
-      setCopied(false);
-    }, 1500);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   const stats = useMemo(() => {
     const trimmed = text.trim();
-
     const words = trimmed ? trimmed.split(/\s+/).length : 0;
     const characters = text.length;
     const charactersNoSpaces = text.replace(/\s/g, "").length;
@@ -103,6 +116,52 @@ export default function ToolDetailPage({
       paragraphs,
     };
   }, [text]);
+
+  const formatJson = () => {
+    try {
+      const parsed = JSON.parse(jsonInput);
+      setJsonOutput(JSON.stringify(parsed, null, 2));
+      setJsonError("");
+    } catch {
+      setJsonError("Invalid JSON input.");
+      setJsonOutput("");
+    }
+  };
+
+  const minifyJson = () => {
+    try {
+      const parsed = JSON.parse(jsonInput);
+      setJsonOutput(JSON.stringify(parsed));
+      setJsonError("");
+    } catch {
+      setJsonError("Invalid JSON input.");
+      setJsonOutput("");
+    }
+  };
+
+  const encodeBase64 = () => {
+    try {
+      setBase64Output(btoa(base64Input));
+      setBase64Error("");
+    } catch {
+      setBase64Error("Unable to encode this input.");
+      setBase64Output("");
+    }
+  };
+
+  const decodeBase64 = () => {
+    try {
+      setBase64Output(atob(base64Input));
+      setBase64Error("");
+    } catch {
+      setBase64Error("Invalid Base64 input.");
+      setBase64Output("");
+    }
+  };
+
+  const generateUuid = () => {
+    setUuidValue(crypto.randomUUID());
+  };
 
   if (!tool) {
     return (
@@ -228,22 +287,18 @@ export default function ToolDetailPage({
               <p className="text-sm text-gray-400">Words</p>
               <p className="mt-2 text-2xl font-bold">{stats.words}</p>
             </div>
-
             <div className="rounded-xl bg-gray-800 p-4">
               <p className="text-sm text-gray-400">Characters</p>
               <p className="mt-2 text-2xl font-bold">{stats.characters}</p>
             </div>
-
             <div className="rounded-xl bg-gray-800 p-4">
               <p className="text-sm text-gray-400">No Spaces</p>
               <p className="mt-2 text-2xl font-bold">{stats.charactersNoSpaces}</p>
             </div>
-
             <div className="rounded-xl bg-gray-800 p-4">
               <p className="text-sm text-gray-400">Sentences</p>
               <p className="mt-2 text-2xl font-bold">{stats.sentences}</p>
             </div>
-
             <div className="rounded-xl bg-gray-800 p-4">
               <p className="text-sm text-gray-400">Paragraphs</p>
               <p className="mt-2 text-2xl font-bold">{stats.paragraphs}</p>
@@ -252,11 +307,105 @@ export default function ToolDetailPage({
         </div>
       )}
 
-      {slug !== "password-generator" && slug !== "word-counter" && (
-        <div className="max-w-3xl rounded-xl bg-gray-900 p-6">
-          <p className="text-lg text-gray-300">
-            This is where the actual {tool.name.toLowerCase()} interface will go.
-          </p>
+      {slug === "json-formatter" && (
+        <div className="max-w-5xl rounded-2xl bg-gray-900 p-6 shadow-lg">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div>
+              <p className="mb-2 text-sm text-gray-400">Input JSON</p>
+              <textarea
+                value={jsonInput}
+                onChange={(e) => setJsonInput(e.target.value)}
+                placeholder='{"name":"QuickFnd","type":"tool"}'
+                className="min-h-[260px] w-full rounded-xl bg-gray-800 p-4 text-white outline-none ring-1 ring-gray-700 placeholder:text-gray-500 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <p className="mb-2 text-sm text-gray-400">Output</p>
+              <textarea
+                value={jsonOutput}
+                readOnly
+                className="min-h-[260px] w-full rounded-xl bg-gray-800 p-4 text-green-400 outline-none ring-1 ring-gray-700"
+              />
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              onClick={formatJson}
+              className="rounded-lg bg-blue-600 px-5 py-3 font-medium hover:bg-blue-700"
+            >
+              Format JSON
+            </button>
+            <button
+              onClick={minifyJson}
+              className="rounded-lg bg-gray-700 px-5 py-3 font-medium hover:bg-gray-600"
+            >
+              Minify JSON
+            </button>
+          </div>
+
+          {jsonError && <p className="mt-4 text-red-400">{jsonError}</p>}
+        </div>
+      )}
+
+      {slug === "base64-encoder-decoder" && (
+        <div className="max-w-5xl rounded-2xl bg-gray-900 p-6 shadow-lg">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div>
+              <p className="mb-2 text-sm text-gray-400">Input</p>
+              <textarea
+                value={base64Input}
+                onChange={(e) => setBase64Input(e.target.value)}
+                placeholder="Enter text or Base64 value..."
+                className="min-h-[220px] w-full rounded-xl bg-gray-800 p-4 text-white outline-none ring-1 ring-gray-700 placeholder:text-gray-500 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <p className="mb-2 text-sm text-gray-400">Output</p>
+              <textarea
+                value={base64Output}
+                readOnly
+                className="min-h-[220px] w-full rounded-xl bg-gray-800 p-4 text-green-400 outline-none ring-1 ring-gray-700"
+              />
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              onClick={encodeBase64}
+              className="rounded-lg bg-blue-600 px-5 py-3 font-medium hover:bg-blue-700"
+            >
+              Encode
+            </button>
+            <button
+              onClick={decodeBase64}
+              className="rounded-lg bg-gray-700 px-5 py-3 font-medium hover:bg-gray-600"
+            >
+              Decode
+            </button>
+          </div>
+
+          {base64Error && <p className="mt-4 text-red-400">{base64Error}</p>}
+        </div>
+      )}
+
+      {slug === "uuid-generator" && (
+        <div className="max-w-2xl rounded-2xl bg-gray-900 p-6 shadow-lg">
+          <button
+            onClick={generateUuid}
+            className="rounded-lg bg-blue-600 px-5 py-3 font-medium hover:bg-blue-700"
+          >
+            Generate UUID
+          </button>
+
+          <div className="mt-4 rounded-lg bg-gray-800 p-4">
+            <p className="mb-2 text-sm text-gray-400">Generated UUID</p>
+            <div className="break-all font-mono text-lg text-green-400">
+              {uuidValue || "Click generate to create a UUID"}
+            </div>
+          </div>
         </div>
       )}
     </main>

@@ -9,12 +9,22 @@ const tools = [
   {
     slug: "json-formatter",
     name: "JSON Formatter",
-    description: "Format and validate JSON easily.",
+    description: "Format, validate, and minify JSON easily.",
   },
   {
     slug: "word-counter",
     name: "Word Counter",
     description: "Count words, characters, and paragraphs instantly.",
+  },
+  {
+    slug: "base64-encoder-decoder",
+    name: "Base64 Encoder / Decoder",
+    description: "Encode or decode text using Base64.",
+  },
+  {
+    slug: "uuid-generator",
+    name: "UUID Generator",
+    description: "Generate unique UUIDs instantly.",
   },
 ];
 
@@ -27,7 +37,7 @@ export default function ToolsPage() {
         Browse powerful online utilities available on QuickFnd.
       </p>
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
         {tools.map((tool) => (
           <Link
             key={tool.slug}
