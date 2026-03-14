@@ -1,60 +1,99 @@
-import Link from "next/link";
+"use client";
 
-const featuredTools = [
+import Link from "next/link";
+import { useMemo, useState } from "react";
+
+const searchableItems = [
   {
-    slug: "password-generator",
+    type: "Tool",
+    slug: "/tools/password-generator",
     name: "Password Generator",
     description: "Generate strong and secure passwords instantly.",
   },
   {
-    slug: "word-counter",
+    type: "Tool",
+    slug: "/tools/word-counter",
     name: "Word Counter",
     description: "Count words, characters, and paragraphs quickly.",
   },
   {
-    slug: "json-formatter",
+    type: "Tool",
+    slug: "/tools/json-formatter",
     name: "JSON Formatter",
     description: "Format, validate, and minify JSON easily.",
   },
-];
-
-const featuredCalculators = [
   {
-    slug: "emi-calculator",
+    type: "Tool",
+    slug: "/tools/base64-encoder-decoder",
+    name: "Base64 Encoder / Decoder",
+    description: "Encode or decode text using Base64.",
+  },
+  {
+    type: "Tool",
+    slug: "/tools/uuid-generator",
+    name: "UUID Generator",
+    description: "Generate unique UUIDs instantly.",
+  },
+  {
+    type: "Calculator",
+    slug: "/calculators/emi-calculator",
     name: "EMI Calculator",
     description: "Calculate monthly loan payments easily.",
   },
   {
-    slug: "age-calculator",
+    type: "Calculator",
+    slug: "/calculators/age-calculator",
     name: "Age Calculator",
     description: "Find your exact age in years, months, and days.",
   },
   {
-    slug: "percentage-calculator",
+    type: "Calculator",
+    slug: "/calculators/percentage-calculator",
     name: "Percentage Calculator",
     description: "Calculate percentages instantly.",
   },
-];
-
-const featuredAITools = [
   {
-    slug: "chatgpt",
+    type: "AI Tool",
+    slug: "/ai-tools/chatgpt",
     name: "ChatGPT",
     description: "AI chatbot for writing, coding, and productivity.",
   },
   {
-    slug: "midjourney",
+    type: "AI Tool",
+    slug: "/ai-tools/midjourney",
     name: "Midjourney",
     description: "Generate AI images from text prompts.",
   },
   {
-    slug: "notion-ai",
+    type: "AI Tool",
+    slug: "/ai-tools/notion-ai",
     name: "Notion AI",
     description: "AI assistant built into Notion.",
   },
 ];
 
+const featuredTools = searchableItems.filter((item) => item.type === "Tool").slice(0, 3);
+const featuredCalculators = searchableItems
+  .filter((item) => item.type === "Calculator")
+  .slice(0, 3);
+const featuredAITools = searchableItems.filter((item) => item.type === "AI Tool").slice(0, 3);
+
 export default function Home() {
+  const [query, setQuery] = useState("");
+
+  const results = useMemo(() => {
+    const value = query.trim().toLowerCase();
+    if (!value) return [];
+
+    return searchableItems.filter((item) => {
+      return (
+        item.name.toLowerCase().includes(value) ||
+        item.description.toLowerCase().includes(value) ||
+        item.type.toLowerCase().includes(value)
+      );
+    });
+  }, [query]);
+
   return (
     <main className="min-h-screen bg-gray-950 px-6 py-12 text-white">
       <section className="mx-auto max-w-6xl text-center">
@@ -67,14 +106,39 @@ export default function Home() {
           and AI tools — built to save time and scale into a fully automated resource hub.
         </p>
 
-        <div className="mx-auto mb-12 max-w-2xl rounded-2xl border border-gray-800 bg-gray-900 p-3 shadow-lg">
+        <div className="mx-auto mb-4 max-w-2xl rounded-2xl border border-gray-800 bg-gray-900 p-3 shadow-lg">
           <input
             type="text"
             placeholder="Search tools, calculators, or AI resources..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
             className="w-full rounded-xl bg-gray-950 px-4 py-4 text-white outline-none placeholder:text-gray-500"
-            readOnly
           />
         </div>
+
+        {query && (
+          <div className="mx-auto mb-12 max-w-2xl rounded-2xl border border-gray-800 bg-gray-900 p-4 text-left">
+            <p className="mb-3 text-sm text-gray-400">
+              {results.length > 0 ? `Found ${results.length} result(s)` : "No results found"}
+            </p>
+
+            <div className="space-y-3">
+              {results.map((item) => (
+                <Link
+                  key={item.slug}
+                  href={item.slug}
+                  className="block rounded-xl bg-gray-800 p-4 transition hover:bg-gray-700"
+                >
+                  <div className="mb-1 text-xs uppercase tracking-wide text-blue-400">
+                    {item.type}
+                  </div>
+                  <div className="font-semibold">{item.name}</div>
+                  <div className="mt-1 text-sm text-gray-400">{item.description}</div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="mx-auto mb-14 max-w-6xl">
@@ -89,7 +153,7 @@ export default function Home() {
           {featuredTools.map((tool) => (
             <Link
               key={tool.slug}
-              href={`/tools/${tool.slug}`}
+              href={tool.slug}
               className="block rounded-2xl bg-gray-900 p-6 transition hover:bg-gray-800"
             >
               <h3 className="text-xl font-semibold">{tool.name}</h3>
@@ -102,10 +166,7 @@ export default function Home() {
       <section className="mx-auto mb-14 max-w-6xl">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-2xl font-semibold">Featured Calculators</h2>
-          <Link
-            href="/calculators"
-            className="text-sm text-blue-400 hover:text-blue-300"
-          >
+          <Link href="/calculators" className="text-sm text-blue-400 hover:text-blue-300">
             View all calculators
           </Link>
         </div>
@@ -114,7 +175,7 @@ export default function Home() {
           {featuredCalculators.map((calculator) => (
             <Link
               key={calculator.slug}
-              href={`/calculators/${calculator.slug}`}
+              href={calculator.slug}
               className="block rounded-2xl bg-gray-900 p-6 transition hover:bg-gray-800"
             >
               <h3 className="text-xl font-semibold">{calculator.name}</h3>
@@ -136,7 +197,7 @@ export default function Home() {
           {featuredAITools.map((tool) => (
             <Link
               key={tool.slug}
-              href={`/ai-tools/${tool.slug}`}
+              href={tool.slug}
               className="block rounded-2xl bg-gray-900 p-6 transition hover:bg-gray-800"
             >
               <h3 className="text-xl font-semibold">{tool.name}</h3>

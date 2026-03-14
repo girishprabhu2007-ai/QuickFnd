@@ -1,3 +1,8 @@
+"use client";
+
+import Link from "next/link";
+import { use } from "react";
+
 const aiTools: Record<
   string,
   {
@@ -22,18 +27,24 @@ const aiTools: Record<
   },
 };
 
-export default async function AIToolPage({
+export default function AIToolPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { slug } = await params;
+  const { slug } = use(params);
   const tool = aiTools[slug];
 
   if (!tool) {
     return (
-      <main className="min-h-screen bg-gray-950 text-white p-10">
-        <h1 className="text-4xl font-bold mb-4">AI Tool Not Found</h1>
+      <main className="min-h-screen bg-gray-950 p-10 text-white">
+        <Link
+          href="/ai-tools"
+          className="mb-6 inline-block text-sm text-blue-400 hover:text-blue-300"
+        >
+          ← Back to AI Tools
+        </Link>
+        <h1 className="mb-4 text-4xl font-bold">AI Tool Not Found</h1>
         <p className="text-gray-400">
           The AI tool you are looking for does not exist.
         </p>
@@ -42,11 +53,18 @@ export default async function AIToolPage({
   }
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white p-10">
-      <h1 className="text-4xl font-bold mb-4">{tool.name}</h1>
-      <p className="text-gray-400 mb-8 max-w-2xl">{tool.description}</p>
+    <main className="min-h-screen bg-gray-950 p-10 text-white">
+      <Link
+        href="/ai-tools"
+        className="mb-6 inline-block text-sm text-blue-400 hover:text-blue-300"
+      >
+        ← Back to AI Tools
+      </Link>
 
-      <div className="bg-gray-900 p-6 rounded-xl max-w-3xl">
+      <h1 className="mb-4 text-4xl font-bold">{tool.name}</h1>
+      <p className="mb-8 max-w-2xl text-gray-400">{tool.description}</p>
+
+      <div className="max-w-3xl rounded-xl bg-gray-900 p-6">
         <p className="text-lg text-gray-300">
           This is where the full review or listing for {tool.name} will go.
         </p>

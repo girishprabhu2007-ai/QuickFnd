@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { use, useMemo, useState } from "react";
 
 const tools: Record<string, { name: string; description: string }> = {
@@ -166,6 +167,12 @@ export default function ToolDetailPage({
   if (!tool) {
     return (
       <main className="min-h-screen bg-gray-950 p-10 text-white">
+        <Link
+          href="/tools"
+          className="mb-6 inline-block text-sm text-blue-400 hover:text-blue-300"
+        >
+          ← Back to Tools
+        </Link>
         <h1 className="mb-4 text-4xl font-bold">Tool Not Found</h1>
         <p className="text-gray-400">
           The tool you are looking for does not exist.
@@ -176,6 +183,13 @@ export default function ToolDetailPage({
 
   return (
     <main className="min-h-screen bg-gray-950 p-10 text-white">
+      <Link
+        href="/tools"
+        className="mb-6 inline-block text-sm text-blue-400 hover:text-blue-300"
+      >
+        ← Back to Tools
+      </Link>
+
       <h1 className="mb-4 text-4xl font-bold">{tool.name}</h1>
       <p className="mb-8 max-w-2xl text-gray-400">{tool.description}</p>
 

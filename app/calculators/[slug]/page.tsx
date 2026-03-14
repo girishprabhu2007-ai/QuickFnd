@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { use, useMemo, useState } from "react";
 
 const calculators: Record<string, { name: string; description: string }> = {
@@ -101,6 +102,12 @@ export default function CalculatorDetailPage({
   if (!calculator) {
     return (
       <main className="min-h-screen bg-gray-950 p-10 text-white">
+        <Link
+          href="/calculators"
+          className="mb-6 inline-block text-sm text-blue-400 hover:text-blue-300"
+        >
+          ← Back to Calculators
+        </Link>
         <h1 className="mb-4 text-4xl font-bold">Calculator Not Found</h1>
         <p className="text-gray-400">
           The calculator you are looking for does not exist.
@@ -111,6 +118,13 @@ export default function CalculatorDetailPage({
 
   return (
     <main className="min-h-screen bg-gray-950 p-10 text-white">
+      <Link
+        href="/calculators"
+        className="mb-6 inline-block text-sm text-blue-400 hover:text-blue-300"
+      >
+        ← Back to Calculators
+      </Link>
+
       <h1 className="mb-4 text-4xl font-bold">{calculator.name}</h1>
       <p className="mb-8 max-w-2xl text-gray-400">{calculator.description}</p>
 
@@ -206,9 +220,7 @@ export default function CalculatorDetailPage({
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="rounded-xl bg-gray-800 p-4">
               <p className="text-sm text-gray-400">Monthly EMI</p>
-              <p className="mt-2 text-xl font-bold">
-                {emiResult ? emiResult.emi : "--"}
-              </p>
+              <p className="mt-2 text-xl font-bold">{emiResult ? emiResult.emi : "--"}</p>
             </div>
 
             <div className="rounded-xl bg-gray-800 p-4">
