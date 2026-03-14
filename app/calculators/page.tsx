@@ -1,36 +1,116 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { getCalculators } from "@/lib/db";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Calculators",
-  description:
-    "Browse useful calculators including EMI, age, and percentage calculators.",
+import { useEffect, useState } from "react";
+
+type CalculatorItem = {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
 };
 
-export default async function CalculatorsPage() {
-  const calculators = await getCalculators();
+export default function AdminCalculators() {
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [description, setDescription] = useState("");
+  const [items, setItems] = useState<CalculatorItem[]>([]);
+
+  async function loadItems() {
+    const response = await fetch("/api/admin/list-calculators");
+    const data = await response.json();
+    setItems(data.items || []);
+  }
+
+  async function addCalculator() {
+    await fetch("/api/admin/add-calculator", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name, slug, description }),
+    });
+
+    setName("");
+    setSlug("");
+    setDescription("");
+    await loadItems();
+  }
+
+  async function deleteCalculator(id: number) {
+    await fetch("/api/admin/delete-calculator", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id }),
+    });
+
+    await loadItems();
+  }
+
+  useEffect(() => {
+    loadItems();
+  }, []);
 
   return (
-    <main className="min-h-screen bg-gray-950 p-10 text-white">
-      <h1 className="mb-6 text-4xl font-bold">Calculators</h1>
+    <div className="grid gap-10 lg:grid-cols-2">
+      <div className="max-w-xl">
+        <h2 className="mb-6 text-xl font-semibold">Add Calculator</h2>
 
-      <p className="mb-10 text-gray-400">
-        Browse useful calculators available on QuickFnd.
-      </p>
+        <input
+          className="mb-4 w-full rounded bg-gray-800 p-3"
+          placeholder="Calculator Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
 
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {calculators.map((calculator) => (
-          <Link
-            key={calculator.id}
-            href={`/calculators/${calculator.slug}`}
-            className="block rounded-xl bg-gray-900 p-6 transition hover:bg-gray-800"
-          >
-            <h2 className="text-xl font-semibold">{calculator.name}</h2>
-            <p className="mt-2 text-gray-400">{calculator.description}</p>
-          </Link>
-        ))}
+        <input
+          className="mb-4 w-full rounded bg-gray-800 p-3"
+          placeholder="Slug"
+          value={slug}
+          onChange={(e) => setSlug(e.target.value)}
+        />
+
+        <textarea
+          className="mb-4 w-full rounded bg-gray-800 p-3"
+          placeholder="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+
+        <button
+          onClick={addCalculator}
+          className="rounded bg-blue-600 px-5 py-3 hover:bg-blue-700"
+        >
+          Add Calculator
+        </button>
       </div>
-    </main>
+
+      <div>
+        <h2 className="mb-6 text-xl font-semibold">Existing Calculators</h2>
+
+        <div className="space-y-4">
+          {items.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-start justify-between gap-4 rounded-xl bg-gray-900 p-4"
+            >
+              <div>
+                <h3 className="font-semibold">{item.name}</h3>
+                <p className="text-sm text-gray-400">{item.slug}</p>
+                <p className="mt-2 text-sm text-gray-300">{item.description}</p>
+              </div>
+
+              <button
+                onClick={() => deleteCalculator(item.id)}
+                className="rounded bg-red-600 px-3 py-2 text-sm hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
