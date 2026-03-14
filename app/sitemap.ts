@@ -1,28 +1,59 @@
 import type { MetadataRoute } from "next";
+import { getAllContentForSitemap } from "@/lib/db";
+import { getSiteUrl } from "@/lib/content-pages";
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://quick-fnd-b5xf.vercel.app";
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const siteUrl = getSiteUrl();
+  const { tools, calculators, aiTools } = await getAllContentForSitemap();
+  const now = new Date();
 
-  const routes = [
-    "",
-    "/tools",
-    "/tools/password-generator",
-    "/tools/word-counter",
-    "/tools/json-formatter",
-    "/tools/base64-encoder-decoder",
-    "/tools/uuid-generator",
-    "/calculators",
-    "/calculators/emi-calculator",
-    "/calculators/age-calculator",
-    "/calculators/percentage-calculator",
-    "/ai-tools",
-    "/ai-tools/chatgpt",
-    "/ai-tools/midjourney",
-    "/ai-tools/notion-ai",
+  const staticPages: MetadataRoute.Sitemap = [
+    {
+      url: `${siteUrl}/`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 1,
+    },
+    {
+      url: `${siteUrl}/tools`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    {
+      url: `${siteUrl}/calculators`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    {
+      url: `${siteUrl}/ai-tools`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
   ];
 
-  return routes.map((route) => ({
-    url: `${baseUrl}${route}`,
-    lastModified: new Date(),
+  const toolPages = tools.map((item) => ({
+    url: `${siteUrl}/tools/${item.slug}`,
+    lastModified: item.created_at ? new Date(item.created_at) : now,
+    changeFrequency: "weekly" as const,
+    priority: 0.8,
   }));
+
+  const calculatorPages = calculators.map((item) => ({
+    url: `${siteUrl}/calculators/${item.slug}`,
+    lastModified: item.created_at ? new Date(item.created_at) : now,
+    changeFrequency: "weekly" as const,
+    priority: 0.8,
+  }));
+
+  const aiToolPages = aiTools.map((item) => ({
+    url: `${siteUrl}/ai-tools/${item.slug}`,
+    lastModified: item.created_at ? new Date(item.created_at) : now,
+    changeFrequency: "weekly" as const,
+    priority: 0.8,
+  }));
+
+  return [...staticPages, ...toolPages, ...calculatorPages, ...aiToolPages];
 }
