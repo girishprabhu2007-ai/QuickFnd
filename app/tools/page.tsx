@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { tools } from "@/lib/data/tools";
+import { getTools } from "@/lib/db";
 
 export const metadata: Metadata = {
   title: "Tools",
@@ -8,7 +8,9 @@ export const metadata: Metadata = {
     "Browse online tools like password generators, word counters, JSON formatters, and more.",
 };
 
-export default function ToolsPage() {
+export default async function ToolsPage() {
+  const tools = await getTools();
+
   return (
     <main className="min-h-screen bg-gray-950 p-10 text-white">
       <h1 className="mb-6 text-4xl font-bold">Tools</h1>
@@ -20,7 +22,7 @@ export default function ToolsPage() {
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {tools.map((tool) => (
           <Link
-            key={tool.slug}
+            key={tool.id}
             href={`/tools/${tool.slug}`}
             className="block rounded-xl bg-gray-900 p-6 transition hover:bg-gray-800"
           >

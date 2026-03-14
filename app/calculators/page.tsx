@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { calculators } from "@/lib/data/calculators";
+import { getCalculators } from "@/lib/db";
 
 export const metadata: Metadata = {
   title: "Calculators",
@@ -8,7 +8,9 @@ export const metadata: Metadata = {
     "Browse useful calculators including EMI, age, and percentage calculators.",
 };
 
-export default function CalculatorsPage() {
+export default async function CalculatorsPage() {
+  const calculators = await getCalculators();
+
   return (
     <main className="min-h-screen bg-gray-950 p-10 text-white">
       <h1 className="mb-6 text-4xl font-bold">Calculators</h1>
@@ -17,10 +19,10 @@ export default function CalculatorsPage() {
         Browse useful calculators available on QuickFnd.
       </p>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {calculators.map((calculator) => (
           <Link
-            key={calculator.slug}
+            key={calculator.id}
             href={`/calculators/${calculator.slug}`}
             className="block rounded-xl bg-gray-900 p-6 transition hover:bg-gray-800"
           >

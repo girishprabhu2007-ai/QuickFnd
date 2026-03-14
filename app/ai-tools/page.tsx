@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { aiTools } from "@/lib/data/ai-tools";
+import { getAITools } from "@/lib/db";
 
 export const metadata: Metadata = {
   title: "AI Tools",
@@ -8,7 +8,9 @@ export const metadata: Metadata = {
     "Discover AI tools for writing, coding, design, productivity, and more.",
 };
 
-export default function AIToolsPage() {
+export default async function AIToolsPage() {
+  const aiTools = await getAITools();
+
   return (
     <main className="min-h-screen bg-gray-950 p-10 text-white">
       <h1 className="mb-6 text-4xl font-bold">AI Tools</h1>
@@ -17,10 +19,10 @@ export default function AIToolsPage() {
         Discover powerful AI tools to boost productivity.
       </p>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {aiTools.map((tool) => (
           <Link
-            key={tool.slug}
+            key={tool.id}
             href={`/ai-tools/${tool.slug}`}
             className="block rounded-xl bg-gray-900 p-6 transition hover:bg-gray-800"
           >
