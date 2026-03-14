@@ -1,177 +1,150 @@
-"use client";
-
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { tools } from "@/lib/data/tools";
-import { calculators } from "@/lib/data/calculators";
-import { aiTools } from "@/lib/data/ai-tools";
+import HomeSearch from "@/components/search/HomeSearch";
+import { getAITools, getCalculators, getTools } from "@/lib/db";
 
-const searchableItems = [
-  ...tools.map((tool) => ({
-    type: "Tool",
-    slug: `/tools/${tool.slug}`,
-    name: tool.name,
-    description: tool.description,
-  })),
-  ...calculators.map((calculator) => ({
-    type: "Calculator",
-    slug: `/calculators/${calculator.slug}`,
-    name: calculator.name,
-    description: calculator.description,
-  })),
-  ...aiTools.map((tool) => ({
-    type: "AI Tool",
-    slug: `/ai-tools/${tool.slug}`,
-    name: tool.name,
-    description: tool.description,
-  })),
-];
+export default async function HomePage() {
+  const [tools, calculators, aiTools] = await Promise.all([
+    getTools(),
+    getCalculators(),
+    getAITools(),
+  ]);
 
-const featuredTools = tools.slice(0, 3).map((tool) => ({
-  slug: `/tools/${tool.slug}`,
-  name: tool.name,
-  description: tool.description,
-}));
-
-const featuredCalculators = calculators.slice(0, 3).map((calculator) => ({
-  slug: `/calculators/${calculator.slug}`,
-  name: calculator.name,
-  description: calculator.description,
-}));
-
-const featuredAITools = aiTools.slice(0, 3).map((tool) => ({
-  slug: `/ai-tools/${tool.slug}`,
-  name: tool.name,
-  description: tool.description,
-}));
-
-export default function Home() {
-  const [query, setQuery] = useState("");
-
-  const results = useMemo(() => {
-    const value = query.trim().toLowerCase();
-    if (!value) return [];
-
-    return searchableItems.filter((item) => {
-      return (
-        item.name.toLowerCase().includes(value) ||
-        item.description.toLowerCase().includes(value) ||
-        item.type.toLowerCase().includes(value)
-      );
-    });
-  }, [query]);
+  const featuredTools = tools.slice(0, 6);
+  const featuredCalculators = calculators.slice(0, 6);
+  const featuredAITools = aiTools.slice(0, 6);
 
   return (
     <main className="min-h-screen bg-gray-950 px-6 py-12 text-white">
-      <section className="mx-auto max-w-6xl text-center">
-        <h1 className="mb-6 text-5xl font-bold leading-tight md:text-6xl">
-          Find powerful tools, calculators, and AI resources instantly
-        </h1>
-
-        <p className="mx-auto mb-8 max-w-3xl text-lg text-gray-400">
-          QuickFnd is your all-in-one platform for online utilities, useful calculators,
-          and AI tools — built to save time and scale into a fully automated resource hub.
-        </p>
-
-        <div className="mx-auto mb-4 max-w-2xl rounded-2xl border border-gray-800 bg-gray-900 p-3 shadow-lg">
-          <input
-            type="text"
-            placeholder="Search tools, calculators, or AI resources..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="w-full rounded-xl bg-gray-950 px-4 py-4 text-white outline-none placeholder:text-gray-500"
-          />
-        </div>
-
-        {query && (
-          <div className="mx-auto mb-12 max-w-2xl rounded-2xl border border-gray-800 bg-gray-900 p-4 text-left">
-            <p className="mb-3 text-sm text-gray-400">
-              {results.length > 0 ? `Found ${results.length} result(s)` : "No results found"}
-            </p>
-
-            <div className="space-y-3">
-              {results.map((item) => (
-                <Link
-                  key={item.slug}
-                  href={item.slug}
-                  className="block rounded-xl bg-gray-800 p-4 transition hover:bg-gray-700"
-                >
-                  <div className="mb-1 text-xs uppercase tracking-wide text-blue-400">
-                    {item.type}
-                  </div>
-                  <div className="font-semibold">{item.name}</div>
-                  <div className="mt-1 text-sm text-gray-400">{item.description}</div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-      </section>
-
-      <section className="mx-auto mb-14 max-w-6xl">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-2xl font-semibold">Featured Tools</h2>
-          <Link href="/tools" className="text-sm text-blue-400 hover:text-blue-300">
-            View all tools
-          </Link>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {featuredTools.map((tool) => (
-            <Link
-              key={tool.slug}
-              href={tool.slug}
-              className="block rounded-2xl bg-gray-900 p-6 transition hover:bg-gray-800"
-            >
-              <h3 className="text-xl font-semibold">{tool.name}</h3>
-              <p className="mt-2 text-gray-400">{tool.description}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto mb-14 max-w-6xl">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-2xl font-semibold">Featured Calculators</h2>
-          <Link href="/calculators" className="text-sm text-blue-400 hover:text-blue-300">
-            View all calculators
-          </Link>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {featuredCalculators.map((calculator) => (
-            <Link
-              key={calculator.slug}
-              href={calculator.slug}
-              className="block rounded-2xl bg-gray-900 p-6 transition hover:bg-gray-800"
-            >
-              <h3 className="text-xl font-semibold">{calculator.name}</h3>
-              <p className="mt-2 text-gray-400">{calculator.description}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
       <section className="mx-auto max-w-6xl">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-2xl font-semibold">Featured AI Tools</h2>
-          <Link href="/ai-tools" className="text-sm text-blue-400 hover:text-blue-300">
-            View all AI tools
-          </Link>
+        <div className="mb-12 rounded-3xl border border-gray-800 bg-gray-900 p-8 md:p-10">
+          <p className="text-sm uppercase tracking-[0.25em] text-blue-400">
+            QuickFnd
+          </p>
+          <h1 className="mt-4 text-4xl font-bold md:text-6xl">
+            Discover useful tools, calculators, and AI utilities
+          </h1>
+          <p className="mt-5 max-w-3xl text-lg leading-8 text-gray-400">
+            QuickFnd is a searchable platform for utility tools, practical
+            calculators, and AI-powered helpers. Explore public pages instantly
+            and use built-in utilities directly in your browser.
+          </p>
+
+          <div className="mt-8 flex flex-wrap gap-4">
+            <Link
+              href="/tools"
+              className="rounded-xl bg-blue-600 px-5 py-3 font-medium text-white hover:bg-blue-700"
+            >
+              Explore Tools
+            </Link>
+            <Link
+              href="/calculators"
+              className="rounded-xl border border-gray-700 bg-gray-950 px-5 py-3 font-medium text-white hover:bg-gray-900"
+            >
+              Browse Calculators
+            </Link>
+            <Link
+              href="/ai-tools"
+              className="rounded-xl border border-gray-700 bg-gray-950 px-5 py-3 font-medium text-white hover:bg-gray-900"
+            >
+              Discover AI Tools
+            </Link>
+          </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {featuredAITools.map((tool) => (
-            <Link
-              key={tool.slug}
-              href={tool.slug}
-              className="block rounded-2xl bg-gray-900 p-6 transition hover:bg-gray-800"
-            >
-              <h3 className="text-xl font-semibold">{tool.name}</h3>
-              <p className="mt-2 text-gray-400">{tool.description}</p>
+        <HomeSearch />
+
+        <section className="mt-12">
+          <div className="mb-6 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-semibold">Featured Tools</h2>
+              <p className="mt-2 text-sm text-gray-400">
+                Popular utility pages from the tools directory.
+              </p>
+            </div>
+            <Link href="/tools" className="text-sm text-blue-400 hover:text-blue-300">
+              View all →
             </Link>
-          ))}
-        </div>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {featuredTools.map((item) => (
+              <Link
+                key={item.slug}
+                href={`/tools/${item.slug}`}
+                className="rounded-2xl border border-gray-800 bg-gray-900 p-6 transition hover:border-gray-700 hover:bg-gray-800"
+              >
+                <h3 className="text-xl font-semibold">{item.name}</h3>
+                <p className="mt-3 text-sm leading-6 text-gray-400">
+                  {item.description}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-12">
+          <div className="mb-6 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-semibold">Featured Calculators</h2>
+              <p className="mt-2 text-sm text-gray-400">
+                Practical calculators for everyday use.
+              </p>
+            </div>
+            <Link
+              href="/calculators"
+              className="text-sm text-blue-400 hover:text-blue-300"
+            >
+              View all →
+            </Link>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {featuredCalculators.map((item) => (
+              <Link
+                key={item.slug}
+                href={`/calculators/${item.slug}`}
+                className="rounded-2xl border border-gray-800 bg-gray-900 p-6 transition hover:border-gray-700 hover:bg-gray-800"
+              >
+                <h3 className="text-xl font-semibold">{item.name}</h3>
+                <p className="mt-3 text-sm leading-6 text-gray-400">
+                  {item.description}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-12">
+          <div className="mb-6 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-semibold">Featured AI Tools</h2>
+              <p className="mt-2 text-sm text-gray-400">
+                AI-powered utilities and discoverable AI listings.
+              </p>
+            </div>
+            <Link
+              href="/ai-tools"
+              className="text-sm text-blue-400 hover:text-blue-300"
+            >
+              View all →
+            </Link>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {featuredAITools.map((item) => (
+              <Link
+                key={item.slug}
+                href={`/ai-tools/${item.slug}`}
+                className="rounded-2xl border border-gray-800 bg-gray-900 p-6 transition hover:border-gray-700 hover:bg-gray-800"
+              >
+                <h3 className="text-xl font-semibold">{item.name}</h3>
+                <p className="mt-3 text-sm leading-6 text-gray-400">
+                  {item.description}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
       </section>
     </main>
   );
