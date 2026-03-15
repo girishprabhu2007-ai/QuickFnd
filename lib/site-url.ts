@@ -14,6 +14,14 @@ function normalizeUrl(value?: string | null) {
   return withProtocol.replace(/\/+$/, "");
 }
 
+function isPreviewLikeHost(hostname: string) {
+  return (
+    hostname.includes("---") ||
+    hostname.startsWith("quick-fnd-git-") ||
+    hostname !== "quick-fnd-b5xf.vercel.app"
+  );
+}
+
 export function getSiteUrl() {
   const explicit =
     normalizeUrl(process.env.NEXT_PUBLIC_SITE_URL) ||
@@ -36,14 +44,21 @@ export function getSiteUrl() {
     normalizeUrl(process.env.NEXT_PUBLIC_VERCEL_URL);
 
   if (currentDeployment) {
-    const currentHost = new URL(currentDeployment).hostname;
-    const defaultHost = new URL(DEFAULT_PRODUCTION_URL).hostname;
+    try {
+      const hostname = new URL(currentDeployment).hostname;
 
-    if (currentHost === defaultHost || currentHost.endsWith(".vercel.app")) {
+      if (hostname === "quick-fnd-b5xf.vercel.app") {
+        return DEFAULT_PRODUCTION_URL;
+      }
+
+      if (hostname.endsWith(".vercel.app") && isPreviewLikeHost(hostname)) {
+        return DEFAULT_PRODUCTION_URL;
+      }
+
+      return currentDeployment;
+    } catch {
       return DEFAULT_PRODUCTION_URL;
     }
-
-    return currentDeployment;
   }
 
   return DEFAULT_PRODUCTION_URL;

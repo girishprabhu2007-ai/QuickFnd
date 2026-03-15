@@ -1,59 +1,87 @@
 import type { MetadataRoute } from "next";
 import { getAllContentForSitemap } from "@/lib/db";
-import { getSiteUrl } from "@/lib/content-pages";
+import { buildProgrammaticPages } from "@/lib/programmatic-pages";
+import { getSiteUrl } from "@/lib/site-url";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = getSiteUrl();
   const { tools, calculators, aiTools } = await getAllContentForSitemap();
-  const now = new Date();
 
-  const staticPages: MetadataRoute.Sitemap = [
+  const mainPages: MetadataRoute.Sitemap = [
     {
       url: `${siteUrl}/`,
-      lastModified: now,
       changeFrequency: "daily",
       priority: 1,
     },
     {
       url: `${siteUrl}/tools`,
-      lastModified: now,
-      changeFrequency: "daily",
+      changeFrequency: "weekly",
       priority: 0.9,
     },
     {
       url: `${siteUrl}/calculators`,
-      lastModified: now,
-      changeFrequency: "daily",
+      changeFrequency: "weekly",
       priority: 0.9,
     },
     {
       url: `${siteUrl}/ai-tools`,
-      lastModified: now,
-      changeFrequency: "daily",
+      changeFrequency: "weekly",
       priority: 0.9,
     },
   ];
 
-  const toolPages = tools.map((item) => ({
+  const toolPages: MetadataRoute.Sitemap = tools.map((item) => ({
     url: `${siteUrl}/tools/${item.slug}`,
-    lastModified: item.created_at ? new Date(item.created_at) : now,
-    changeFrequency: "weekly" as const,
+    changeFrequency: "weekly",
     priority: 0.8,
   }));
 
-  const calculatorPages = calculators.map((item) => ({
+  const calculatorPages: MetadataRoute.Sitemap = calculators.map((item) => ({
     url: `${siteUrl}/calculators/${item.slug}`,
-    lastModified: item.created_at ? new Date(item.created_at) : now,
-    changeFrequency: "weekly" as const,
+    changeFrequency: "weekly",
     priority: 0.8,
   }));
 
-  const aiToolPages = aiTools.map((item) => ({
+  const aiToolPages: MetadataRoute.Sitemap = aiTools.map((item) => ({
     url: `${siteUrl}/ai-tools/${item.slug}`,
-    lastModified: item.created_at ? new Date(item.created_at) : now,
-    changeFrequency: "weekly" as const,
+    changeFrequency: "weekly",
     priority: 0.8,
   }));
 
-  return [...staticPages, ...toolPages, ...calculatorPages, ...aiToolPages];
+  const toolTopicPages: MetadataRoute.Sitemap = buildProgrammaticPages(
+    "tools",
+    tools
+  ).map((page) => ({
+    url: `${siteUrl}${page.href}`,
+    changeFrequency: "weekly",
+    priority: 0.7,
+  }));
+
+  const calculatorTopicPages: MetadataRoute.Sitemap = buildProgrammaticPages(
+    "calculators",
+    calculators
+  ).map((page) => ({
+    url: `${siteUrl}${page.href}`,
+    changeFrequency: "weekly",
+    priority: 0.7,
+  }));
+
+  const aiTopicPages: MetadataRoute.Sitemap = buildProgrammaticPages(
+    "ai_tools",
+    aiTools
+  ).map((page) => ({
+    url: `${siteUrl}${page.href}`,
+    changeFrequency: "weekly",
+    priority: 0.7,
+  }));
+
+  return [
+    ...mainPages,
+    ...toolPages,
+    ...calculatorPages,
+    ...aiToolPages,
+    ...toolTopicPages,
+    ...calculatorTopicPages,
+    ...aiTopicPages,
+  ];
 }

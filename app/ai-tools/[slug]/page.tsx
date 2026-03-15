@@ -132,10 +132,10 @@ export default async function AIToolDetailPage({ params }: Props) {
                 About this AI tool
               </h2>
               <p className="mt-4 text-sm leading-7 text-q-muted">
-                {item.name} is published as an indexable AI tool page on
-                QuickFnd. Interactive AI utilities use engine-based rendering,
-                while directory-style entries still work as searchable public
-                pages.
+                {item.name} is published as a dedicated QuickFnd AI tool page.
+                Some AI pages include an interactive engine, while others serve
+                as structured discovery pages with related links and supporting
+                content.
               </p>
             </section>
 

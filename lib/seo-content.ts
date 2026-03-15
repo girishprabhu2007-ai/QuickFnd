@@ -30,7 +30,10 @@ function titleCaseFromSlug(slug: string) {
   return slug
     .split("-")
     .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .map((part) => {
+      if (part.toLowerCase() === "ai") return "AI";
+      return part.charAt(0).toUpperCase() + part.slice(1);
+    })
     .join(" ");
 }
 
@@ -41,49 +44,47 @@ function getCategoryTitle(table: PublicTable) {
 }
 
 function getApplicationCategory(table: PublicTable) {
-  if (table === "tools") return "DeveloperApplication";
+  if (table === "tools") return "UtilitiesApplication";
   if (table === "calculators") return "FinanceApplication";
   return "BusinessApplication";
 }
 
 function buildIntro(table: PublicTable, item: PublicContentItem) {
-  const label = getCategoryLabel(table).toLowerCase();
-
   if (table === "tools") {
-    return `${item.name} helps you complete common browser-based tasks quickly without installing extra software. Use it on QuickFnd for fast results, a simple interface, and easy access from any device.`;
+    return `${item.name} is a browser-based QuickFnd tool designed to help you complete a focused task quickly and with less manual work. It works directly in your browser, is easy to reuse, and is accessible across desktop and mobile devices.`;
   }
 
   if (table === "calculators") {
-    return `${item.name} helps you calculate results instantly with a clean interface and quick inputs. It is built for everyday use, fast estimation, and easier decision-making directly in your browser.`;
+    return `${item.name} is a QuickFnd calculator built for fast input, instant results, and easier decision-making. It helps reduce manual calculation effort and gives you a cleaner way to estimate common values online.`;
   }
 
-  return `${item.name} is available on QuickFnd as an indexable ${label} page with a usable interface, helpful supporting content, and related discovery paths for users exploring AI workflows.`;
+  return `${item.name} is an AI-focused QuickFnd page built to help users discover or use a specific AI workflow. Depending on the page, it may include an interactive interface, structured supporting content, and links to related AI tools.`;
 }
 
 function buildBenefits(table: PublicTable, item: PublicContentItem) {
   if (table === "tools") {
     return [
-      `Use ${item.name.toLowerCase()} instantly in the browser without extra setup.`,
-      `Get fast results with a focused interface built for repeat use.`,
-      `Access a dedicated page that is easy to bookmark, share, and revisit.`,
-      `Discover related QuickFnd tools for adjacent tasks and workflows.`,
+      `Use ${item.name.toLowerCase()} directly in your browser with no software installation.`,
+      `Complete repeat tasks faster with a focused and lightweight interface.`,
+      `Access a dedicated public page that is easy to bookmark and revisit.`,
+      `Move into related QuickFnd tools for adjacent tasks and workflows.`,
     ];
   }
 
   if (table === "calculators") {
     return [
-      `Run ${item.name.toLowerCase()} calculations quickly with fewer manual steps.`,
-      `Reduce mistakes compared with doing the same math by hand.`,
-      `Use a cleaner calculator layout that works on desktop and mobile.`,
-      `Continue into related calculators for broader planning and comparison.`,
+      `Calculate results quickly with fewer manual steps.`,
+      `Reduce common arithmetic mistakes compared with hand calculation.`,
+      `Use a clean interface that works well on both desktop and mobile.`,
+      `Compare related QuickFnd calculators for broader planning.`,
     ];
   }
 
   return [
-    `Use ${item.name.toLowerCase()} from a dedicated, indexable QuickFnd page.`,
-    `Explore the tool in context with related AI workflows and companion utilities.`,
-    `Get a cleaner discovery experience than browsing scattered tool lists.`,
-    `Benefit from structured content, internal links, and reusable navigation paths.`,
+    `Explore ${item.name.toLowerCase()} from a dedicated AI tool page.`,
+    `Use or evaluate the workflow in a cleaner and more structured environment.`,
+    `Discover related AI tools without jumping across multiple directories.`,
+    `Benefit from supporting content, internal links, and clearer navigation.`,
   ];
 }
 
@@ -91,35 +92,35 @@ function buildSteps(table: PublicTable, item: PublicContentItem) {
   if (table === "tools") {
     return [
       `Open the ${item.name} interface on this page.`,
-      `Enter or paste the content needed for the tool.`,
+      `Paste, type, or upload the content needed for the tool.`,
       `Adjust any available settings if the tool supports configuration.`,
-      `Review the output and copy or reuse the result immediately.`,
+      `Review the result and copy, download, or reuse it immediately.`,
     ];
   }
 
   if (table === "calculators") {
     return [
       `Open the ${item.name} calculator on this page.`,
-      `Enter the required values into the available fields.`,
-      `Check any assumptions, units, or percentage values before calculating.`,
-      `Review the result and compare it with related calculators if needed.`,
+      `Enter the required values into the input fields.`,
+      `Review units, assumptions, or percentages before calculating.`,
+      `Check the result and compare it with related calculators if helpful.`,
     ];
   }
 
   return [
-    `Open the ${item.name} page and review the available interface or listing details.`,
-    `Enter your prompt, topic, or task if this AI page includes an interactive engine.`,
-    `Generate or review results and refine the input for better output quality.`,
-    `Explore related AI tools on QuickFnd to expand the workflow.`,
+    `Open the ${item.name} page and review the available interface or tool details.`,
+    `Enter your prompt, request, or task if the page includes an interactive AI engine.`,
+    `Review the output and refine your input if you want better results.`,
+    `Explore related AI tools on QuickFnd to continue the workflow.`,
   ];
 }
 
 function buildUseCases(table: PublicTable) {
   if (table === "tools") {
     return [
-      `Quick one-off browser tasks without installing software`,
-      `Developer, marketer, student, or creator utility workflows`,
-      `Repeated formatting, encoding, transforming, or generation tasks`,
+      `Quick browser-based tasks without installing extra software`,
+      `Developer, marketer, student, and creator utility workflows`,
+      `Formatting, transforming, generating, or validating common inputs`,
       `Saving time on small but frequent digital operations`,
     ];
   }
@@ -127,17 +128,17 @@ function buildUseCases(table: PublicTable) {
   if (table === "calculators") {
     return [
       `Fast estimation before making a decision`,
-      `Comparing scenarios with slightly different inputs`,
-      `Checking values for finance, planning, or personal calculations`,
+      `Comparing scenarios with slightly different values`,
+      `Checking finance, planning, or everyday calculation inputs`,
       `Using a mobile-friendly calculator during daily workflows`,
     ];
   }
 
   return [
-    `Exploring AI workflows from a dedicated landing page`,
-    `Generating first drafts, prompts, or structured content ideas`,
-    `Comparing related AI task flows on the same platform`,
-    `Using AI utilities in a cleaner discovery environment`,
+    `Exploring practical AI workflows from a dedicated page`,
+    `Generating drafts, prompts, outlines, or structured starting points`,
+    `Comparing related AI tools inside one platform`,
+    `Finding the next useful AI workflow through internal discovery`,
   ];
 }
 
@@ -148,15 +149,15 @@ function buildFAQs(table: PublicTable, item: PublicContentItem): FAQItem[] {
     return [
       {
         question: `What is ${itemName}?`,
-        answer: `${itemName} is a browser-based tool on QuickFnd that helps users complete a focused task quickly without needing extra software.`,
+        answer: `${itemName} is a browser-based QuickFnd tool that helps users complete a specific task online without needing extra installed software.`,
       },
       {
         question: `How do I use ${itemName}?`,
-        answer: `Open the tool, enter the required input, adjust settings if available, and use the generated or transformed result directly on the page.`,
+        answer: `Open the tool, enter the required input, adjust any available settings, and use the generated or transformed result directly on the page.`,
       },
       {
         question: `Is ${itemName} free to use?`,
-        answer: `${itemName} is presented as a public QuickFnd page and is designed for quick access and repeat use from the browser.`,
+        answer: `${itemName} is available as a public QuickFnd page for quick browser-based use.`,
       },
       {
         question: `Can I use ${itemName} on mobile?`,
@@ -173,7 +174,7 @@ function buildFAQs(table: PublicTable, item: PublicContentItem): FAQItem[] {
       },
       {
         question: `How accurate is ${itemName}?`,
-        answer: `${itemName} is useful for fast calculations and estimates, but users should verify important financial, legal, or professional decisions independently where necessary.`,
+        answer: `${itemName} is useful for fast online calculations and estimates, but important financial, legal, medical, or professional decisions should still be verified independently.`,
       },
       {
         question: `How do I use ${itemName}?`,
@@ -181,7 +182,7 @@ function buildFAQs(table: PublicTable, item: PublicContentItem): FAQItem[] {
       },
       {
         question: `Can I compare related calculations on QuickFnd?`,
-        answer: `Yes. Each page can connect users to related calculators for broader comparison and planning.`,
+        answer: `Yes. QuickFnd includes related calculators so you can continue comparing scenarios and results.`,
       },
     ];
   }
@@ -189,19 +190,19 @@ function buildFAQs(table: PublicTable, item: PublicContentItem): FAQItem[] {
   return [
     {
       question: `What is ${itemName}?`,
-      answer: `${itemName} is an AI-related page on QuickFnd that helps users discover or use a focused AI workflow through a dedicated public page.`,
+      answer: `${itemName} is an AI-focused page on QuickFnd that helps users discover or use a specific AI workflow from a dedicated public page.`,
     },
     {
       question: `How do I use ${itemName}?`,
-      answer: `Open the page, enter your topic or request if the interface is interactive, review the output, and refine as needed.`,
+      answer: `Open the page, enter your request if the interface is interactive, review the response, and refine the input if needed.`,
     },
     {
       question: `Who is ${itemName} useful for?`,
-      answer: `${itemName} can be useful for creators, marketers, operators, founders, students, and anyone exploring practical AI workflows.`,
+      answer: `${itemName} can be useful for creators, marketers, founders, operators, students, and anyone exploring practical AI workflows.`,
     },
     {
       question: `Does QuickFnd include related AI tools?`,
-      answer: `Yes. QuickFnd organizes related AI pages so users can continue exploring adjacent use cases and workflows.`,
+      answer: `Yes. QuickFnd organizes related AI pages so users can continue exploring adjacent AI use cases and workflows.`,
     },
   ];
 }

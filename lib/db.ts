@@ -25,29 +25,75 @@ function normalizeItem(item: Record<string, unknown>): PublicContentItem {
   };
 }
 
+function uniqueBySlug(items: PublicContentItem[]) {
+  const seen = new Set<string>();
+  const output: PublicContentItem[] = [];
+
+  for (const item of items) {
+    const slug = String(item.slug || "").trim();
+    if (!slug || seen.has(slug)) continue;
+    seen.add(slug);
+    output.push(item);
+  }
+
+  return output;
+}
+
 function mergeWithStaticItems(
   table: PublicTable,
   dbItems: PublicContentItem[]
 ): PublicContentItem[] {
-  const seen = new Set(dbItems.map((item) => item.slug));
-  const staticItems = getStaticItems(table).filter((item) => !seen.has(item.slug));
-  return [...dbItems, ...staticItems];
+  const staticItems = getStaticItems(table);
+  return uniqueBySlug([...dbItems, ...staticItems]);
 }
 
-export async function getContentItems(table: PublicTable): Promise<PublicContentItem[]> {
-  const { data, error } = await supabase
-    .from(table)
-    .select("*")
-    .order("id", { ascending: false });
+async function safeSelectAll(table: PublicTable) {
+  try {
+    const result = await supabase.from(table).select("*").order("id", {
+      ascending: false,
+    });
+
+    return result;
+  } catch (error) {
+    console.error(`safeSelectAll(${table}) unexpected error:`, error);
+    return {
+      data: null,
+      error,
+    };
+  }
+}
+
+async function safeSelectBySlug(table: PublicTable, slug: string) {
+  try {
+    const result = await supabase
+      .from(table)
+      .select("*")
+      .eq("slug", slug)
+      .maybeSingle();
+
+    return result;
+  } catch (error) {
+    console.error(`safeSelectBySlug(${table}, ${slug}) unexpected error:`, error);
+    return {
+      data: null,
+      error,
+    };
+  }
+}
+
+export async function getContentItems(
+  table: PublicTable
+): Promise<PublicContentItem[]> {
+  const { data, error } = await safeSelectAll(table);
 
   if (error) {
     console.error(`getContentItems(${table}) error:`, error);
     return getStaticItems(table);
   }
 
-  const items = (data || []).map((item) =>
-    normalizeItem(item as Record<string, unknown>)
-  );
+  const items = Array.isArray(data)
+    ? data.map((item) => normalizeItem(item as Record<string, unknown>))
+    : [];
 
   return mergeWithStaticItems(table, items);
 }
@@ -56,17 +102,13 @@ export async function getContentItem(
   table: PublicTable,
   slug: string
 ): Promise<PublicContentItem | null> {
-  const { data, error } = await supabase
-    .from(table)
-    .select("*")
-    .eq("slug", slug)
-    .maybeSingle();
+  const { data, error } = await safeSelectBySlug(table, slug);
 
   if (!error && data) {
     return normalizeItem(data as Record<string, unknown>);
   }
 
-  if (error && error.code !== "PGRST116") {
+  if (error && (error as { code?: string }).code !== "PGRST116") {
     console.error(`getContentItem(${table}, ${slug}) error:`, error);
   }
 
@@ -91,12 +133,22 @@ export async function getRelatedContent(
     return [];
   }
 
-  const { data, error } = await supabase
-    .from(table)
-    .select("*")
-    .in("slug", cleaned);
+  let data: unknown[] | null = null;
+  let error: unknown = null;
 
-  const dbItems = !error && data
+  try {
+    const result = await supabase.from(table).select("*").in("slug", cleaned);
+    data = result.data;
+    error = result.error;
+  } catch (caught) {
+    error = caught;
+  }
+
+  if (error) {
+    console.error(`getRelatedContent(${table}) error:`, error);
+  }
+
+  const dbItems = Array.isArray(data)
     ? data.map((item) => normalizeItem(item as Record<string, unknown>))
     : [];
 
@@ -119,19 +171,26 @@ export async function getRelatedContent(
   return ordered;
 }
 
-export async function getAllContentSlugs(table: PublicTable): Promise<string[]> {
-  const { data, error } = await supabase.from(table).select("slug");
+export async function getAllContentSlugs(
+  table: PublicTable
+): Promise<string[]> {
+  try {
+    const { data, error } = await supabase.from(table).select("slug");
 
-  const dbSlugs =
-    error || !data
-      ? []
-      : data
-          .map((item) => String((item as { slug?: string }).slug || "").trim())
-          .filter(Boolean);
+    const dbSlugs =
+      error || !data
+        ? []
+        : data
+            .map((item) => String((item as { slug?: string }).slug || "").trim())
+            .filter(Boolean);
 
-  const staticSlugs = getStaticItems(table).map((item) => item.slug);
+    const staticSlugs = getStaticItems(table).map((item) => item.slug);
 
-  return Array.from(new Set([...dbSlugs, ...staticSlugs]));
+    return Array.from(new Set([...dbSlugs, ...staticSlugs]));
+  } catch (error) {
+    console.error(`getAllContentSlugs(${table}) unexpected error:`, error);
+    return getStaticItems(table).map((item) => item.slug);
+  }
 }
 
 export async function getAllContentForSitemap() {
