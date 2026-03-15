@@ -33,6 +33,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const url = `${siteUrl}/calculators/${item.slug}`;
   const title = buildPageTitle(item, "calculators");
   const description = buildMetaDescription(item, "calculators");
+  const ogImage = `${siteUrl}/api/og?title=${encodeURIComponent(
+    item.name
+  )}&subtitle=${encodeURIComponent(description)}`;
 
   return {
     title,
@@ -46,11 +49,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url,
       siteName: "QuickFnd",
       type: "website",
+      images: [ogImage],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
+      images: [ogImage],
     },
   };
 }

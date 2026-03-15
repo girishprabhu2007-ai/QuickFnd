@@ -5,6 +5,7 @@ import { getCategoryPath } from "@/lib/content-pages";
 import { getDisplayDescription } from "@/lib/display-content";
 import { getSiteUrl } from "@/lib/site-url";
 import PageSEOSections from "@/components/seo/PageSEOSections";
+import ShareButtons from "@/components/social/ShareButtons";
 
 type Props = {
   table: PublicTable;
@@ -59,7 +60,7 @@ export default function PublicDetailPage({
 
   return (
     <main className="min-h-screen bg-q-bg px-4 py-8 text-q-text sm:px-6 lg:px-8 lg:py-12">
-      <section className="mx-auto max-w-6xl">
+      <section className="mx-auto max-w-7xl">
         <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm text-q-muted">
           <Link href="/" className="hover:text-q-text">
             Home
@@ -88,15 +89,21 @@ export default function PublicDetailPage({
             {item.name}
           </h1>
 
-          <p className="mt-4 max-w-3xl text-base leading-7 text-q-muted md:text-lg md:leading-8">
+          <p className="mt-4 max-w-4xl text-base leading-7 text-q-muted md:text-lg md:leading-8">
             {description}
           </p>
+
+          <ShareButtons url={pageUrl} title={item.name} />
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-[1.3fr_0.7fr]">
-          {primaryContent}
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,2fr)_320px]">
+          <div className="min-w-0">
+            <div className="rounded-3xl border border-q-border bg-q-card/60 p-3 md:p-4">
+              {primaryContent}
+            </div>
+          </div>
 
-          <aside className="space-y-6">
+          <aside className="space-y-6 xl:sticky xl:top-24 self-start">
             <section className="rounded-2xl border border-q-border bg-q-card p-6">
               <h2 className="text-xl font-semibold text-q-text">
                 About this {entityLabel.toLowerCase()}
@@ -113,7 +120,7 @@ export default function PublicDetailPage({
               <dl className="mt-4 grid gap-4 text-sm">
                 <div>
                   <dt className="text-q-muted">Slug</dt>
-                  <dd className="mt-1 text-q-text">{item.slug}</dd>
+                  <dd className="mt-1 break-words text-q-text">{item.slug}</dd>
                 </div>
                 <div>
                   <dt className="text-q-muted">Category</dt>
@@ -121,7 +128,7 @@ export default function PublicDetailPage({
                 </div>
                 <div>
                   <dt className="text-q-muted">Engine</dt>
-                  <dd className="mt-1 text-q-text">
+                  <dd className="mt-1 break-words text-q-text">
                     {item.engine_type || "auto"}
                   </dd>
                 </div>

@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import CurrencyConverterClient from "@/components/tools/CurrencyConverterClient";
 import JsonLd from "@/components/seo/JsonLd";
 import PublicDetailPage from "@/components/seo/PublicDetailPage";
-import BuiltInToolClient from "@/components/tools/BuiltInToolClient";
 import { getContentItem, getRelatedContent } from "@/lib/db";
-import { buildMetaDescription, buildPageTitle } from "@/lib/content-pages";
 import {
   buildBreadcrumbSchema,
   buildFaqSchema,
@@ -12,40 +11,33 @@ import {
 } from "@/lib/seo-content";
 import { getSiteUrl } from "@/lib/site-url";
 
-type Props = {
-  params: Promise<{ slug: string }>;
-};
-
 export const revalidate = 300;
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
-  const item = await getContentItem("tools", slug);
+export async function generateMetadata(): Promise<Metadata> {
+  const item = await getContentItem("tools", "currency-converter");
 
   if (!item) {
     return {
-      title: "Tool Not Found | QuickFnd",
-      description: "The requested tool could not be found.",
+      title: "Currency Converter | QuickFnd",
+      description: "Convert currencies in real time on QuickFnd.",
     };
   }
 
   const siteUrl = getSiteUrl();
   const url = `${siteUrl}/tools/${item.slug}`;
-  const title = buildPageTitle(item, "tools");
-  const description = buildMetaDescription(item, "tools");
   const ogImage = `${siteUrl}/api/og?title=${encodeURIComponent(
     item.name
-  )}&subtitle=${encodeURIComponent(description)}`;
+  )}&subtitle=${encodeURIComponent("Real-time currency conversion on QuickFnd")}`;
 
   return {
-    title,
-    description,
+    title: `${item.name} | QuickFnd`,
+    description: "Convert currencies in real time using live exchange rates.",
     alternates: {
       canonical: url,
     },
     openGraph: {
-      title,
-      description,
+      title: `${item.name} | QuickFnd`,
+      description: "Convert currencies in real time using live exchange rates.",
       url,
       siteName: "QuickFnd",
       type: "website",
@@ -53,16 +45,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title,
-      description,
+      title: `${item.name} | QuickFnd`,
+      description: "Convert currencies in real time using live exchange rates.",
       images: [ogImage],
     },
   };
 }
 
-export default async function ToolDetailPage({ params }: Props) {
-  const { slug } = await params;
-  const item = await getContentItem("tools", slug);
+export default async function CurrencyConverterPage() {
+  const item = await getContentItem("tools", "currency-converter");
 
   if (!item) {
     notFound();
@@ -77,12 +68,15 @@ export default async function ToolDetailPage({ params }: Props) {
   return (
     <>
       <JsonLd
-        id="tool-breadcrumb-schema"
+        id="currency-converter-breadcrumb-schema"
         data={buildBreadcrumbSchema("tools", item)}
       />
-      <JsonLd id="tool-faq-schema" data={buildFaqSchema("tools", item)} />
       <JsonLd
-        id="tool-software-schema"
+        id="currency-converter-faq-schema"
+        data={buildFaqSchema("tools", item)}
+      />
+      <JsonLd
+        id="currency-converter-software-schema"
         data={buildSoftwareSchema("tools", item)}
       />
 
@@ -90,7 +84,7 @@ export default async function ToolDetailPage({ params }: Props) {
         table="tools"
         item={item}
         relatedItems={relatedItems}
-        primaryContent={<BuiltInToolClient item={item} />}
+        primaryContent={<CurrencyConverterClient />}
       />
     </>
   );

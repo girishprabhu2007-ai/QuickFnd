@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import BuiltInAIToolClient from "@/components/ai-tools/BuiltInAIToolClient";
+import AIToolEngineClient from "@/components/ai-tools/AIToolEngineClient";
 import JsonLd from "@/components/seo/JsonLd";
 import PublicDetailPage from "@/components/seo/PublicDetailPage";
 import { getContentItem, getRelatedContent } from "@/lib/db";
-import { buildMetaDescription, buildPageTitle } from "@/lib/content-pages";
 import {
   buildBreadcrumbSchema,
   buildFaqSchema,
@@ -12,40 +11,33 @@ import {
 } from "@/lib/seo-content";
 import { getSiteUrl } from "@/lib/site-url";
 
-type Props = {
-  params: Promise<{ slug: string }>;
-};
-
 export const revalidate = 300;
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
-  const item = await getContentItem("ai_tools", slug);
+export async function generateMetadata(): Promise<Metadata> {
+  const item = await getContentItem("ai_tools", "ai-email-writer");
 
   if (!item) {
     return {
-      title: "AI Tool Not Found | QuickFnd",
-      description: "The requested AI tool could not be found.",
+      title: "AI Email Writer | QuickFnd",
+      description: "Generate emails with AI on QuickFnd.",
     };
   }
 
   const siteUrl = getSiteUrl();
   const url = `${siteUrl}/ai-tools/${item.slug}`;
-  const title = buildPageTitle(item, "ai_tools");
-  const description = buildMetaDescription(item, "ai_tools");
   const ogImage = `${siteUrl}/api/og?title=${encodeURIComponent(
     item.name
-  )}&subtitle=${encodeURIComponent(description)}`;
+  )}&subtitle=${encodeURIComponent("Generate emails with AI on QuickFnd")}`;
 
   return {
-    title,
-    description,
+    title: `${item.name} | QuickFnd`,
+    description: "Generate polished emails instantly with OpenAI.",
     alternates: {
       canonical: url,
     },
     openGraph: {
-      title,
-      description,
+      title: `${item.name} | QuickFnd`,
+      description: "Generate polished emails instantly with OpenAI.",
       url,
       siteName: "QuickFnd",
       type: "website",
@@ -53,16 +45,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title,
-      description,
+      title: `${item.name} | QuickFnd`,
+      description: "Generate polished emails instantly with OpenAI.",
       images: [ogImage],
     },
   };
 }
 
-export default async function AIToolDetailPage({ params }: Props) {
-  const { slug } = await params;
-  const item = await getContentItem("ai_tools", slug);
+export default async function AIEmailWriterPage() {
+  const item = await getContentItem("ai_tools", "ai-email-writer");
 
   if (!item) {
     notFound();
@@ -77,12 +68,15 @@ export default async function AIToolDetailPage({ params }: Props) {
   return (
     <>
       <JsonLd
-        id="ai-tool-breadcrumb-schema"
+        id="ai-email-writer-breadcrumb-schema"
         data={buildBreadcrumbSchema("ai_tools", item)}
       />
-      <JsonLd id="ai-tool-faq-schema" data={buildFaqSchema("ai_tools", item)} />
       <JsonLd
-        id="ai-tool-software-schema"
+        id="ai-email-writer-faq-schema"
+        data={buildFaqSchema("ai_tools", item)}
+      />
+      <JsonLd
+        id="ai-email-writer-software-schema"
         data={buildSoftwareSchema("ai_tools", item)}
       />
 
@@ -90,7 +84,12 @@ export default async function AIToolDetailPage({ params }: Props) {
         table="ai_tools"
         item={item}
         relatedItems={relatedItems}
-        primaryContent={<BuiltInAIToolClient item={item} />}
+        primaryContent={
+          <AIToolEngineClient
+            toolSlug="ai-email-writer"
+            toolName={item.name}
+          />
+        }
       />
     </>
   );
