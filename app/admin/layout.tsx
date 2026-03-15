@@ -4,6 +4,7 @@ import { getAdminUser } from "@/lib/admin-auth";
 const navItems = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/generate", label: "Generate" },
+  { href: "/admin/bulk-generate", label: "Bulk Generate" },
   { href: "/admin/tools", label: "Tools" },
   { href: "/admin/calculators", label: "Calculators" },
   { href: "/admin/ai-tools", label: "AI Tools" },

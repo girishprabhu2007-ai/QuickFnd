@@ -4,20 +4,26 @@ const cards = [
   {
     title: "Generate content",
     description:
-      "Use AI to generate a tool, calculator, or AI tool draft, then review and save it.",
+      "Create one tool, calculator, or AI tool draft with AI and save it after review.",
     href: "/admin/generate",
     cta: "Open generator",
   },
   {
+    title: "Bulk generate",
+    description:
+      "Generate multiple content items from a single theme, edit them, and save selected entries in one workflow.",
+    href: "/admin/bulk-generate",
+    cta: "Open bulk generator",
+  },
+  {
     title: "Manage tools",
-    description: "Add, review, and delete tool listings already stored in QuickFnd.",
+    description: "Review, add, and delete tool entries already stored in QuickFnd.",
     href: "/admin/tools",
     cta: "Open tools",
   },
   {
     title: "Manage calculators",
-    description:
-      "Review current calculator entries and add new items manually when needed.",
+    description: "Review current calculator entries and add new items when needed.",
     href: "/admin/calculators",
     cta: "Open calculators",
   },
@@ -35,13 +41,12 @@ export default function AdminHome() {
       <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
         <h2 className="text-2xl font-semibold text-white">Admin dashboard</h2>
         <p className="mt-3 max-w-3xl text-gray-400">
-          Welcome to the QuickFnd admin panel. Milestone 1 adds the admin
-          automation flow so you can generate database-ready content with AI and
-          save it into the existing content tables.
+          QuickFnd now supports single-item generation, public detail pages, homepage search,
+          and bulk content workflows. Use bulk generation to scale faster while keeping manual review.
         </p>
       </div>
 
-      <div className="mt-8 grid gap-6 md:grid-cols-2">
+      <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {cards.map((card) => (
           <div
             key={card.href}

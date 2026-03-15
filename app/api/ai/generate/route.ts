@@ -30,6 +30,13 @@ type AdminContentInput = {
   category: AdminCategory;
 };
 
+type BulkAdminContentInput = {
+  mode: "bulk-admin-content";
+  theme: string;
+  category: AdminCategory;
+  count: number;
+};
+
 function parseAdminContent(raw: string) {
   try {
     const parsed = JSON.parse(raw);
@@ -39,9 +46,29 @@ function parseAdminContent(raw: string) {
   }
 }
 
+function parseBulkAdminContent(raw: string) {
+  try {
+    const parsed = JSON.parse(raw);
+
+    const items = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray(parsed?.items)
+      ? parsed.items
+      : [];
+
+    return items
+      .map((item) => normalizeGeneratedContent(item))
+      .filter((item) => item.name && item.slug && item.description);
+  } catch {
+    return [];
+  }
+}
+
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as Partial<PublicToolInput & AdminContentInput>;
+    const body = (await req.json()) as Partial<
+      PublicToolInput & AdminContentInput & BulkAdminContentInput
+    >;
 
     if (body.mode === "admin-content") {
       const adminUser = await getAdminUser();
@@ -58,7 +85,10 @@ export async function POST(req: Request) {
       }
 
       if (!category || !["tool", "calculator", "ai-tool"].includes(category)) {
-        return NextResponse.json({ error: "Valid category is required." }, { status: 400 });
+        return NextResponse.json(
+          { error: "Valid category is required." },
+          { status: 400 }
+        );
       }
 
       const response = await client.responses.create({
@@ -113,6 +143,89 @@ Rules:
       }
 
       return NextResponse.json({ item });
+    }
+
+    if (body.mode === "bulk-admin-content") {
+      const adminUser = await getAdminUser();
+
+      if (!adminUser) {
+        return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+      }
+
+      const theme = String(body.theme || "").trim();
+      const category = body.category;
+      const count = Math.max(2, Math.min(25, Number(body.count) || 10));
+
+      if (!theme) {
+        return NextResponse.json({ error: "Theme is required." }, { status: 400 });
+      }
+
+      if (!category || !["tool", "calculator", "ai-tool"].includes(category)) {
+        return NextResponse.json(
+          { error: "Valid category is required." },
+          { status: 400 }
+        );
+      }
+
+      const response = await client.responses.create({
+        model: "gpt-4.1-mini",
+        input: [
+          {
+            role: "system",
+            content: `
+You generate bulk QuickFnd admin content for the category "${category}".
+Return valid JSON only.
+No markdown. No code fences.
+
+Return this exact shape:
+{
+  "items": [
+    {
+      "name": "string",
+      "slug": "string",
+      "description": "string",
+      "related_slugs": ["string", "string", "string"]
+    }
+  ]
+}
+
+Rules:
+- Return exactly ${count} items.
+- Items must be distinct and useful.
+- "name" should be clear and human-friendly.
+- "slug" must be lowercase, hyphen-separated, URL-safe.
+- "description" should be 2 to 4 sentences, concise, useful, and SEO-friendly.
+- "related_slugs" should contain 3 to 6 realistic related slugs.
+- Avoid duplicates.
+- Do not include explanations outside the JSON.
+            `.trim(),
+          },
+          {
+            role: "user",
+            content: `Generate ${count} QuickFnd ${category} entries for this theme: ${theme}`,
+          },
+        ],
+      });
+
+      const raw = response.output_text?.trim();
+
+      if (!raw) {
+        return NextResponse.json(
+          { error: "No output returned from AI." },
+          { status: 500 }
+        );
+      }
+
+      const items = parseBulkAdminContent(raw);
+
+      if (items.length === 0) {
+        return NextResponse.json(
+          { error: "AI returned an invalid bulk content payload." },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({ items });
     }
 
     const { tool, input } = body as PublicToolInput;

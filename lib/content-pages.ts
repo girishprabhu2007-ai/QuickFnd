@@ -15,21 +15,77 @@ const STATIC_TOOLS: PublicContentItem[] = [
     slug: "password-generator",
     description:
       "Create strong random passwords with customizable length and character settings. Useful for account security, development work, and quick password generation.",
-    related_slugs: ["json-formatter", "word-counter"],
+    related_slugs: ["json-formatter", "word-counter", "random-string-generator"],
   },
   {
     name: "JSON Formatter",
     slug: "json-formatter",
     description:
       "Format, validate, and minify JSON instantly in the browser. Useful for debugging APIs, cleaning payloads, and improving readability.",
-    related_slugs: ["word-counter", "password-generator"],
+    related_slugs: ["word-counter", "password-generator", "base64-encoder"],
   },
   {
     name: "Word Counter",
     slug: "word-counter",
     description:
       "Count words, characters, and reading time instantly. Useful for content writing, editing, blog drafts, and quick text analysis.",
-    related_slugs: ["json-formatter", "password-generator"],
+    related_slugs: ["json-formatter", "password-generator", "text-case-converter"],
+  },
+  {
+    name: "UUID Generator",
+    slug: "uuid-generator",
+    description:
+      "Generate UUID values instantly in the browser for development, identifiers, database entries, and testing workflows.",
+    related_slugs: ["random-string-generator", "slug-generator", "password-generator"],
+  },
+  {
+    name: "Slug Generator",
+    slug: "slug-generator",
+    description:
+      "Convert text into clean URL-friendly slugs instantly. Useful for SEO, CMS publishing, content systems, and developer workflows.",
+    related_slugs: ["text-case-converter", "url-encoder", "uuid-generator"],
+  },
+  {
+    name: "Random String Generator",
+    slug: "random-string-generator",
+    description:
+      "Generate random strings with adjustable length and character options for testing, tokens, placeholders, and development workflows.",
+    related_slugs: ["uuid-generator", "password-generator", "base64-encoder"],
+  },
+  {
+    name: "Base64 Encoder",
+    slug: "base64-encoder",
+    description:
+      "Encode text into Base64 instantly in the browser. Useful for data transformation, development, APIs, and quick encoding tasks.",
+    related_slugs: ["base64-decoder", "url-encoder", "json-formatter"],
+  },
+  {
+    name: "Base64 Decoder",
+    slug: "base64-decoder",
+    description:
+      "Decode Base64 text instantly in the browser. Useful for debugging payloads, inspecting encoded data, and development workflows.",
+    related_slugs: ["base64-encoder", "json-formatter", "url-decoder"],
+  },
+  {
+    name: "URL Encoder",
+    slug: "url-encoder",
+    description:
+      "Encode text for safe use in URLs and query strings. Useful for developers, marketers, and quick web utility tasks.",
+    related_slugs: ["url-decoder", "slug-generator", "base64-encoder"],
+  },
+  {
+    name: "URL Decoder",
+    slug: "url-decoder",
+    description:
+      "Decode URL-encoded text instantly to readable form. Useful for debugging links, query strings, and encoded parameters.",
+    related_slugs: ["url-encoder", "base64-decoder", "json-formatter"],
+  },
+  {
+    name: "Text Case Converter",
+    slug: "text-case-converter",
+    description:
+      "Convert text into lowercase, uppercase, title case, and slug case instantly. Useful for writing, formatting, and content workflows.",
+    related_slugs: ["slug-generator", "word-counter", "json-formatter"],
   },
 ];
 
