@@ -16,8 +16,8 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
-      <h2 className="text-xl font-semibold text-white">{title}</h2>
+    <section className="rounded-2xl border border-q-border bg-q-card p-6">
+      <h2 className="text-xl font-semibold text-q-text">{title}</h2>
       <div className="mt-4">{children}</div>
     </section>
   );
@@ -53,6 +53,18 @@ function asStringArray(value: unknown, fallback: string[]) {
   if (!Array.isArray(value)) return fallback;
   const items = value.map((v) => String(v).trim()).filter(Boolean);
   return items.length ? items : fallback;
+}
+
+function inputClass() {
+  return "w-full rounded-xl border border-q-border bg-q-bg p-4 text-q-text outline-none placeholder:text-q-muted";
+}
+
+function textareaClass(minHeight: string) {
+  return `w-full rounded-xl border border-q-border bg-q-bg p-4 text-q-text outline-none placeholder:text-q-muted ${minHeight}`;
+}
+
+function softPanelClass() {
+  return "rounded-xl border border-q-border bg-q-bg p-4";
 }
 
 function PasswordGenerator() {
@@ -92,7 +104,7 @@ function PasswordGenerator() {
     <Card title="Password Generator">
       <div className="space-y-4">
         <div>
-          <label className="mb-2 block text-sm text-gray-300">Length: {length}</label>
+          <label className="mb-2 block text-sm text-q-muted">Length: {length}</label>
           <input
             type="range"
             min={6}
@@ -104,29 +116,29 @@ function PasswordGenerator() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="flex items-center gap-2 text-sm text-gray-300">
+          <label className="flex items-center gap-2 text-sm text-q-muted">
             <input type="checkbox" checked={useUppercase} onChange={(e) => setUseUppercase(e.target.checked)} />
             Uppercase
           </label>
-          <label className="flex items-center gap-2 text-sm text-gray-300">
+          <label className="flex items-center gap-2 text-sm text-q-muted">
             <input type="checkbox" checked={useLowercase} onChange={(e) => setUseLowercase(e.target.checked)} />
             Lowercase
           </label>
-          <label className="flex items-center gap-2 text-sm text-gray-300">
+          <label className="flex items-center gap-2 text-sm text-q-muted">
             <input type="checkbox" checked={useNumbers} onChange={(e) => setUseNumbers(e.target.checked)} />
             Numbers
           </label>
-          <label className="flex items-center gap-2 text-sm text-gray-300">
+          <label className="flex items-center gap-2 text-sm text-q-muted">
             <input type="checkbox" checked={useSymbols} onChange={(e) => setUseSymbols(e.target.checked)} />
             Symbols
           </label>
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <button onClick={generatePassword} className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700">
+          <button onClick={generatePassword} className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover">
             Generate Password
           </button>
-          <button onClick={() => copyText(password)} disabled={!password} className="rounded-xl bg-gray-800 px-4 py-2 font-medium text-white hover:bg-gray-700 disabled:opacity-50">
+          <button onClick={() => copyText(password)} disabled={!password} className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover disabled:opacity-50">
             Copy
           </button>
         </div>
@@ -135,7 +147,7 @@ function PasswordGenerator() {
           readOnly
           value={password}
           placeholder="Your generated password will appear here"
-          className="min-h-[110px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={textareaClass("min-h-[110px]")}
         />
       </div>
     </Card>
@@ -176,28 +188,32 @@ function JsonFormatter() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder='Paste JSON here, for example: {"name":"QuickFnd"}'
-          className="min-h-[160px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={textareaClass("min-h-[160px]")}
         />
 
         <div className="flex flex-wrap gap-3">
-          <button onClick={formatJson} className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700">
+          <button onClick={formatJson} className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover">
             Format
           </button>
-          <button onClick={minifyJson} className="rounded-xl bg-gray-800 px-4 py-2 font-medium text-white hover:bg-gray-700">
+          <button onClick={minifyJson} className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover">
             Minify
           </button>
-          <button onClick={() => copyText(output)} disabled={!output} className="rounded-xl bg-gray-800 px-4 py-2 font-medium text-white hover:bg-gray-700 disabled:opacity-50">
+          <button onClick={() => copyText(output)} disabled={!output} className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover disabled:opacity-50">
             Copy Output
           </button>
         </div>
 
-        {error ? <div className="rounded-xl border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">{error}</div> : null}
+        {error ? (
+          <div className="rounded-xl border border-q-danger bg-q-danger-soft p-3 text-sm text-q-danger">
+            {error}
+          </div>
+        ) : null}
 
         <textarea
           readOnly
           value={output}
           placeholder="Formatted JSON output"
-          className="min-h-[200px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={textareaClass("min-h-[200px]")}
         />
       </div>
     </Card>
@@ -224,25 +240,25 @@ function WordCounter() {
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Paste or type text here"
-          className="min-h-[220px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={textareaClass("min-h-[220px]")}
         />
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-xl border border-gray-800 bg-gray-950 p-4">
-            <div className="text-sm text-gray-400">Words</div>
-            <div className="mt-2 text-2xl font-semibold text-white">{stats.words}</div>
+          <div className={softPanelClass()}>
+            <div className="text-sm text-q-muted">Words</div>
+            <div className="mt-2 text-2xl font-semibold text-q-text">{stats.words}</div>
           </div>
-          <div className="rounded-xl border border-gray-800 bg-gray-950 p-4">
-            <div className="text-sm text-gray-400">Characters</div>
-            <div className="mt-2 text-2xl font-semibold text-white">{stats.characters}</div>
+          <div className={softPanelClass()}>
+            <div className="text-sm text-q-muted">Characters</div>
+            <div className="mt-2 text-2xl font-semibold text-q-text">{stats.characters}</div>
           </div>
-          <div className="rounded-xl border border-gray-800 bg-gray-950 p-4">
-            <div className="text-sm text-gray-400">No Spaces</div>
-            <div className="mt-2 text-2xl font-semibold text-white">{stats.charactersNoSpaces}</div>
+          <div className={softPanelClass()}>
+            <div className="text-sm text-q-muted">No Spaces</div>
+            <div className="mt-2 text-2xl font-semibold text-q-text">{stats.charactersNoSpaces}</div>
           </div>
-          <div className="rounded-xl border border-gray-800 bg-gray-950 p-4">
-            <div className="text-sm text-gray-400">Read Time</div>
-            <div className="mt-2 text-2xl font-semibold text-white">{stats.readingMinutes} min</div>
+          <div className={softPanelClass()}>
+            <div className="text-sm text-q-muted">Read Time</div>
+            <div className="mt-2 text-2xl font-semibold text-q-text">{stats.readingMinutes} min</div>
           </div>
         </div>
       </div>
@@ -265,10 +281,10 @@ function UUIDGenerator() {
     <Card title="UUID Generator">
       <div className="space-y-4">
         <div className="flex flex-wrap gap-3">
-          <button onClick={generateUuid} className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700">
+          <button onClick={generateUuid} className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover">
             Generate UUID
           </button>
-          <button onClick={() => copyText(result)} disabled={!result} className="rounded-xl bg-gray-800 px-4 py-2 font-medium text-white hover:bg-gray-700 disabled:opacity-50">
+          <button onClick={() => copyText(result)} disabled={!result} className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover disabled:opacity-50">
             Copy
           </button>
         </div>
@@ -276,7 +292,7 @@ function UUIDGenerator() {
           readOnly
           value={result}
           placeholder="Generated UUID will appear here"
-          className="min-h-[110px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={textareaClass("min-h-[110px]")}
         />
       </div>
     </Card>
@@ -294,16 +310,16 @@ function SlugGenerator() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Enter text to convert into a URL slug"
-          className="min-h-[140px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={textareaClass("min-h-[140px]")}
         />
-        <button onClick={() => copyText(output)} disabled={!output} className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50">
+        <button onClick={() => copyText(output)} disabled={!output} className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover disabled:opacity-50">
           Copy Slug
         </button>
         <textarea
           readOnly
           value={output}
           placeholder="Slug output"
-          className="min-h-[110px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={textareaClass("min-h-[110px]")}
         />
       </div>
     </Card>
@@ -344,30 +360,30 @@ function RandomStringGenerator() {
     <Card title="Random String Generator">
       <div className="space-y-4">
         <div>
-          <label className="mb-2 block text-sm text-gray-300">Length: {length}</label>
+          <label className="mb-2 block text-sm text-q-muted">Length: {length}</label>
           <input type="range" min={4} max={128} value={length} onChange={(e) => setLength(Number(e.target.value))} className="w-full" />
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3">
-          <label className="flex items-center gap-2 text-sm text-gray-300">
+          <label className="flex items-center gap-2 text-sm text-q-muted">
             <input type="checkbox" checked={useUppercase} onChange={(e) => setUseUppercase(e.target.checked)} />
             Uppercase
           </label>
-          <label className="flex items-center gap-2 text-sm text-gray-300">
+          <label className="flex items-center gap-2 text-sm text-q-muted">
             <input type="checkbox" checked={useLowercase} onChange={(e) => setUseLowercase(e.target.checked)} />
             Lowercase
           </label>
-          <label className="flex items-center gap-2 text-sm text-gray-300">
+          <label className="flex items-center gap-2 text-sm text-q-muted">
             <input type="checkbox" checked={useNumbers} onChange={(e) => setUseNumbers(e.target.checked)} />
             Numbers
           </label>
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <button onClick={generateString} className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700">
+          <button onClick={generateString} className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover">
             Generate String
           </button>
-          <button onClick={() => copyText(result)} disabled={!result} className="rounded-xl bg-gray-800 px-4 py-2 font-medium text-white hover:bg-gray-700 disabled:opacity-50">
+          <button onClick={() => copyText(result)} disabled={!result} className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover disabled:opacity-50">
             Copy
           </button>
         </div>
@@ -376,7 +392,7 @@ function RandomStringGenerator() {
           readOnly
           value={result}
           placeholder="Generated string will appear here"
-          className="min-h-[110px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={textareaClass("min-h-[110px]")}
         />
       </div>
     </Card>
@@ -405,22 +421,22 @@ function Base64Encoder() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Enter text to encode"
-          className="min-h-[140px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={textareaClass("min-h-[140px]")}
         />
         <div className="flex flex-wrap gap-3">
-          <button onClick={encodeValue} className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700">
+          <button onClick={encodeValue} className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover">
             Encode
           </button>
-          <button onClick={() => copyText(output)} disabled={!output} className="rounded-xl bg-gray-800 px-4 py-2 font-medium text-white hover:bg-gray-700 disabled:opacity-50">
+          <button onClick={() => copyText(output)} disabled={!output} className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover disabled:opacity-50">
             Copy
           </button>
         </div>
-        {error ? <div className="rounded-xl border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">{error}</div> : null}
+        {error ? <div className="rounded-xl border border-q-danger bg-q-danger-soft p-3 text-sm text-q-danger">{error}</div> : null}
         <textarea
           readOnly
           value={output}
           placeholder="Base64 output"
-          className="min-h-[110px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={textareaClass("min-h-[110px]")}
         />
       </div>
     </Card>
@@ -449,22 +465,22 @@ function Base64Decoder() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Enter Base64 text to decode"
-          className="min-h-[140px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={textareaClass("min-h-[140px]")}
         />
         <div className="flex flex-wrap gap-3">
-          <button onClick={decodeValue} className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700">
+          <button onClick={decodeValue} className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover">
             Decode
           </button>
-          <button onClick={() => copyText(output)} disabled={!output} className="rounded-xl bg-gray-800 px-4 py-2 font-medium text-white hover:bg-gray-700 disabled:opacity-50">
+          <button onClick={() => copyText(output)} disabled={!output} className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover disabled:opacity-50">
             Copy
           </button>
         </div>
-        {error ? <div className="rounded-xl border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">{error}</div> : null}
+        {error ? <div className="rounded-xl border border-q-danger bg-q-danger-soft p-3 text-sm text-q-danger">{error}</div> : null}
         <textarea
           readOnly
           value={output}
           placeholder="Decoded text"
-          className="min-h-[110px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={textareaClass("min-h-[110px]")}
         />
       </div>
     </Card>
@@ -488,16 +504,16 @@ function UrlEncoder() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Enter text to URL-encode"
-          className="min-h-[140px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={textareaClass("min-h-[140px]")}
         />
-        <button onClick={() => copyText(output)} disabled={!output} className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50">
+        <button onClick={() => copyText(output)} disabled={!output} className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover disabled:opacity-50">
           Copy Encoded Output
         </button>
         <textarea
           readOnly
           value={output}
           placeholder="Encoded output"
-          className="min-h-[110px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={textareaClass("min-h-[110px]")}
         />
       </div>
     </Card>
@@ -526,22 +542,22 @@ function UrlDecoder() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Enter URL-encoded text"
-          className="min-h-[140px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={textareaClass("min-h-[140px]")}
         />
         <div className="flex flex-wrap gap-3">
-          <button onClick={decodeValue} className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700">
+          <button onClick={decodeValue} className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover">
             Decode
           </button>
-          <button onClick={() => copyText(output)} disabled={!output} className="rounded-xl bg-gray-800 px-4 py-2 font-medium text-white hover:bg-gray-700 disabled:opacity-50">
+          <button onClick={() => copyText(output)} disabled={!output} className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover disabled:opacity-50">
             Copy
           </button>
         </div>
-        {error ? <div className="rounded-xl border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">{error}</div> : null}
+        {error ? <div className="rounded-xl border border-q-danger bg-q-danger-soft p-3 text-sm text-q-danger">{error}</div> : null}
         <textarea
           readOnly
           value={output}
           placeholder="Decoded output"
-          className="min-h-[110px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={textareaClass("min-h-[110px]")}
         />
       </div>
     </Card>
@@ -553,9 +569,9 @@ function TextCaseConverter() {
 
   const output = useMemo(() => {
     return {
-      lower: input.toLowerCase(),
-      upper: input.toUpperCase(),
-      title: input.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase()),
+      lowercase: input.toLowerCase(),
+      uppercase: input.toUpperCase(),
+      titlecase: input.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase()),
       slug: slugify(input),
     };
   }, [input]);
@@ -567,25 +583,15 @@ function TextCaseConverter() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Enter text to transform"
-          className="min-h-[160px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={textareaClass("min-h-[160px]")}
         />
         <div className="grid gap-4">
-          <div className="rounded-xl border border-gray-800 bg-gray-950 p-4">
-            <div className="mb-2 text-sm text-gray-400">lowercase</div>
-            <div className="break-words text-sm text-gray-200">{output.lower}</div>
-          </div>
-          <div className="rounded-xl border border-gray-800 bg-gray-950 p-4">
-            <div className="mb-2 text-sm text-gray-400">UPPERCASE</div>
-            <div className="break-words text-sm text-gray-200">{output.upper}</div>
-          </div>
-          <div className="rounded-xl border border-gray-800 bg-gray-950 p-4">
-            <div className="mb-2 text-sm text-gray-400">Title Case</div>
-            <div className="break-words text-sm text-gray-200">{output.title}</div>
-          </div>
-          <div className="rounded-xl border border-gray-800 bg-gray-950 p-4">
-            <div className="mb-2 text-sm text-gray-400">slug-case</div>
-            <div className="break-words text-sm text-gray-200">{output.slug}</div>
-          </div>
+          {Object.entries(output).map(([key, value]) => (
+            <div key={key} className={softPanelClass()}>
+              <div className="mb-2 text-sm text-q-muted">{key}</div>
+              <div className="break-words text-sm text-q-text">{value}</div>
+            </div>
+          ))}
         </div>
       </div>
     </Card>
@@ -619,13 +625,13 @@ function CodeFormatter() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Paste code or JSON here"
-          className="min-h-[180px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 font-mono text-white outline-none"
+          className="min-h-[180px] w-full rounded-xl border border-q-border bg-q-bg p-4 font-mono text-q-text outline-none placeholder:text-q-muted"
         />
         <div className="flex flex-wrap gap-3">
-          <button onClick={formatCode} className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700">
+          <button onClick={formatCode} className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover">
             Format
           </button>
-          <button onClick={() => copyText(output)} disabled={!output} className="rounded-xl bg-gray-800 px-4 py-2 font-medium text-white hover:bg-gray-700 disabled:opacity-50">
+          <button onClick={() => copyText(output)} disabled={!output} className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover disabled:opacity-50">
             Copy
           </button>
         </div>
@@ -633,7 +639,7 @@ function CodeFormatter() {
           readOnly
           value={output}
           placeholder="Formatted output"
-          className="min-h-[180px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 font-mono text-white outline-none"
+          className="min-h-[180px] w-full rounded-xl border border-q-border bg-q-bg p-4 font-mono text-q-text outline-none placeholder:text-q-muted"
         />
       </div>
     </Card>
@@ -696,38 +702,38 @@ function CodeSnippetManager() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Snippet title"
-          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={inputClass()}
         />
         <textarea
           value={code}
           onChange={(e) => setCode(e.target.value)}
           placeholder="Paste snippet code"
-          className="min-h-[160px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 font-mono text-white outline-none"
+          className="min-h-[160px] w-full rounded-xl border border-q-border bg-q-bg p-4 font-mono text-q-text outline-none placeholder:text-q-muted"
         />
-        <button onClick={saveSnippet} className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700">
+        <button onClick={saveSnippet} className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover">
           Save Snippet
         </button>
 
         <div className="space-y-3">
           {snippets.length === 0 ? (
-            <div className="rounded-xl border border-gray-800 bg-gray-950 p-4 text-sm text-gray-400">
+            <div className={`${softPanelClass()} text-sm text-q-muted`}>
               No snippets saved yet.
             </div>
           ) : (
             snippets.map((snippet) => (
-              <div key={snippet.id} className="rounded-xl border border-gray-800 bg-gray-950 p-4">
+              <div key={snippet.id} className={softPanelClass()}>
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="font-medium text-white">{snippet.title}</h3>
+                  <h3 className="font-medium text-q-text">{snippet.title}</h3>
                   <div className="flex gap-2">
-                    <button onClick={() => copyText(snippet.code)} className="rounded-lg bg-gray-800 px-3 py-1 text-sm text-white hover:bg-gray-700">
+                    <button onClick={() => copyText(snippet.code)} className="rounded-lg border border-q-border bg-q-card px-3 py-1 text-sm text-q-text hover:bg-q-card-hover">
                       Copy
                     </button>
-                    <button onClick={() => deleteSnippet(snippet.id)} className="rounded-lg bg-red-900/60 px-3 py-1 text-sm text-white hover:bg-red-800">
+                    <button onClick={() => deleteSnippet(snippet.id)} className="rounded-lg border border-q-danger bg-q-danger-soft px-3 py-1 text-sm text-q-danger hover:opacity-90">
                       Delete
                     </button>
                   </div>
                 </div>
-                <pre className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-lg border border-gray-800 bg-black/30 p-3 text-sm text-gray-200">
+                <pre className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-lg border border-q-border bg-q-card p-3 text-sm text-q-text">
                   {snippet.code}
                 </pre>
               </div>
@@ -765,13 +771,13 @@ function TextTransformer(config: Record<string, unknown>) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Enter text to transform"
-          className="min-h-[160px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={textareaClass("min-h-[160px]")}
         />
         <div className="grid gap-4">
           {Object.entries(output).map(([key, value]) => (
-            <div key={key} className="rounded-xl border border-gray-800 bg-gray-950 p-4">
-              <div className="mb-2 text-sm text-gray-400">{key}</div>
-              <div className="break-words text-sm text-gray-200">{value}</div>
+            <div key={key} className={softPanelClass()}>
+              <div className="mb-2 text-sm text-q-muted">{key}</div>
+              <div className="break-words text-sm text-q-text">{value}</div>
             </div>
           ))}
         </div>
@@ -812,21 +818,21 @@ function NumberGenerator(config: Record<string, unknown>) {
             value={min}
             onChange={(e) => setMin(e.target.value)}
             placeholder="Minimum"
-            className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+            className={inputClass()}
           />
           <input
             type="number"
             value={max}
             onChange={(e) => setMax(e.target.value)}
             placeholder="Maximum"
-            className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+            className={inputClass()}
           />
         </div>
         <div className="flex flex-wrap gap-3">
-          <button onClick={generateNumber} className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700">
+          <button onClick={generateNumber} className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover">
             Generate Number
           </button>
-          <button onClick={() => copyText(result)} disabled={!result} className="rounded-xl bg-gray-800 px-4 py-2 font-medium text-white hover:bg-gray-700 disabled:opacity-50">
+          <button onClick={() => copyText(result)} disabled={!result} className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover disabled:opacity-50">
             Copy
           </button>
         </div>
@@ -834,7 +840,7 @@ function NumberGenerator(config: Record<string, unknown>) {
           readOnly
           value={result}
           placeholder="Generated number"
-          className="min-h-[110px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={textareaClass("min-h-[110px]")}
         />
       </div>
     </Card>
@@ -857,7 +863,7 @@ function UnitConverter(config: Record<string, unknown>) {
   return (
     <Card title={title}>
       <div className="space-y-4">
-        <div className="text-sm text-gray-400">
+        <div className="text-sm text-q-muted">
           Convert {fromUnit} to {toUnit}
         </div>
         <input
@@ -865,13 +871,13 @@ function UnitConverter(config: Record<string, unknown>) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={`Enter value in ${fromUnit}`}
-          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={inputClass()}
         />
         <textarea
           readOnly
           value={output ? `${output} ${toUnit}` : ""}
           placeholder="Converted output"
-          className="min-h-[110px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={textareaClass("min-h-[110px]")}
         />
       </div>
     </Card>
@@ -881,7 +887,7 @@ function UnitConverter(config: Record<string, unknown>) {
 function GenericTool() {
   return (
     <Card title="Tool Interface">
-      <div className="rounded-xl border border-gray-800 bg-gray-950 p-5 text-gray-300">
+      <div className="rounded-xl border border-q-border bg-q-bg p-5 text-q-muted">
         This page is live and database-driven. It is already a valid public page,
         and you can attach a dedicated tool engine to this slug later.
       </div>

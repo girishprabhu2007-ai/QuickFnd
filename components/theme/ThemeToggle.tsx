@@ -13,7 +13,9 @@ export default function ThemeToggle() {
       aria-label="Toggle theme"
     >
       <span>{mounted ? (theme === "dark" ? "🌙" : "☀️") : "🌓"}</span>
-      <span>{mounted ? (theme === "dark" ? "Dark" : "Light") : "Theme"}</span>
+      <span className="hidden sm:inline">
+        {mounted ? (theme === "dark" ? "Dark" : "Light") : "Theme"}
+      </span>
     </button>
   );
 }

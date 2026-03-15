@@ -2,115 +2,121 @@
 
 import { useEffect, useState } from "react";
 
-type ToolItem = {
-  id: number;
+type AdminItem = {
+  id?: number;
   name: string;
   slug: string;
   description: string;
 };
 
-export default function AdminTools() {
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [description, setDescription] = useState("");
-  const [items, setItems] = useState<ToolItem[]>([]);
+export default function AdminToolsPage() {
+  const [items, setItems] = useState<AdminItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [busySlug, setBusySlug] = useState("");
 
   async function loadItems() {
-    const response = await fetch("/api/admin/list-tools");
-    const data = await response.json();
-    setItems(data.items || []);
-  }
+    setLoading(true);
+    setError("");
 
-  async function addTool() {
-    await fetch("/api/admin/add-tool", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ name, slug, description }),
-    });
+    try {
+      const response = await fetch("/api/admin/list-tools");
+      const data = await response.json();
 
-    setName("");
-    setSlug("");
-    setDescription("");
-    await loadItems();
-  }
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to load tools.");
+      }
 
-  async function deleteTool(id: number) {
-    await fetch("/api/admin/delete-tool", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ id }),
-    });
-
-    await loadItems();
+      setItems(Array.isArray(data.items) ? data.items : []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load tools.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     loadItems();
   }, []);
 
+  async function handleDelete(slug: string) {
+    setBusySlug(slug);
+    setError("");
+
+    try {
+      const response = await fetch("/api/admin/delete-tool", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ slug }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to delete tool.");
+      }
+
+      setItems((prev) => prev.filter((item) => item.slug !== slug));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete tool.");
+    } finally {
+      setBusySlug("");
+    }
+  }
+
   return (
-    <div className="grid gap-10 lg:grid-cols-2">
-      <div className="max-w-xl">
-        <h2 className="mb-6 text-xl font-semibold">Add Tool</h2>
+    <div className="space-y-6">
+      <section className="rounded-3xl border border-q-border bg-q-card p-6 md:p-8">
+        <h2 className="text-2xl font-semibold text-q-text">Manage Tools</h2>
+        <p className="mt-2 text-sm text-q-muted">
+          Review saved tool entries and remove outdated records.
+        </p>
+      </section>
 
-        <input
-          className="mb-4 w-full rounded bg-gray-800 p-3"
-          placeholder="Tool Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
+      {error ? (
+        <div className="rounded-xl border border-q-danger bg-q-danger-soft px-4 py-3 text-sm text-q-danger">
+          {error}
+        </div>
+      ) : null}
 
-        <input
-          className="mb-4 w-full rounded bg-gray-800 p-3"
-          placeholder="Slug"
-          value={slug}
-          onChange={(e) => setSlug(e.target.value)}
-        />
-
-        <textarea
-          className="mb-4 w-full rounded bg-gray-800 p-3"
-          placeholder="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-
-        <button
-          onClick={addTool}
-          className="rounded bg-blue-600 px-5 py-3 hover:bg-blue-700"
-        >
-          Add Tool
-        </button>
-      </div>
-
-      <div>
-        <h2 className="mb-6 text-xl font-semibold">Existing Tools</h2>
-
-        <div className="space-y-4">
+      {loading ? (
+        <div className="rounded-2xl border border-q-border bg-q-card p-6 text-q-muted">
+          Loading tools...
+        </div>
+      ) : items.length === 0 ? (
+        <div className="rounded-2xl border border-q-border bg-q-card p-6 text-q-muted">
+          No tools found.
+        </div>
+      ) : (
+        <div className="grid gap-4">
           {items.map((item) => (
             <div
-              key={item.id}
-              className="flex items-start justify-between gap-4 rounded-xl bg-gray-900 p-4"
+              key={item.slug}
+              className="rounded-2xl border border-q-border bg-q-card p-5"
             >
-              <div>
-                <h3 className="font-semibold">{item.name}</h3>
-                <p className="text-sm text-gray-400">{item.slug}</p>
-                <p className="mt-2 text-sm text-gray-300">{item.description}</p>
-              </div>
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div className="min-w-0">
+                  <h3 className="text-lg font-semibold text-q-text">{item.name}</h3>
+                  <p className="mt-1 text-sm text-q-muted">{item.slug}</p>
+                  <p className="mt-3 text-sm leading-6 text-q-muted">
+                    {item.description}
+                  </p>
+                </div>
 
-              <button
-                onClick={() => deleteTool(item.id)}
-                className="rounded bg-red-600 px-3 py-2 text-sm hover:bg-red-700"
-              >
-                Delete
-              </button>
+                <button
+                  onClick={() => handleDelete(item.slug)}
+                  disabled={busySlug === item.slug}
+                  className="rounded-xl border border-q-danger bg-q-danger-soft px-4 py-2 text-sm font-medium text-q-danger hover:opacity-90 disabled:opacity-60"
+                >
+                  {busySlug === item.slug ? "Deleting..." : "Delete"}
+                </button>
+              </div>
             </div>
           ))}
         </div>
-      </div>
+      )}
     </div>
   );
 }

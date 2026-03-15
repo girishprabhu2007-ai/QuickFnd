@@ -74,6 +74,14 @@ function presetConfig(engine: string) {
   return {};
 }
 
+function panelClass() {
+  return "rounded-2xl border border-q-border bg-q-card p-6";
+}
+
+function fieldClass() {
+  return "w-full rounded-xl border border-q-border bg-q-bg px-4 py-3 text-q-text outline-none placeholder:text-q-muted";
+}
+
 export default function AdminBulkGeneratePage() {
   const [theme, setTheme] = useState("");
   const [category, setCategory] = useState<AdminCategory>("tool");
@@ -198,9 +206,7 @@ export default function AdminBulkGeneratePage() {
       }
 
       if (successCount > 0) {
-        setSuccess(
-          `Saved ${successCount} item${successCount === 1 ? "" : "s"} successfully.`
-        );
+        setSuccess(`Saved ${successCount} item${successCount === 1 ? "" : "s"} successfully.`);
       }
 
       if (failed.length > 0) {
@@ -223,21 +229,21 @@ export default function AdminBulkGeneratePage() {
 
   return (
     <div className="space-y-8">
-      <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
-        <h2 className="text-2xl font-semibold text-white">Bulk Generate Content</h2>
-        <p className="mt-2 max-w-3xl text-sm text-gray-400">
+      <div className={panelClass()}>
+        <h2 className="text-2xl font-semibold text-q-text">Bulk Generate Content</h2>
+        <p className="mt-2 max-w-3xl text-sm text-q-muted">
           Generate multiple tools, calculators, or AI tools at once from a single theme.
         </p>
 
         <div className="mt-6 grid gap-5 md:grid-cols-3">
           <div className="md:col-span-1">
-            <label className="mb-2 block text-sm font-medium text-gray-200">
+            <label className="mb-2 block text-sm font-medium text-q-text">
               Category
             </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as AdminCategory)}
-              className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-white outline-none"
+              className={fieldClass()}
             >
               {categoryOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -248,7 +254,7 @@ export default function AdminBulkGeneratePage() {
           </div>
 
           <div className="md:col-span-1">
-            <label className="mb-2 block text-sm font-medium text-gray-200">
+            <label className="mb-2 block text-sm font-medium text-q-text">
               Count
             </label>
             <input
@@ -256,22 +262,20 @@ export default function AdminBulkGeneratePage() {
               min={2}
               max={25}
               value={count}
-              onChange={(e) =>
-                setCount(Math.max(2, Math.min(25, Number(e.target.value) || 2)))
-              }
-              className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-white outline-none"
+              onChange={(e) => setCount(Math.max(2, Math.min(25, Number(e.target.value) || 2)))}
+              className={fieldClass()}
             />
           </div>
 
           <div className="md:col-span-3">
-            <label className="mb-2 block text-sm font-medium text-gray-200">
+            <label className="mb-2 block text-sm font-medium text-q-text">
               Theme
             </label>
             <input
               value={theme}
               onChange={(e) => setTheme(e.target.value)}
               placeholder="e.g. text utilities, finance calculators, dev tools"
-              className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-white outline-none"
+              className={fieldClass()}
             />
           </div>
         </div>
@@ -280,7 +284,7 @@ export default function AdminBulkGeneratePage() {
           <button
             onClick={handleGenerate}
             disabled={isGenerating}
-            className="rounded-xl bg-blue-600 px-5 py-3 font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+            className="rounded-xl bg-q-primary px-5 py-3 font-medium text-white hover:bg-q-primary-hover disabled:opacity-60"
           >
             {isGenerating ? "Generating..." : "Generate Bulk Items"}
           </button>
@@ -288,54 +292,54 @@ export default function AdminBulkGeneratePage() {
           <button
             onClick={handleSaveSelected}
             disabled={isSaving || selectedCount === 0}
-            className="rounded-xl bg-emerald-600 px-5 py-3 font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+            className="rounded-xl bg-q-success px-5 py-3 font-medium text-white hover:bg-q-success-hover disabled:opacity-60"
           >
             {isSaving ? "Saving..." : `Save Selected (${selectedCount})`}
           </button>
 
           <button
             onClick={() => toggleAll(true)}
-            className="rounded-xl bg-gray-800 px-5 py-3 font-medium text-white hover:bg-gray-700"
+            className="rounded-xl border border-q-border bg-q-card px-5 py-3 font-medium text-q-text hover:bg-q-card-hover"
           >
             Select All
           </button>
 
           <button
             onClick={() => toggleAll(false)}
-            className="rounded-xl bg-gray-800 px-5 py-3 font-medium text-white hover:bg-gray-700"
+            className="rounded-xl border border-q-border bg-q-card px-5 py-3 font-medium text-q-text hover:bg-q-card-hover"
           >
             Clear Selection
           </button>
         </div>
 
         {error ? (
-          <div className="mt-4 rounded-xl border border-red-900 bg-red-950/40 px-4 py-3 text-sm text-red-300">
+          <div className="mt-4 rounded-xl border border-q-danger bg-q-danger-soft px-4 py-3 text-sm text-q-danger">
             {error}
           </div>
         ) : null}
 
         {success ? (
-          <div className="mt-4 rounded-xl border border-emerald-900 bg-emerald-950/40 px-4 py-3 text-sm text-emerald-300">
+          <div className="mt-4 rounded-xl border border-q-success bg-q-success-soft px-4 py-3 text-sm text-q-success">
             {success}
           </div>
         ) : null}
       </div>
 
-      <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
+      <div className={panelClass()}>
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="text-xl font-semibold text-white">Generated Items</h3>
-            <p className="mt-1 text-sm text-gray-400">
+            <h3 className="text-xl font-semibold text-q-text">Generated Items</h3>
+            <p className="mt-1 text-sm text-q-muted">
               Edit content, engine type, and config before saving.
             </p>
           </div>
-          <div className="text-sm text-gray-400">
+          <div className="text-sm text-q-muted">
             {items.length} total / {selectedCount} selected
           </div>
         </div>
 
         {items.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-gray-700 bg-gray-950 p-10 text-center text-gray-500">
+          <div className="rounded-2xl border border-dashed border-q-border bg-q-bg p-10 text-center text-q-muted">
             No items generated yet.
           </div>
         ) : (
@@ -343,10 +347,10 @@ export default function AdminBulkGeneratePage() {
             {items.map((item) => (
               <div
                 key={item.localId}
-                className="rounded-2xl border border-gray-800 bg-gray-950 p-5"
+                className="rounded-2xl border border-q-border bg-q-bg p-5"
               >
                 <div className="mb-4 flex items-center justify-between gap-4">
-                  <label className="flex items-center gap-3 text-sm text-gray-300">
+                  <label className="flex items-center gap-3 text-sm text-q-muted">
                     <input
                       type="checkbox"
                       checked={item.selected}
@@ -362,7 +366,7 @@ export default function AdminBulkGeneratePage() {
                         prev.filter((current) => current.localId !== item.localId)
                       )
                     }
-                    className="text-sm text-red-300 hover:text-red-200"
+                    className="text-sm text-q-danger hover:opacity-80"
                   >
                     Remove
                   </button>
@@ -370,7 +374,7 @@ export default function AdminBulkGeneratePage() {
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-200">
+                    <label className="mb-2 block text-sm font-medium text-q-text">
                       Name
                     </label>
                     <input
@@ -387,12 +391,12 @@ export default function AdminBulkGeneratePage() {
                               : item.engine_type,
                         });
                       }}
-                      className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none"
+                      className={fieldClass()}
                     />
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-200">
+                    <label className="mb-2 block text-sm font-medium text-q-text">
                       Slug
                     </label>
                     <input
@@ -404,12 +408,12 @@ export default function AdminBulkGeneratePage() {
                           engine_type: inferEngineType(category, nextSlug) as EngineType,
                         });
                       }}
-                      className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none"
+                      className={fieldClass()}
                     />
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-200">
+                    <label className="mb-2 block text-sm font-medium text-q-text">
                       Engine type
                     </label>
                     <select
@@ -420,7 +424,7 @@ export default function AdminBulkGeneratePage() {
                           engineConfigText: prettyJson(presetConfig(e.target.value)),
                         })
                       }
-                      className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none"
+                      className={fieldClass()}
                     >
                       {engineOptions.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -431,7 +435,7 @@ export default function AdminBulkGeneratePage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-200">
+                    <label className="mb-2 block text-sm font-medium text-q-text">
                       Engine config (JSON)
                     </label>
                     <textarea
@@ -440,12 +444,12 @@ export default function AdminBulkGeneratePage() {
                       onChange={(e) =>
                         replaceItem(item.localId, { engineConfigText: e.target.value })
                       }
-                      className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none"
+                      className={fieldClass()}
                     />
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="mb-2 block text-sm font-medium text-gray-200">
+                    <label className="mb-2 block text-sm font-medium text-q-text">
                       Description
                     </label>
                     <textarea
@@ -454,12 +458,12 @@ export default function AdminBulkGeneratePage() {
                       onChange={(e) =>
                         replaceItem(item.localId, { description: e.target.value })
                       }
-                      className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none"
+                      className={fieldClass()}
                     />
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="mb-2 block text-sm font-medium text-gray-200">
+                    <label className="mb-2 block text-sm font-medium text-q-text">
                       Related slugs
                     </label>
                     <input
@@ -469,7 +473,7 @@ export default function AdminBulkGeneratePage() {
                           related_slugs: normalizeRelatedSlugs(e.target.value),
                         })
                       }
-                      className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none"
+                      className={fieldClass()}
                     />
                   </div>
                 </div>

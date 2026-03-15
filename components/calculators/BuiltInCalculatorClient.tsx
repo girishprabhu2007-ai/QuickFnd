@@ -16,11 +16,19 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
-      <h2 className="text-xl font-semibold text-white">{title}</h2>
+    <section className="rounded-2xl border border-q-border bg-q-card p-6">
+      <h2 className="text-xl font-semibold text-q-text">{title}</h2>
       <div className="mt-4">{children}</div>
     </section>
   );
+}
+
+function inputClass() {
+  return "w-full rounded-xl border border-q-border bg-q-bg p-4 text-q-text outline-none placeholder:text-q-muted";
+}
+
+function panelClass() {
+  return "rounded-xl border border-q-border bg-q-bg p-5 text-q-text";
 }
 
 function AgeCalculator() {
@@ -59,9 +67,9 @@ function AgeCalculator() {
           type="date"
           value={birthDate}
           onChange={(e) => setBirthDate(e.target.value)}
-          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={inputClass()}
         />
-        <div className="rounded-xl border border-gray-800 bg-gray-950 p-5 text-gray-300">
+        <div className={panelClass()}>
           {result ? (
             <span>
               Age: <strong>{result.years}</strong> years,{" "}
@@ -69,7 +77,7 @@ function AgeCalculator() {
               <strong>{result.days}</strong> days
             </span>
           ) : (
-            "Choose a birth date to calculate age."
+            <span className="text-q-muted">Choose a birth date to calculate age.</span>
           )}
         </div>
       </div>
@@ -105,22 +113,22 @@ function BMICalculator() {
           value={heightCm}
           onChange={(e) => setHeightCm(e.target.value)}
           placeholder="Height in cm"
-          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={inputClass()}
         />
         <input
           type="number"
           value={weightKg}
           onChange={(e) => setWeightKg(e.target.value)}
           placeholder="Weight in kg"
-          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={inputClass()}
         />
-        <div className="rounded-xl border border-gray-800 bg-gray-950 p-5 text-gray-300">
+        <div className={panelClass()}>
           {result ? (
             <span>
               BMI: <strong>{result.bmi}</strong> ({result.category})
             </span>
           ) : (
-            "Enter height and weight to calculate BMI."
+            <span className="text-q-muted">Enter height and weight to calculate BMI.</span>
           )}
         </div>
       </div>
@@ -172,23 +180,23 @@ function LoanCalculator() {
           value={principal}
           onChange={(e) => setPrincipal(e.target.value)}
           placeholder="Loan amount"
-          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={inputClass()}
         />
         <input
           type="number"
           value={annualRate}
           onChange={(e) => setAnnualRate(e.target.value)}
           placeholder="Annual interest rate (%)"
-          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={inputClass()}
         />
         <input
           type="number"
           value={years}
           onChange={(e) => setYears(e.target.value)}
           placeholder="Repayment years"
-          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={inputClass()}
         />
-        <div className="rounded-xl border border-gray-800 bg-gray-950 p-5 text-gray-300">
+        <div className={panelClass()}>
           {result ? (
             <div className="grid gap-2">
               <div>Monthly Payment: <strong>{result.monthly}</strong></div>
@@ -196,7 +204,7 @@ function LoanCalculator() {
               <div>Total Interest: <strong>{result.interest}</strong></div>
             </div>
           ) : (
-            "Enter loan values to calculate monthly payment."
+            <span className="text-q-muted">Enter loan values to calculate monthly payment.</span>
           )}
         </div>
       </div>
@@ -247,23 +255,23 @@ function EMICalculator() {
           value={principal}
           onChange={(e) => setPrincipal(e.target.value)}
           placeholder="Loan amount"
-          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={inputClass()}
         />
         <input
           type="number"
           value={annualRate}
           onChange={(e) => setAnnualRate(e.target.value)}
           placeholder="Annual interest rate (%)"
-          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={inputClass()}
         />
         <input
           type="number"
           value={months}
           onChange={(e) => setMonths(e.target.value)}
           placeholder="Loan tenure in months"
-          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={inputClass()}
         />
-        <div className="rounded-xl border border-gray-800 bg-gray-950 p-5 text-gray-300">
+        <div className={panelClass()}>
           {result ? (
             <div className="grid gap-2">
               <div>Monthly EMI: <strong>{result.emi}</strong></div>
@@ -271,7 +279,7 @@ function EMICalculator() {
               <div>Total Interest: <strong>{result.interest}</strong></div>
             </div>
           ) : (
-            "Enter EMI values to calculate payment."
+            <span className="text-q-muted">Enter EMI values to calculate payment.</span>
           )}
         </div>
       </div>
@@ -307,7 +315,7 @@ function PercentageCalculator() {
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value as "of" | "whatPercent" | "change")}
-          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={inputClass()}
         >
           <option value="of">What is A% of B?</option>
           <option value="whatPercent">A is what percent of B?</option>
@@ -319,17 +327,17 @@ function PercentageCalculator() {
           value={a}
           onChange={(e) => setA(e.target.value)}
           placeholder="Value A"
-          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={inputClass()}
         />
         <input
           type="number"
           value={b}
           onChange={(e) => setB(e.target.value)}
           placeholder="Value B"
-          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={inputClass()}
         />
 
-        <div className="rounded-xl border border-gray-800 bg-gray-950 p-5 text-gray-300">
+        <div className={panelClass()}>
           Result: <strong>{result || "Enter values to calculate."}</strong>
         </div>
       </div>
@@ -367,30 +375,30 @@ function SimpleInterestCalculator(config: Record<string, unknown>) {
           value={principal}
           onChange={(e) => setPrincipal(e.target.value)}
           placeholder="Principal amount"
-          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={inputClass()}
         />
         <input
           type="number"
           value={rate}
           onChange={(e) => setRate(e.target.value)}
           placeholder="Rate (%)"
-          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={inputClass()}
         />
         <input
           type="number"
           value={time}
           onChange={(e) => setTime(e.target.value)}
           placeholder="Time (years)"
-          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={inputClass()}
         />
-        <div className="rounded-xl border border-gray-800 bg-gray-950 p-5 text-gray-300">
+        <div className={panelClass()}>
           {result ? (
             <div className="grid gap-2">
               <div>Interest: <strong>{result.interest}</strong></div>
               <div>Total Amount: <strong>{result.total}</strong></div>
             </div>
           ) : (
-            "Enter values to calculate simple interest."
+            <span className="text-q-muted">Enter values to calculate simple interest.</span>
           )}
         </div>
       </div>
@@ -434,7 +442,7 @@ function GSTCalculator(config: Record<string, unknown>) {
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value as "add" | "remove")}
-          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={inputClass()}
         >
           <option value="add">Add GST</option>
           <option value="remove">Remove GST</option>
@@ -445,24 +453,24 @@ function GSTCalculator(config: Record<string, unknown>) {
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder="Amount"
-          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={inputClass()}
         />
         <input
           type="number"
           value={rate}
           onChange={(e) => setRate(e.target.value)}
           placeholder="GST rate (%)"
-          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          className={inputClass()}
         />
 
-        <div className="rounded-xl border border-gray-800 bg-gray-950 p-5 text-gray-300">
+        <div className={panelClass()}>
           {result ? (
             <div className="grid gap-2">
               <div>GST Amount: <strong>{result.gst}</strong></div>
               <div>{mode === "add" ? "Total with GST" : "Base Amount"}: <strong>{result.total}</strong></div>
             </div>
           ) : (
-            "Enter values to calculate GST."
+            <span className="text-q-muted">Enter values to calculate GST.</span>
           )}
         </div>
       </div>
@@ -473,7 +481,7 @@ function GSTCalculator(config: Record<string, unknown>) {
 function GenericCalculator() {
   return (
     <Card title="Calculator Interface">
-      <div className="rounded-xl border border-gray-800 bg-gray-950 p-5 text-gray-300">
+      <div className="rounded-xl border border-q-border bg-q-bg p-5 text-q-muted">
         This calculator page is live and database-driven. You can attach a
         more specific calculator engine later.
       </div>
