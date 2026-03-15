@@ -9,13 +9,13 @@ import {
   buildMetaDescription,
   buildPageTitle,
   getCategoryPath,
-  getSiteUrl,
 } from "@/lib/content-pages";
 import {
   buildBreadcrumbSchema,
   buildFaqSchema,
   buildSoftwareSchema,
 } from "@/lib/seo-content";
+import { getSiteUrl } from "@/lib/site-url";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -67,6 +67,9 @@ export default async function AIToolDetailPage({ params }: Props) {
   if (!item) {
     notFound();
   }
+
+  const siteUrl = getSiteUrl();
+  const pageUrl = `${siteUrl}${getCategoryPath("ai_tools")}/${item.slug}`;
 
   const relatedItems = await getRelatedContent(
     "ai_tools",
@@ -157,12 +160,7 @@ export default async function AIToolDetailPage({ params }: Props) {
                 </div>
                 <div>
                   <dt className="text-q-muted">URL</dt>
-                  <dd className="mt-1 break-all text-q-text">
-                    {getSiteUrl() +
-                      getCategoryPath("ai_tools") +
-                      "/" +
-                      item.slug}
-                  </dd>
+                  <dd className="mt-1 break-all text-q-text">{pageUrl}</dd>
                 </div>
               </dl>
             </section>

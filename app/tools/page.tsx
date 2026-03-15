@@ -1,52 +1,204 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { getTools } from "@/lib/db";
+import { notFound } from "next/navigation";
+import JsonLd from "@/components/seo/JsonLd";
+import PageSEOSections from "@/components/seo/PageSEOSections";
+import BuiltInToolClient from "@/components/tools/BuiltInToolClient";
+import { getContentItem, getRelatedContent } from "@/lib/db";
+import {
+  buildMetaDescription,
+  buildPageTitle,
+  getCategoryPath,
+} from "@/lib/content-pages";
+import {
+  buildBreadcrumbSchema,
+  buildFaqSchema,
+  buildSoftwareSchema,
+} from "@/lib/seo-content";
+import { getSiteUrl } from "@/lib/site-url";
+
+type Props = {
+  params: Promise<{ slug: string }>;
+};
 
 export const revalidate = 300;
 
-export default async function ToolsPage() {
-  const tools = await getTools();
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const item = await getContentItem("tools", slug);
+
+  if (!item) {
+    return {
+      title: "Tool Not Found | QuickFnd",
+      description: "The requested tool could not be found.",
+    };
+  }
+
+  const siteUrl = getSiteUrl();
+  const url = `${siteUrl}/tools/${item.slug}`;
+  const title = buildPageTitle(item, "tools");
+  const description = buildMetaDescription(item, "tools");
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: url,
+    },
+    openGraph: {
+      title,
+      description,
+      url,
+      siteName: "QuickFnd",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  };
+}
+
+export default async function ToolDetailPage({ params }: Props) {
+  const { slug } = await params;
+  const item = await getContentItem("tools", slug);
+
+  if (!item) {
+    notFound();
+  }
+
+  const siteUrl = getSiteUrl();
+  const pageUrl = `${siteUrl}${getCategoryPath("tools")}/${item.slug}`;
+
+  const relatedItems = await getRelatedContent(
+    "tools",
+    item.related_slugs,
+    item.slug
+  );
 
   return (
     <main className="min-h-screen bg-q-bg px-4 py-8 text-q-text sm:px-6 lg:px-8 lg:py-12">
+      <JsonLd
+        id="tool-breadcrumb-schema"
+        data={buildBreadcrumbSchema("tools", item)}
+      />
+      <JsonLd id="tool-faq-schema" data={buildFaqSchema("tools", item)} />
+      <JsonLd
+        id="tool-software-schema"
+        data={buildSoftwareSchema("tools", item)}
+      />
+
       <section className="mx-auto max-w-6xl">
-        <div className="mb-10 rounded-3xl border border-q-border bg-q-card p-6 md:p-8 lg:p-10">
-          <p className="text-sm uppercase tracking-[0.2em] text-blue-500">
-            QuickFnd Directory
-          </p>
-          <h1 className="mt-4 text-3xl font-bold md:text-5xl">
+        <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm text-q-muted">
+          <Link href="/" className="hover:text-q-text">
+            Home
+          </Link>
+          <span>/</span>
+          <Link href="/tools" className="hover:text-q-text">
             Tools
+          </Link>
+          <span>/</span>
+          <span className="text-q-text">{item.name}</span>
+        </nav>
+
+        <div className="mb-10">
+          <Link
+            href="/tools"
+            className="text-sm text-blue-500 hover:text-blue-400"
+          >
+            ← Back to tools
+          </Link>
+
+          <p className="mt-5 text-sm uppercase tracking-[0.2em] text-blue-500">
+            QuickFnd Tool
+          </p>
+
+          <h1 className="mt-3 text-3xl font-bold md:text-4xl lg:text-5xl">
+            {item.name}
           </h1>
+
           <p className="mt-4 max-w-3xl text-base leading-7 text-q-muted md:text-lg md:leading-8">
-            Explore browser-based utility tools for developers, writers,
-            productivity workflows, and quick online tasks.
+            {item.description}
           </p>
         </div>
 
-        {tools.length === 0 ? (
-          <div className="rounded-2xl border border-q-border bg-q-card p-6 text-q-muted">
-            No tools available yet.
-          </div>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {tools.map((tool) => (
-              <Link
-                key={tool.slug}
-                href={`/tools/${tool.slug}`}
-                className="rounded-2xl border border-q-border bg-q-card p-6 transition hover:bg-q-card-hover"
-              >
-                <h2 className="text-xl font-semibold text-q-text">
-                  {tool.name}
-                </h2>
-                <p className="mt-3 text-sm leading-6 text-q-muted">
-                  {tool.description}
-                </p>
-                <div className="mt-4 text-sm font-medium text-blue-500">
-                  Open tool →
+        <div className="grid gap-8 lg:grid-cols-[1.3fr_0.7fr]">
+          <BuiltInToolClient item={item} />
+
+          <aside className="space-y-6">
+            <section className="rounded-2xl border border-q-border bg-q-card p-6">
+              <h2 className="text-xl font-semibold text-q-text">
+                About this tool
+              </h2>
+              <p className="mt-4 text-sm leading-7 text-q-muted">
+                {item.name} is available on QuickFnd as a live public page with
+                its own slug, metadata, internal links, and engine-based
+                rendering.
+              </p>
+            </section>
+
+            <section className="rounded-2xl border border-q-border bg-q-card p-6">
+              <h2 className="text-xl font-semibold text-q-text">
+                Tool details
+              </h2>
+              <dl className="mt-4 grid gap-4 text-sm">
+                <div>
+                  <dt className="text-q-muted">Slug</dt>
+                  <dd className="mt-1 text-q-text">{item.slug}</dd>
                 </div>
-              </Link>
-            ))}
-          </div>
-        )}
+                <div>
+                  <dt className="text-q-muted">Category</dt>
+                  <dd className="mt-1 text-q-text">Tool</dd>
+                </div>
+                <div>
+                  <dt className="text-q-muted">Engine</dt>
+                  <dd className="mt-1 text-q-text">
+                    {item.engine_type || "auto"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-q-muted">URL</dt>
+                  <dd className="mt-1 break-all text-q-text">{pageUrl}</dd>
+                </div>
+              </dl>
+            </section>
+          </aside>
+        </div>
+
+        <section className="mt-10">
+          <PageSEOSections table="tools" item={item} />
+        </section>
+
+        <section className="mt-10">
+          <h2 className="text-2xl font-semibold text-q-text">Related tools</h2>
+
+          {relatedItems.length === 0 ? (
+            <div className="mt-4 rounded-2xl border border-q-border bg-q-card p-6 text-q-muted">
+              No related tools available yet.
+            </div>
+          ) : (
+            <div className="mt-6 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {relatedItems.map((related) => (
+                <Link
+                  key={related.slug}
+                  href={`/tools/${related.slug}`}
+                  className="rounded-2xl border border-q-border bg-q-card p-6 transition hover:bg-q-card-hover"
+                >
+                  <h3 className="text-lg font-semibold text-q-text">
+                    {related.name}
+                  </h3>
+                  <p className="mt-3 text-sm leading-6 text-q-muted">
+                    {related.description}
+                  </p>
+                  <div className="mt-4 text-sm font-medium text-blue-500">
+                    Open tool →
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
       </section>
     </main>
   );

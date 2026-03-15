@@ -1,5 +1,6 @@
 import type { PublicContentItem, PublicTable } from "@/lib/content-pages";
-import { getCategoryLabel, getCategoryPath, getSiteUrl } from "@/lib/content-pages";
+import { getCategoryLabel, getCategoryPath } from "@/lib/content-pages";
+import { getSiteUrl } from "@/lib/site-url";
 
 type BreadcrumbItem = {
   name: string;
@@ -113,7 +114,7 @@ function buildSteps(table: PublicTable, item: PublicContentItem) {
   ];
 }
 
-function buildUseCases(table: PublicTable, item: PublicContentItem) {
+function buildUseCases(table: PublicTable) {
   if (table === "tools") {
     return [
       `Quick one-off browser tasks without installing software`,
@@ -223,7 +224,7 @@ export function buildSEOSectionData(
     intro: buildIntro(table, item),
     benefits: buildBenefits(table, item),
     steps: buildSteps(table, item),
-    useCases: buildUseCases(table, item),
+    useCases: buildUseCases(table),
     faqs: buildFAQs(table, item),
     breadcrumbs: [
       { name: "Home", url: siteUrl },
