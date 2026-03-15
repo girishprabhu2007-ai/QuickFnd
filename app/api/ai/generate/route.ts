@@ -39,7 +39,7 @@ type BulkAdminContentInput = {
 
 function parseAdminContent(raw: string) {
   try {
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
     return normalizeGeneratedContent(parsed);
   } catch {
     return null;
@@ -48,16 +48,25 @@ function parseAdminContent(raw: string) {
 
 function parseBulkAdminContent(raw: string) {
   try {
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(raw) as unknown;
 
-    const items = Array.isArray(parsed)
-      ? parsed
-      : Array.isArray(parsed?.items)
-      ? parsed.items
-      : [];
+    let items: unknown[] = [];
+
+    if (Array.isArray(parsed)) {
+      items = parsed;
+    } else if (
+      parsed &&
+      typeof parsed === "object" &&
+      "items" in parsed &&
+      Array.isArray((parsed as { items?: unknown[] }).items)
+    ) {
+      items = (parsed as { items: unknown[] }).items;
+    }
 
     return items
-      .map((item) => normalizeGeneratedContent(item))
+      .map((item: unknown) =>
+        normalizeGeneratedContent((item ?? {}) as Record<string, unknown>)
+      )
       .filter((item) => item.name && item.slug && item.description);
   } catch {
     return [];
