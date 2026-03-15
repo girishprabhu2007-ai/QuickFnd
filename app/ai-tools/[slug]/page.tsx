@@ -186,15 +186,15 @@ export default async function AIToolDetailPage({ params }: Props) {
                 <Link
                   key={related.slug}
                   href={`/ai-tools/${related.slug}`}
-                  className="rounded-2xl border border-q-border bg-q-card p-6 transition hover:bg-q-card-hover"
+                  className="group rounded-2xl border border-q-border bg-q-card p-6 transition-all duration-200 hover:-translate-y-1 hover:border-blue-400/50 hover:shadow-[0_12px_30px_rgba(59,130,246,0.12)]"
                 >
-                  <h3 className="text-lg font-semibold text-q-text">
+                  <h3 className="text-lg font-semibold text-q-text transition-colors duration-200 group-hover:text-blue-500">
                     {related.name}
                   </h3>
                   <p className="mt-3 text-sm leading-6 text-q-muted">
                     {related.description}
                   </p>
-                  <div className="mt-4 text-sm font-medium text-blue-500">
+                  <div className="mt-4 text-sm font-medium text-blue-500 transition-transform duration-200 group-hover:translate-x-1">
                     Open AI tool →
                   </div>
                 </Link>

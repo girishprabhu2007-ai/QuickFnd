@@ -12,7 +12,7 @@ type FAQItem = {
   answer: string;
 };
 
-type SEOSectionData = {
+export type SEOSectionData = {
   categoryLabel: string;
   categoryPath: string;
   categoryTitle: string;
@@ -25,17 +25,6 @@ type SEOSectionData = {
   breadcrumbs: BreadcrumbItem[];
   applicationCategory: string;
 };
-
-function titleCaseFromSlug(slug: string) {
-  return slug
-    .split("-")
-    .filter(Boolean)
-    .map((part) => {
-      if (part.toLowerCase() === "ai") return "AI";
-      return part.charAt(0).toUpperCase() + part.slice(1);
-    })
-    .join(" ");
-}
 
 function getCategoryTitle(table: PublicTable) {
   if (table === "tools") return "Tools";
@@ -51,11 +40,11 @@ function getApplicationCategory(table: PublicTable) {
 
 function buildIntro(table: PublicTable, item: PublicContentItem) {
   if (table === "tools") {
-    return `${item.name} is a browser-based QuickFnd tool designed to help you complete a focused task quickly and with less manual work. It works directly in your browser, is easy to reuse, and is accessible across desktop and mobile devices.`;
+    return `${item.name} is a browser-based QuickFnd tool designed to help you complete a focused task quickly with less manual work. It runs directly in the browser and is easy to reuse across desktop and mobile devices.`;
   }
 
   if (table === "calculators") {
-    return `${item.name} is a QuickFnd calculator built for fast input, instant results, and easier decision-making. It helps reduce manual calculation effort and gives you a cleaner way to estimate common values online.`;
+    return `${item.name} is a QuickFnd calculator built for fast input, instant results, and easier online decision-making. It helps reduce manual calculation effort and gives users a cleaner way to estimate common values.`;
   }
 
   return `${item.name} is an AI-focused QuickFnd page built to help users discover or use a specific AI workflow. Depending on the page, it may include an interactive interface, structured supporting content, and links to related AI tools.`;
@@ -64,10 +53,10 @@ function buildIntro(table: PublicTable, item: PublicContentItem) {
 function buildBenefits(table: PublicTable, item: PublicContentItem) {
   if (table === "tools") {
     return [
-      `Use ${item.name.toLowerCase()} directly in your browser with no software installation.`,
+      `Use ${item.name.toLowerCase()} directly in your browser without installing extra software.`,
       `Complete repeat tasks faster with a focused and lightweight interface.`,
       `Access a dedicated public page that is easy to bookmark and revisit.`,
-      `Move into related QuickFnd tools for adjacent tasks and workflows.`,
+      `Discover related QuickFnd tools for adjacent tasks and workflows.`,
     ];
   }
 
@@ -75,8 +64,8 @@ function buildBenefits(table: PublicTable, item: PublicContentItem) {
     return [
       `Calculate results quickly with fewer manual steps.`,
       `Reduce common arithmetic mistakes compared with hand calculation.`,
-      `Use a clean interface that works well on both desktop and mobile.`,
-      `Compare related QuickFnd calculators for broader planning.`,
+      `Use a clean interface that works well on desktop and mobile.`,
+      `Continue into related QuickFnd calculators for broader comparison.`,
     ];
   }
 
@@ -109,7 +98,7 @@ function buildSteps(table: PublicTable, item: PublicContentItem) {
 
   return [
     `Open the ${item.name} page and review the available interface or tool details.`,
-    `Enter your prompt, request, or task if the page includes an interactive AI engine.`,
+    `Enter your request if the page includes an interactive AI engine.`,
     `Review the output and refine your input if you want better results.`,
     `Explore related AI tools on QuickFnd to continue the workflow.`,
   ];
@@ -230,7 +219,7 @@ export function buildSEOSectionData(
     breadcrumbs: [
       { name: "Home", url: siteUrl },
       { name: categoryTitle, url: `${siteUrl}${categoryPath}` },
-      { name: item.name || titleCaseFromSlug(item.slug), url: pageUrl },
+      { name: item.name, url: pageUrl },
     ],
     applicationCategory: getApplicationCategory(table),
   };

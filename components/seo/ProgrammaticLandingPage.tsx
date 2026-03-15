@@ -137,9 +137,7 @@ export default function ProgrammaticLandingPage({
 
           <aside className="space-y-6">
             <section className="rounded-2xl border border-q-border bg-q-card p-6">
-              <h2 className="text-xl font-semibold text-q-text">
-                Main page
-              </h2>
+              <h2 className="text-xl font-semibold text-q-text">Main page</h2>
               <p className="mt-3 text-sm leading-7 text-q-muted">
                 This topic page is built around <strong>{item.name}</strong>.
               </p>
@@ -152,9 +150,7 @@ export default function ProgrammaticLandingPage({
             </section>
 
             <section className="rounded-2xl border border-q-border bg-q-card p-6">
-              <h2 className="text-xl font-semibold text-q-text">
-                Related pages
-              </h2>
+              <h2 className="text-xl font-semibold text-q-text">Related pages</h2>
 
               {relatedItems.length === 0 ? (
                 <p className="mt-3 text-sm leading-7 text-q-muted">
