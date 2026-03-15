@@ -14,6 +14,9 @@ export type ToolEngineType =
   | "text-case-converter"
   | "code-formatter"
   | "code-snippet-manager"
+  | "text-transformer"
+  | "number-generator"
+  | "unit-converter"
   | "generic-directory";
 
 export type CalculatorEngineType =
@@ -22,6 +25,8 @@ export type CalculatorEngineType =
   | "loan-calculator"
   | "emi-calculator"
   | "percentage-calculator"
+  | "simple-interest-calculator"
+  | "gst-calculator"
   | "generic-directory";
 
 export type AIToolEngineType =
@@ -58,6 +63,9 @@ export const ENGINE_OPTIONS: Record<EngineCategory, EngineOption[]> = {
     { value: "text-case-converter", label: "Text Case Converter" },
     { value: "code-formatter", label: "Code Formatter" },
     { value: "code-snippet-manager", label: "Code Snippet Manager" },
+    { value: "text-transformer", label: "Text Transformer (Config)" },
+    { value: "number-generator", label: "Number Generator (Config)" },
+    { value: "unit-converter", label: "Unit Converter (Config)" },
   ],
   calculator: [
     { value: "generic-directory", label: "Generic Directory Page" },
@@ -66,6 +74,8 @@ export const ENGINE_OPTIONS: Record<EngineCategory, EngineOption[]> = {
     { value: "loan-calculator", label: "Loan Calculator" },
     { value: "emi-calculator", label: "EMI Calculator" },
     { value: "percentage-calculator", label: "Percentage Calculator" },
+    { value: "simple-interest-calculator", label: "Simple Interest Calculator" },
+    { value: "gst-calculator", label: "GST Calculator" },
   ],
   "ai-tool": [
     { value: "generic-directory", label: "Generic Directory Page" },
@@ -112,10 +122,7 @@ export function inferEngineType(
     if (value === "json-formatter") return "json-formatter";
     if (value === "word-counter") return "word-counter";
     if (value.includes("uuid")) return "uuid-generator";
-    if (
-      value === "slug-generator" ||
-      (value.includes("slug") && value.includes("generator"))
-    ) {
+    if (value === "slug-generator" || (value.includes("slug") && value.includes("generator"))) {
       return "slug-generator";
     }
     if (
@@ -132,15 +139,20 @@ export function inferEngineType(
     if (value === "text-case-converter" || value.includes("case-converter")) {
       return "text-case-converter";
     }
-    if (
-      value === "code-formatter" ||
-      value.includes("code-formatter") ||
-      value.includes("formatter")
-    ) {
+    if (value === "code-formatter" || value.includes("code-formatter")) {
       return "code-formatter";
     }
     if (value === "code-snippet-manager" || value.includes("snippet-manager")) {
       return "code-snippet-manager";
+    }
+    if (value.includes("text") && value.includes("transform")) {
+      return "text-transformer";
+    }
+    if (value.includes("number") && value.includes("generator")) {
+      return "number-generator";
+    }
+    if (value.includes("converter")) {
+      return "unit-converter";
     }
     return "generic-directory";
   }
@@ -155,6 +167,8 @@ export function inferEngineType(
     if (value === "percentage-calculator" || value.includes("percentage")) {
       return "percentage-calculator";
     }
+    if (value.includes("simple-interest")) return "simple-interest-calculator";
+    if (value === "gst-calculator" || value.includes("gst")) return "gst-calculator";
     return "generic-directory";
   }
 

@@ -1,54 +1,47 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import "./globals.css";
+import ThemeProvider from "@/components/theme/ThemeProvider";
+import SiteHeader from "@/components/layout/SiteHeader";
 
 export const metadata: Metadata = {
-  title: {
-    default: "QuickFnd",
-    template: "%s | QuickFnd",
-  },
-  description:
-    "QuickFnd is an all-in-one platform for online tools, calculators, and AI resources.",
+  title: "QuickFnd",
+  description: "Discover useful tools, calculators, and AI utilities.",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
+  const themeInitScript = `
+    (function() {
+      try {
+        var stored = localStorage.getItem("quickfnd-theme");
+        var prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+        var theme = stored === "light" || stored === "dark"
+          ? stored
+          : (prefersLight ? "light" : "dark");
+
+        document.documentElement.setAttribute("data-theme", theme);
+        if (theme === "dark") {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+      } catch (e) {}
+    })();
+  `;
+
   return (
-    <html lang="en">
-      <body className="bg-gray-950 text-white">
-        <header className="border-b border-gray-800 bg-gray-950/95 backdrop-blur">
-          <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-            <Link href="/" className="text-2xl font-bold">
-              QuickFnd
-            </Link>
-
-            <div className="flex items-center gap-6 text-sm text-gray-300">
-              <Link href="/" className="transition hover:text-white">
-                Home
-              </Link>
-              <Link href="/tools" className="transition hover:text-white">
-                Tools
-              </Link>
-              <Link href="/calculators" className="transition hover:text-white">
-                Calculators
-              </Link>
-              <Link href="/ai-tools" className="transition hover:text-white">
-                AI Tools
-              </Link>
-            </div>
-          </nav>
-        </header>
-
-        {children}
-
-        <footer className="mt-16 border-t border-gray-800">
-          <div className="mx-auto max-w-7xl px-6 py-6 text-sm text-gray-400">
-            © 2026 QuickFnd. All rights reserved.
+    <html lang="en" suppressHydrationWarning>
+      <body className="min-h-screen bg-q-bg text-q-text transition-colors">
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <ThemeProvider>
+          <div className="min-h-screen bg-q-bg text-q-text">
+            <SiteHeader />
+            {children}
           </div>
-        </footer>
+        </ThemeProvider>
       </body>
     </html>
   );

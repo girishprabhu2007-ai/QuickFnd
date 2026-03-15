@@ -49,6 +49,12 @@ function base64ToUnicode(value: string) {
   return decodeURIComponent(escape(atob(value)));
 }
 
+function asStringArray(value: unknown, fallback: string[]) {
+  if (!Array.isArray(value)) return fallback;
+  const items = value.map((v) => String(v).trim()).filter(Boolean);
+  return items.length ? items : fallback;
+}
+
 function PasswordGenerator() {
   const [length, setLength] = useState(16);
   const [useUppercase, setUseUppercase] = useState(true);
@@ -86,9 +92,7 @@ function PasswordGenerator() {
     <Card title="Password Generator">
       <div className="space-y-4">
         <div>
-          <label className="mb-2 block text-sm text-gray-300">
-            Length: {length}
-          </label>
+          <label className="mb-2 block text-sm text-gray-300">Length: {length}</label>
           <input
             type="range"
             min={6}
@@ -101,51 +105,28 @@ function PasswordGenerator() {
 
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="flex items-center gap-2 text-sm text-gray-300">
-            <input
-              type="checkbox"
-              checked={useUppercase}
-              onChange={(e) => setUseUppercase(e.target.checked)}
-            />
+            <input type="checkbox" checked={useUppercase} onChange={(e) => setUseUppercase(e.target.checked)} />
             Uppercase
           </label>
           <label className="flex items-center gap-2 text-sm text-gray-300">
-            <input
-              type="checkbox"
-              checked={useLowercase}
-              onChange={(e) => setUseLowercase(e.target.checked)}
-            />
+            <input type="checkbox" checked={useLowercase} onChange={(e) => setUseLowercase(e.target.checked)} />
             Lowercase
           </label>
           <label className="flex items-center gap-2 text-sm text-gray-300">
-            <input
-              type="checkbox"
-              checked={useNumbers}
-              onChange={(e) => setUseNumbers(e.target.checked)}
-            />
+            <input type="checkbox" checked={useNumbers} onChange={(e) => setUseNumbers(e.target.checked)} />
             Numbers
           </label>
           <label className="flex items-center gap-2 text-sm text-gray-300">
-            <input
-              type="checkbox"
-              checked={useSymbols}
-              onChange={(e) => setUseSymbols(e.target.checked)}
-            />
+            <input type="checkbox" checked={useSymbols} onChange={(e) => setUseSymbols(e.target.checked)} />
             Symbols
           </label>
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <button
-            onClick={generatePassword}
-            className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
-          >
+          <button onClick={generatePassword} className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700">
             Generate Password
           </button>
-          <button
-            onClick={() => copyText(password)}
-            disabled={!password}
-            className="rounded-xl bg-gray-800 px-4 py-2 font-medium text-white hover:bg-gray-700 disabled:opacity-50"
-          >
+          <button onClick={() => copyText(password)} disabled={!password} className="rounded-xl bg-gray-800 px-4 py-2 font-medium text-white hover:bg-gray-700 disabled:opacity-50">
             Copy
           </button>
         </div>
@@ -199,32 +180,18 @@ function JsonFormatter() {
         />
 
         <div className="flex flex-wrap gap-3">
-          <button
-            onClick={formatJson}
-            className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
-          >
+          <button onClick={formatJson} className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700">
             Format
           </button>
-          <button
-            onClick={minifyJson}
-            className="rounded-xl bg-gray-800 px-4 py-2 font-medium text-white hover:bg-gray-700"
-          >
+          <button onClick={minifyJson} className="rounded-xl bg-gray-800 px-4 py-2 font-medium text-white hover:bg-gray-700">
             Minify
           </button>
-          <button
-            onClick={() => copyText(output)}
-            disabled={!output}
-            className="rounded-xl bg-gray-800 px-4 py-2 font-medium text-white hover:bg-gray-700 disabled:opacity-50"
-          >
+          <button onClick={() => copyText(output)} disabled={!output} className="rounded-xl bg-gray-800 px-4 py-2 font-medium text-white hover:bg-gray-700 disabled:opacity-50">
             Copy Output
           </button>
         </div>
 
-        {error ? (
-          <div className="rounded-xl border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">
-            {error}
-          </div>
-        ) : null}
+        {error ? <div className="rounded-xl border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">{error}</div> : null}
 
         <textarea
           readOnly
@@ -247,12 +214,7 @@ function WordCounter() {
     const charactersNoSpaces = text.replace(/\s/g, "").length;
     const readingMinutes = words > 0 ? Math.max(1, Math.ceil(words / 200)) : 0;
 
-    return {
-      words,
-      characters,
-      charactersNoSpaces,
-      readingMinutes,
-    };
+    return { words, characters, charactersNoSpaces, readingMinutes };
   }, [text]);
 
   return (
@@ -334,11 +296,7 @@ function SlugGenerator() {
           placeholder="Enter text to convert into a URL slug"
           className="min-h-[140px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
         />
-        <button
-          onClick={() => copyText(output)}
-          disabled={!output}
-          className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-        >
+        <button onClick={() => copyText(output)} disabled={!output} className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50">
           Copy Slug
         </button>
         <textarea
@@ -532,11 +490,7 @@ function UrlEncoder() {
           placeholder="Enter text to URL-encode"
           className="min-h-[140px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
         />
-        <button
-          onClick={() => copyText(output)}
-          disabled={!output}
-          className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-        >
+        <button onClick={() => copyText(output)} disabled={!output} className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50">
           Copy Encoded Output
         </button>
         <textarea
@@ -615,7 +569,6 @@ function TextCaseConverter() {
           placeholder="Enter text to transform"
           className="min-h-[160px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
         />
-
         <div className="grid gap-4">
           <div className="rounded-xl border border-gray-800 bg-gray-950 p-4">
             <div className="mb-2 text-sm text-gray-400">lowercase</div>
@@ -786,6 +739,145 @@ function CodeSnippetManager() {
   );
 }
 
+function TextTransformer(config: Record<string, unknown>) {
+  const [input, setInput] = useState("");
+  const modes = asStringArray(config.modes, ["lowercase", "uppercase", "titlecase", "slug"]);
+  const title = String(config.title || "Text Transformer");
+
+  const output = useMemo(() => {
+    const result: Record<string, string> = {};
+
+    if (modes.includes("lowercase")) result.lowercase = input.toLowerCase();
+    if (modes.includes("uppercase")) result.uppercase = input.toUpperCase();
+    if (modes.includes("titlecase")) {
+      result.titlecase = input.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase());
+    }
+    if (modes.includes("slug")) result.slug = slugify(input);
+    if (modes.includes("trim")) result.trim = input.trim();
+
+    return result;
+  }, [input, modes]);
+
+  return (
+    <Card title={title}>
+      <div className="space-y-4">
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Enter text to transform"
+          className="min-h-[160px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+        />
+        <div className="grid gap-4">
+          {Object.entries(output).map(([key, value]) => (
+            <div key={key} className="rounded-xl border border-gray-800 bg-gray-950 p-4">
+              <div className="mb-2 text-sm text-gray-400">{key}</div>
+              <div className="break-words text-sm text-gray-200">{value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function NumberGenerator(config: Record<string, unknown>) {
+  const title = String(config.title || "Number Generator");
+  const minDefault = Number(config.min ?? 1);
+  const maxDefault = Number(config.max ?? 100);
+  const allowDecimal = Boolean(config.allowDecimal);
+
+  const [min, setMin] = useState(String(minDefault));
+  const [max, setMax] = useState(String(maxDefault));
+  const [result, setResult] = useState("");
+
+  function generateNumber() {
+    const minNum = Number(min);
+    const maxNum = Number(max);
+
+    if (!Number.isFinite(minNum) || !Number.isFinite(maxNum) || minNum > maxNum) {
+      setResult("Invalid range");
+      return;
+    }
+
+    const random = Math.random() * (maxNum - minNum) + minNum;
+    setResult(allowDecimal ? random.toFixed(2) : String(Math.floor(random)));
+  }
+
+  return (
+    <Card title={title}>
+      <div className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <input
+            type="number"
+            value={min}
+            onChange={(e) => setMin(e.target.value)}
+            placeholder="Minimum"
+            className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          />
+          <input
+            type="number"
+            value={max}
+            onChange={(e) => setMax(e.target.value)}
+            placeholder="Maximum"
+            className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+          />
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <button onClick={generateNumber} className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700">
+            Generate Number
+          </button>
+          <button onClick={() => copyText(result)} disabled={!result} className="rounded-xl bg-gray-800 px-4 py-2 font-medium text-white hover:bg-gray-700 disabled:opacity-50">
+            Copy
+          </button>
+        </div>
+        <textarea
+          readOnly
+          value={result}
+          placeholder="Generated number"
+          className="min-h-[110px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+        />
+      </div>
+    </Card>
+  );
+}
+
+function UnitConverter(config: Record<string, unknown>) {
+  const title = String(config.title || "Unit Converter");
+  const fromUnit = String(config.fromUnit || "meters");
+  const toUnit = String(config.toUnit || "feet");
+  const multiplier = Number(config.multiplier ?? 3.28084);
+
+  const [input, setInput] = useState("");
+  const output = useMemo(() => {
+    const value = Number(input);
+    if (!Number.isFinite(value)) return "";
+    return (value * multiplier).toFixed(4);
+  }, [input, multiplier]);
+
+  return (
+    <Card title={title}>
+      <div className="space-y-4">
+        <div className="text-sm text-gray-400">
+          Convert {fromUnit} to {toUnit}
+        </div>
+        <input
+          type="number"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder={`Enter value in ${fromUnit}`}
+          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+        />
+        <textarea
+          readOnly
+          value={output ? `${output} ${toUnit}` : ""}
+          placeholder="Converted output"
+          className="min-h-[110px] w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+        />
+      </div>
+    </Card>
+  );
+}
+
 function GenericTool() {
   return (
     <Card title="Tool Interface">
@@ -799,6 +891,7 @@ function GenericTool() {
 
 export default function BuiltInToolClient({ item }: Props) {
   const engine = item.engine_type || inferEngineType("tool", item.slug);
+  const config = item.engine_config || {};
 
   if (engine === "password-generator") return <PasswordGenerator />;
   if (engine === "json-formatter") return <JsonFormatter />;
@@ -813,6 +906,9 @@ export default function BuiltInToolClient({ item }: Props) {
   if (engine === "text-case-converter") return <TextCaseConverter />;
   if (engine === "code-formatter") return <CodeFormatter />;
   if (engine === "code-snippet-manager") return <CodeSnippetManager />;
+  if (engine === "text-transformer") return <TextTransformer {...{ config }} />;
+  if (engine === "number-generator") return <NumberGenerator {...{ config }} />;
+  if (engine === "unit-converter") return <UnitConverter {...{ config }} />;
 
   return <GenericTool />;
 }

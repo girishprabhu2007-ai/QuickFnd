@@ -191,15 +191,9 @@ function LoanCalculator() {
         <div className="rounded-xl border border-gray-800 bg-gray-950 p-5 text-gray-300">
           {result ? (
             <div className="grid gap-2">
-              <div>
-                Monthly Payment: <strong>{result.monthly}</strong>
-              </div>
-              <div>
-                Total Payment: <strong>{result.total}</strong>
-              </div>
-              <div>
-                Total Interest: <strong>{result.interest}</strong>
-              </div>
+              <div>Monthly Payment: <strong>{result.monthly}</strong></div>
+              <div>Total Payment: <strong>{result.total}</strong></div>
+              <div>Total Interest: <strong>{result.interest}</strong></div>
             </div>
           ) : (
             "Enter loan values to calculate monthly payment."
@@ -272,15 +266,9 @@ function EMICalculator() {
         <div className="rounded-xl border border-gray-800 bg-gray-950 p-5 text-gray-300">
           {result ? (
             <div className="grid gap-2">
-              <div>
-                Monthly EMI: <strong>{result.emi}</strong>
-              </div>
-              <div>
-                Total Payment: <strong>{result.total}</strong>
-              </div>
-              <div>
-                Total Interest: <strong>{result.interest}</strong>
-              </div>
+              <div>Monthly EMI: <strong>{result.emi}</strong></div>
+              <div>Total Payment: <strong>{result.total}</strong></div>
+              <div>Total Interest: <strong>{result.interest}</strong></div>
             </div>
           ) : (
             "Enter EMI values to calculate payment."
@@ -304,15 +292,11 @@ function PercentageCalculator() {
       return "";
     }
 
-    if (mode === "of") {
-      return `${((first / 100) * second).toFixed(2)}`;
-    }
-
+    if (mode === "of") return `${((first / 100) * second).toFixed(2)}`;
     if (mode === "whatPercent") {
       if (second === 0) return "Cannot divide by zero";
       return `${((first / second) * 100).toFixed(2)}%`;
     }
-
     if (second === 0) return "Cannot divide by zero";
     return `${(((first - second) / second) * 100).toFixed(2)}%`;
   }, [mode, a, b]);
@@ -353,6 +337,139 @@ function PercentageCalculator() {
   );
 }
 
+function SimpleInterestCalculator(config: Record<string, unknown>) {
+  const title = String(config.title || "Simple Interest Calculator");
+  const [principal, setPrincipal] = useState("");
+  const [rate, setRate] = useState("");
+  const [time, setTime] = useState("");
+
+  const result = useMemo(() => {
+    const p = Number(principal);
+    const r = Number(rate);
+    const t = Number(time);
+
+    if (!p || !r || !t) return null;
+
+    const interest = (p * r * t) / 100;
+    const total = p + interest;
+
+    return {
+      interest: interest.toFixed(2),
+      total: total.toFixed(2),
+    };
+  }, [principal, rate, time]);
+
+  return (
+    <Card title={title}>
+      <div className="grid gap-4">
+        <input
+          type="number"
+          value={principal}
+          onChange={(e) => setPrincipal(e.target.value)}
+          placeholder="Principal amount"
+          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+        />
+        <input
+          type="number"
+          value={rate}
+          onChange={(e) => setRate(e.target.value)}
+          placeholder="Rate (%)"
+          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+        />
+        <input
+          type="number"
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+          placeholder="Time (years)"
+          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+        />
+        <div className="rounded-xl border border-gray-800 bg-gray-950 p-5 text-gray-300">
+          {result ? (
+            <div className="grid gap-2">
+              <div>Interest: <strong>{result.interest}</strong></div>
+              <div>Total Amount: <strong>{result.total}</strong></div>
+            </div>
+          ) : (
+            "Enter values to calculate simple interest."
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function GSTCalculator(config: Record<string, unknown>) {
+  const title = String(config.title || "GST Calculator");
+  const defaultRate = Number(config.defaultRate ?? 18);
+
+  const [amount, setAmount] = useState("");
+  const [rate, setRate] = useState(String(defaultRate));
+  const [mode, setMode] = useState<"add" | "remove">("add");
+
+  const result = useMemo(() => {
+    const amt = Number(amount);
+    const gstRate = Number(rate);
+
+    if (!amt || !gstRate) return null;
+
+    if (mode === "add") {
+      const gst = (amt * gstRate) / 100;
+      return {
+        gst: gst.toFixed(2),
+        total: (amt + gst).toFixed(2),
+      };
+    }
+
+    const base = amt / (1 + gstRate / 100);
+    const gst = amt - base;
+    return {
+      gst: gst.toFixed(2),
+      total: base.toFixed(2),
+    };
+  }, [amount, rate, mode]);
+
+  return (
+    <Card title={title}>
+      <div className="grid gap-4">
+        <select
+          value={mode}
+          onChange={(e) => setMode(e.target.value as "add" | "remove")}
+          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+        >
+          <option value="add">Add GST</option>
+          <option value="remove">Remove GST</option>
+        </select>
+
+        <input
+          type="number"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="Amount"
+          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+        />
+        <input
+          type="number"
+          value={rate}
+          onChange={(e) => setRate(e.target.value)}
+          placeholder="GST rate (%)"
+          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+        />
+
+        <div className="rounded-xl border border-gray-800 bg-gray-950 p-5 text-gray-300">
+          {result ? (
+            <div className="grid gap-2">
+              <div>GST Amount: <strong>{result.gst}</strong></div>
+              <div>{mode === "add" ? "Total with GST" : "Base Amount"}: <strong>{result.total}</strong></div>
+            </div>
+          ) : (
+            "Enter values to calculate GST."
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 function GenericCalculator() {
   return (
     <Card title="Calculator Interface">
@@ -366,12 +483,15 @@ function GenericCalculator() {
 
 export default function BuiltInCalculatorClient({ item }: Props) {
   const engine = item.engine_type || inferEngineType("calculator", item.slug);
+  const config = item.engine_config || {};
 
   if (engine === "age-calculator") return <AgeCalculator />;
   if (engine === "bmi-calculator") return <BMICalculator />;
   if (engine === "loan-calculator") return <LoanCalculator />;
   if (engine === "emi-calculator") return <EMICalculator />;
   if (engine === "percentage-calculator") return <PercentageCalculator />;
+  if (engine === "simple-interest-calculator") return <SimpleInterestCalculator {...{ config }} />;
+  if (engine === "gst-calculator") return <GSTCalculator {...{ config }} />;
 
   return <GenericCalculator />;
 }

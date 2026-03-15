@@ -22,6 +22,10 @@ const saveRouteMap: Record<AdminCategory, string> = {
   "ai-tool": "/api/admin/add-ai-tool",
 };
 
+function prettyJson(value: unknown) {
+  return JSON.stringify(value ?? {}, null, 2);
+}
+
 export default function AdminGeneratePage() {
   const [topic, setTopic] = useState("");
   const [category, setCategory] = useState<AdminCategory>("tool");
@@ -37,6 +41,8 @@ export default function AdminGeneratePage() {
   const relatedSlugsText = useMemo(() => {
     return generated?.related_slugs?.join(", ") ?? "";
   }, [generated]);
+
+  const engineOptions = ENGINE_OPTIONS[category];
 
   async function handleGenerate() {
     setError("");
@@ -72,7 +78,7 @@ export default function AdminGeneratePage() {
       }
 
       setGenerated(data.item);
-      setEngineConfigText(JSON.stringify(data.item.engine_config || {}, null, 2));
+      setEngineConfigText(prettyJson(data.item.engine_config));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate content.");
     } finally {
@@ -135,7 +141,62 @@ export default function AdminGeneratePage() {
     });
   }
 
-  const engineOptions = ENGINE_OPTIONS[category];
+  function loadPresetConfig(nextEngine: string) {
+    if (nextEngine === "text-transformer") {
+      setEngineConfigText(
+        prettyJson({
+          title: "Text Transformer",
+          modes: ["lowercase", "uppercase", "titlecase", "slug"],
+        })
+      );
+      return;
+    }
+
+    if (nextEngine === "number-generator") {
+      setEngineConfigText(
+        prettyJson({
+          title: "Random Number Generator",
+          min: 1,
+          max: 100,
+          allowDecimal: false,
+        })
+      );
+      return;
+    }
+
+    if (nextEngine === "unit-converter") {
+      setEngineConfigText(
+        prettyJson({
+          title: "Meters to Feet Converter",
+          fromUnit: "meters",
+          toUnit: "feet",
+          multiplier: 3.28084,
+        })
+      );
+      return;
+    }
+
+    if (nextEngine === "simple-interest-calculator") {
+      setEngineConfigText(
+        prettyJson({
+          title: "Simple Interest Calculator",
+        })
+      );
+      return;
+    }
+
+    if (nextEngine === "gst-calculator") {
+      setEngineConfigText(
+        prettyJson({
+          title: "GST Calculator",
+          defaultRate: 18,
+        })
+      );
+      return;
+    }
+
+    setEngineConfigText("{}");
+  }
 
   return (
     <div className="grid gap-8 lg:grid-cols-[420px_1fr]">
@@ -147,9 +208,7 @@ export default function AdminGeneratePage() {
 
         <div className="mt-6 space-y-5">
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-200">
-              Topic
-            </label>
+            <label className="mb-2 block text-sm font-medium text-gray-200">Topic</label>
             <input
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
@@ -159,9 +218,7 @@ export default function AdminGeneratePage() {
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-200">
-              Category
-            </label>
+            <label className="mb-2 block text-sm font-medium text-gray-200">Category</label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as AdminCategory)}
@@ -219,10 +276,7 @@ export default function AdminGeneratePage() {
                   updateGenerated("name", nextName);
                   if (!generated.slug.trim() || generated.slug === slugify(generated.name)) {
                     updateGenerated("slug", nextSlug);
-                    updateGenerated(
-                      "engine_type",
-                      inferEngineType(category, nextSlug) as EngineType | null
-                    );
+                    updateGenerated("engine_type", inferEngineType(category, nextSlug) as EngineType | null);
                   }
                 }}
                 className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-white outline-none"
@@ -236,24 +290,20 @@ export default function AdminGeneratePage() {
                 onChange={(e) => {
                   const nextSlug = slugify(e.target.value);
                   updateGenerated("slug", nextSlug);
-                  updateGenerated(
-                    "engine_type",
-                    inferEngineType(category, nextSlug) as EngineType | null
-                  );
+                  updateGenerated("engine_type", inferEngineType(category, nextSlug) as EngineType | null);
                 }}
                 className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-white outline-none"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-200">
-                Engine type
-              </label>
+              <label className="mb-2 block text-sm font-medium text-gray-200">Engine type</label>
               <select
                 value={generated.engine_type || "generic-directory"}
-                onChange={(e) =>
-                  updateGenerated("engine_type", e.target.value as EngineType)
-                }
+                onChange={(e) => {
+                  updateGenerated("engine_type", e.target.value as EngineType);
+                  loadPresetConfig(e.target.value);
+                }}
                 className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-white outline-none"
               >
                 {engineOptions.map((option) => (
@@ -265,11 +315,9 @@ export default function AdminGeneratePage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-200">
-                Engine config (JSON)
-              </label>
+              <label className="mb-2 block text-sm font-medium text-gray-200">Engine config (JSON)</label>
               <textarea
-                rows={6}
+                rows={8}
                 value={engineConfigText}
                 onChange={(e) => setEngineConfigText(e.target.value)}
                 className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-white outline-none"
@@ -290,9 +338,7 @@ export default function AdminGeneratePage() {
               <label className="mb-2 block text-sm font-medium text-gray-200">Related slugs</label>
               <input
                 value={relatedSlugsText}
-                onChange={(e) =>
-                  updateGenerated("related_slugs", normalizeRelatedSlugs(e.target.value))
-                }
+                onChange={(e) => updateGenerated("related_slugs", normalizeRelatedSlugs(e.target.value))}
                 placeholder="comma-separated-slugs"
                 className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-white outline-none"
               />

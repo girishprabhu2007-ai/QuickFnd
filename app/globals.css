@@ -1,26 +1,126 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --q-bg: #f8fafc;
+  --q-card: #ffffff;
+  --q-card-hover: #f1f5f9;
+  --q-border: #dbe4ee;
+  --q-text: #0f172a;
+  --q-muted: #475569;
+  --q-primary: #2563eb;
+  --q-primary-hover: #1d4ed8;
+  --q-success: #059669;
+  --q-success-hover: #047857;
+  --q-danger-bg: rgba(127, 29, 29, 0.08);
+  --q-danger-border: rgba(127, 29, 29, 0.28);
+  --q-danger-text: #b91c1c;
+  --q-success-bg: rgba(6, 95, 70, 0.08);
+  --q-success-border: rgba(6, 95, 70, 0.28);
+  --q-success-text: #047857;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.dark:root,
+html.dark {
+  --q-bg: #030712;
+  --q-card: #0f172a;
+  --q-card-hover: #111c33;
+  --q-border: #1f2937;
+  --q-text: #ffffff;
+  --q-muted: #94a3b8;
+  --q-primary: #2563eb;
+  --q-primary-hover: #1d4ed8;
+  --q-success: #059669;
+  --q-success-hover: #047857;
+  --q-danger-bg: rgba(127, 29, 29, 0.35);
+  --q-danger-border: rgba(127, 29, 29, 0.6);
+  --q-danger-text: #fca5a5;
+  --q-success-bg: rgba(6, 95, 70, 0.35);
+  --q-success-border: rgba(6, 95, 70, 0.6);
+  --q-success-text: #86efac;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--q-bg);
+  color: var(--q-text);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.bg-q-bg {
+  background-color: var(--q-bg);
+}
+
+.bg-q-card {
+  background-color: var(--q-card);
+}
+
+.bg-q-card-hover {
+  background-color: var(--q-card-hover);
+}
+
+.border-q-border {
+  border-color: var(--q-border);
+}
+
+.text-q-text {
+  color: var(--q-text);
+}
+
+.text-q-muted {
+  color: var(--q-muted);
+}
+
+.bg-q-primary {
+  background-color: var(--q-primary);
+}
+
+.hover\:bg-q-primary-hover:hover {
+  background-color: var(--q-primary-hover);
+}
+
+.bg-q-success {
+  background-color: var(--q-success);
+}
+
+.hover\:bg-q-success-hover:hover {
+  background-color: var(--q-success-hover);
+}
+
+.bg-q-danger-soft {
+  background-color: var(--q-danger-bg);
+}
+
+.border-q-danger {
+  border-color: var(--q-danger-border);
+}
+
+.text-q-danger {
+  color: var(--q-danger-text);
+}
+
+.bg-q-success-soft {
+  background-color: var(--q-success-bg);
+}
+
+.border-q-success {
+  border-color: var(--q-success-border);
+}
+
+.text-q-success {
+  color: var(--q-success-text);
+}
+
+input,
+textarea,
+select {
+  color: var(--q-text);
 }

@@ -28,6 +28,52 @@ type BulkItem = GeneratedAdminContent & {
   engineConfigText: string;
 };
 
+function prettyJson(value: unknown) {
+  return JSON.stringify(value ?? {}, null, 2);
+}
+
+function presetConfig(engine: string) {
+  if (engine === "text-transformer") {
+    return {
+      title: "Text Transformer",
+      modes: ["lowercase", "uppercase", "titlecase", "slug"],
+    };
+  }
+
+  if (engine === "number-generator") {
+    return {
+      title: "Random Number Generator",
+      min: 1,
+      max: 100,
+      allowDecimal: false,
+    };
+  }
+
+  if (engine === "unit-converter") {
+    return {
+      title: "Meters to Feet Converter",
+      fromUnit: "meters",
+      toUnit: "feet",
+      multiplier: 3.28084,
+    };
+  }
+
+  if (engine === "simple-interest-calculator") {
+    return {
+      title: "Simple Interest Calculator",
+    };
+  }
+
+  if (engine === "gst-calculator") {
+    return {
+      title: "GST Calculator",
+      defaultRate: 18,
+    };
+  }
+
+  return {};
+}
+
 export default function AdminBulkGeneratePage() {
   const [theme, setTheme] = useState("");
   const [category, setCategory] = useState<AdminCategory>("tool");
@@ -94,7 +140,7 @@ export default function AdminBulkGeneratePage() {
           ...item,
           localId: `${Date.now()}-${index}-${item.slug}`,
           selected: true,
-          engineConfigText: JSON.stringify(item.engine_config || {}, null, 2),
+          engineConfigText: prettyJson(item.engine_config),
         })
       );
 
@@ -152,7 +198,9 @@ export default function AdminBulkGeneratePage() {
       }
 
       if (successCount > 0) {
-        setSuccess(`Saved ${successCount} item${successCount === 1 ? "" : "s"} successfully.`);
+        setSuccess(
+          `Saved ${successCount} item${successCount === 1 ? "" : "s"} successfully.`
+        );
       }
 
       if (failed.length > 0) {
@@ -208,7 +256,9 @@ export default function AdminBulkGeneratePage() {
               min={2}
               max={25}
               value={count}
-              onChange={(e) => setCount(Math.max(2, Math.min(25, Number(e.target.value) || 2)))}
+              onChange={(e) =>
+                setCount(Math.max(2, Math.min(25, Number(e.target.value) || 2)))
+              }
               className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-white outline-none"
             />
           </div>
@@ -220,7 +270,7 @@ export default function AdminBulkGeneratePage() {
             <input
               value={theme}
               onChange={(e) => setTheme(e.target.value)}
-              placeholder="e.g. developer utilities, finance calculators, SEO AI tools"
+              placeholder="e.g. text utilities, finance calculators, dev tools"
               className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-white outline-none"
             />
           </div>
@@ -367,6 +417,7 @@ export default function AdminBulkGeneratePage() {
                       onChange={(e) =>
                         replaceItem(item.localId, {
                           engine_type: e.target.value as EngineType,
+                          engineConfigText: prettyJson(presetConfig(e.target.value)),
                         })
                       }
                       className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none"

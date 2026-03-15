@@ -99,6 +99,9 @@ url-decoder
 text-case-converter
 code-formatter
 code-snippet-manager
+text-transformer
+number-generator
+unit-converter
 generic-directory`;
   }
 
@@ -109,6 +112,8 @@ bmi-calculator
 loan-calculator
 emi-calculator
 percentage-calculator
+simple-interest-calculator
+gst-calculator
 generic-directory`;
   }
 
@@ -138,10 +143,7 @@ export async function POST(req: Request) {
       }
 
       if (!category || !["tool", "calculator", "ai-tool"].includes(category)) {
-        return NextResponse.json(
-          { error: "Valid category is required." },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "Valid category is required." }, { status: 400 });
       }
 
       const response = await client.responses.create({
@@ -169,7 +171,8 @@ Rules:
 - "slug" must be lowercase, hyphen-separated, URL-safe.
 - "description" should be 2 to 4 sentences, concise, useful, and SEO-friendly.
 - "related_slugs" should contain 3 to 6 realistic related slugs.
-- "engine_config" should usually be {} unless a small config is clearly useful.
+- "engine_config" should usually be {} unless a reusable config-driven engine is clearly useful.
+- Prefer reusable engines when appropriate.
 - If no specific engine fits, use "generic-directory".
 - ${getEnginePrompt(category)}
 - Do not include explanations outside the JSON.
@@ -185,10 +188,7 @@ Rules:
       const raw = response.output_text?.trim();
 
       if (!raw) {
-        return NextResponse.json(
-          { error: "No output returned from AI." },
-          { status: 500 }
-        );
+        return NextResponse.json({ error: "No output returned from AI." }, { status: 500 });
       }
 
       const item = parseAdminContent(raw, category);
@@ -223,10 +223,7 @@ Rules:
       }
 
       if (!category || !["tool", "calculator", "ai-tool"].includes(category)) {
-        return NextResponse.json(
-          { error: "Valid category is required." },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "Valid category is required." }, { status: 400 });
       }
 
       const response = await client.responses.create({
@@ -260,7 +257,8 @@ Rules:
 - "slug" must be lowercase, hyphen-separated, URL-safe.
 - "description" should be 2 to 4 sentences, concise, useful, and SEO-friendly.
 - "related_slugs" should contain 3 to 6 realistic related slugs.
-- "engine_config" should usually be {} unless a small config is clearly useful.
+- "engine_config" should usually be {} unless a reusable config-driven engine is clearly useful.
+- Prefer reusable engines when appropriate.
 - If no specific engine fits, use "generic-directory".
 - ${getEnginePrompt(category)}
 - Avoid duplicates.
@@ -277,10 +275,7 @@ Rules:
       const raw = response.output_text?.trim();
 
       if (!raw) {
-        return NextResponse.json(
-          { error: "No output returned from AI." },
-          { status: 500 }
-        );
+        return NextResponse.json({ error: "No output returned from AI." }, { status: 500 });
       }
 
       const items = parseBulkAdminContent(raw, category);
@@ -332,10 +327,7 @@ Tone: ${input.tone || ""}`;
     const output = response.output_text?.trim();
 
     if (!output) {
-      return NextResponse.json(
-        { error: "No output returned from AI." },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "No output returned from AI." }, { status: 500 });
     }
 
     return NextResponse.json({ result: output });
