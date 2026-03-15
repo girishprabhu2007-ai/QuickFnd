@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import BuiltInAIToolClient from "@/components/ai-tools/BuiltInAIToolClient";
+import JsonLd from "@/components/seo/JsonLd";
+import PageSEOSections from "@/components/seo/PageSEOSections";
 import { getContentItem, getRelatedContent } from "@/lib/db";
 import {
   buildMetaDescription,
@@ -9,6 +11,11 @@ import {
   getCategoryPath,
   getSiteUrl,
 } from "@/lib/content-pages";
+import {
+  buildBreadcrumbSchema,
+  buildFaqSchema,
+  buildSoftwareSchema,
+} from "@/lib/seo-content";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -69,7 +76,29 @@ export default async function AIToolDetailPage({ params }: Props) {
 
   return (
     <main className="min-h-screen bg-q-bg px-4 py-8 text-q-text sm:px-6 lg:px-8 lg:py-12">
+      <JsonLd
+        id="ai-tool-breadcrumb-schema"
+        data={buildBreadcrumbSchema("ai_tools", item)}
+      />
+      <JsonLd id="ai-tool-faq-schema" data={buildFaqSchema("ai_tools", item)} />
+      <JsonLd
+        id="ai-tool-software-schema"
+        data={buildSoftwareSchema("ai_tools", item)}
+      />
+
       <section className="mx-auto max-w-6xl">
+        <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm text-q-muted">
+          <Link href="/" className="hover:text-q-text">
+            Home
+          </Link>
+          <span>/</span>
+          <Link href="/ai-tools" className="hover:text-q-text">
+            AI Tools
+          </Link>
+          <span>/</span>
+          <span className="text-q-text">{item.name}</span>
+        </nav>
+
         <div className="mb-10">
           <Link
             href="/ai-tools"
@@ -139,6 +168,10 @@ export default async function AIToolDetailPage({ params }: Props) {
             </section>
           </aside>
         </div>
+
+        <section className="mt-10">
+          <PageSEOSections table="ai_tools" item={item} />
+        </section>
 
         <section className="mt-10">
           <h2 className="text-2xl font-semibold text-q-text">
