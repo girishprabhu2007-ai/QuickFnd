@@ -84,15 +84,14 @@ export default async function ToolDetailPage({ params }: Props) {
         </div>
 
         <div className="grid gap-8 lg:grid-cols-[1.3fr_0.7fr]">
-          <BuiltInToolClient slug={item.slug} />
+          <BuiltInToolClient item={item} />
 
           <aside className="space-y-6">
             <section className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
               <h2 className="text-xl font-semibold">About this tool</h2>
               <p className="mt-4 text-sm leading-7 text-gray-400">
                 {item.name} is available on QuickFnd as a live public page with
-                its own slug, metadata, and internal links. This structure keeps
-                the tool indexable and ready for future feature expansion.
+                its own slug, metadata, internal links, and engine-based rendering.
               </p>
             </section>
 
@@ -108,6 +107,10 @@ export default async function ToolDetailPage({ params }: Props) {
                   <dd className="mt-1 text-gray-200">Tool</dd>
                 </div>
                 <div>
+                  <dt className="text-gray-500">Engine</dt>
+                  <dd className="mt-1 text-gray-200">{item.engine_type || "auto"}</dd>
+                </div>
+                <div>
                   <dt className="text-gray-500">URL</dt>
                   <dd className="mt-1 break-all text-gray-200">
                     {getSiteUrl() + getCategoryPath("tools") + "/" + item.slug}
@@ -117,21 +120,6 @@ export default async function ToolDetailPage({ params }: Props) {
             </section>
           </aside>
         </div>
-
-        <section className="mt-10 rounded-2xl border border-gray-800 bg-gray-900 p-6">
-          <h2 className="text-2xl font-semibold">How to use</h2>
-          <div className="mt-4 grid gap-4 text-sm leading-7 text-gray-400 md:grid-cols-3">
-            <div className="rounded-xl border border-gray-800 bg-gray-950 p-4">
-              1. Open the tool interface and enter your input values.
-            </div>
-            <div className="rounded-xl border border-gray-800 bg-gray-950 p-4">
-              2. Run the action or calculation directly in the browser.
-            </div>
-            <div className="rounded-xl border border-gray-800 bg-gray-950 p-4">
-              3. Review the output and use related tools for the next step.
-            </div>
-          </div>
-        </section>
 
         <section className="mt-10">
           <h2 className="text-2xl font-semibold">Related tools</h2>

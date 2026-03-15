@@ -87,16 +87,15 @@ export default async function AIToolDetailPage({ params }: Props) {
         </div>
 
         <div className="grid gap-8 lg:grid-cols-[1.3fr_0.7fr]">
-          <BuiltInAIToolClient slug={item.slug} />
+          <BuiltInAIToolClient item={item} />
 
           <aside className="space-y-6">
             <section className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
               <h2 className="text-xl font-semibold">About this AI tool</h2>
               <p className="mt-4 text-sm leading-7 text-gray-400">
                 {item.name} is published as an indexable AI tool page on
-                QuickFnd. Interactive AI utilities continue to use your existing
-                `/api/ai/generate` route, while directory-style entries render as
-                content pages automatically.
+                QuickFnd. Interactive AI utilities use engine-based rendering,
+                while directory-style entries still work as searchable public pages.
               </p>
             </section>
 
@@ -112,6 +111,10 @@ export default async function AIToolDetailPage({ params }: Props) {
                   <dd className="mt-1 text-gray-200">AI Tool</dd>
                 </div>
                 <div>
+                  <dt className="text-gray-500">Engine</dt>
+                  <dd className="mt-1 text-gray-200">{item.engine_type || "auto"}</dd>
+                </div>
+                <div>
                   <dt className="text-gray-500">URL</dt>
                   <dd className="mt-1 break-all text-gray-200">
                     {getSiteUrl() + getCategoryPath("ai_tools") + "/" + item.slug}
@@ -121,21 +124,6 @@ export default async function AIToolDetailPage({ params }: Props) {
             </section>
           </aside>
         </div>
-
-        <section className="mt-10 rounded-2xl border border-gray-800 bg-gray-900 p-6">
-          <h2 className="text-2xl font-semibold">What this page supports</h2>
-          <div className="mt-4 grid gap-4 text-sm leading-7 text-gray-400 md:grid-cols-3">
-            <div className="rounded-xl border border-gray-800 bg-gray-950 p-4">
-              1. Interactive AI utilities for built-in QuickFnd AI tools.
-            </div>
-            <div className="rounded-xl border border-gray-800 bg-gray-950 p-4">
-              2. Searchable, SEO-friendly directory pages for AI listings.
-            </div>
-            <div className="rounded-xl border border-gray-800 bg-gray-950 p-4">
-              3. Internal linking between related AI tool pages.
-            </div>
-          </div>
-        </section>
 
         <section className="mt-10">
           <h2 className="text-2xl font-semibold">Related AI tools</h2>

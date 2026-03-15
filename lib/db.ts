@@ -5,15 +5,23 @@ import {
   type PublicContentItem,
   type PublicTable,
 } from "./content-pages";
+import {
+  normalizeEngineConfig,
+  type EngineType,
+} from "./engine-metadata";
 
-function normalizeItem(item: any): PublicContentItem {
+function normalizeItem(item: Record<string, unknown>): PublicContentItem {
   return {
-    id: item.id,
+    id: typeof item.id === "number" ? item.id : undefined,
     name: String(item.name || ""),
     slug: String(item.slug || ""),
     description: String(item.description || ""),
-    related_slugs: Array.isArray(item.related_slugs) ? item.related_slugs : [],
-    created_at: item.created_at || null,
+    related_slugs: Array.isArray(item.related_slugs)
+      ? item.related_slugs.map((value) => String(value))
+      : [],
+    engine_type: (item.engine_type as EngineType | null | undefined) ?? null,
+    engine_config: normalizeEngineConfig(item.engine_config),
+    created_at: typeof item.created_at === "string" ? item.created_at : null,
   };
 }
 
@@ -37,7 +45,11 @@ export async function getContentItems(table: PublicTable): Promise<PublicContent
     return getStaticItems(table);
   }
 
-  return mergeWithStaticItems(table, (data || []).map(normalizeItem));
+  const items = (data || []).map((item) =>
+    normalizeItem(item as Record<string, unknown>)
+  );
+
+  return mergeWithStaticItems(table, items);
 }
 
 export async function getContentItem(
@@ -51,7 +63,7 @@ export async function getContentItem(
     .maybeSingle();
 
   if (!error && data) {
-    return normalizeItem(data);
+    return normalizeItem(data as Record<string, unknown>);
   }
 
   if (error && error.code !== "PGRST116") {
@@ -84,7 +96,10 @@ export async function getRelatedContent(
     .select("*")
     .in("slug", cleaned);
 
-  const dbItems = !error && data ? data.map(normalizeItem) : [];
+  const dbItems = !error && data
+    ? data.map((item) => normalizeItem(item as Record<string, unknown>))
+    : [];
+
   const found = new Map(dbItems.map((item) => [item.slug, item]));
   const ordered: PublicContentItem[] = [];
 
@@ -111,7 +126,7 @@ export async function getAllContentSlugs(table: PublicTable): Promise<string[]> 
     error || !data
       ? []
       : data
-          .map((item: any) => String(item.slug || "").trim())
+          .map((item) => String((item as { slug?: string }).slug || "").trim())
           .filter(Boolean);
 
   const staticSlugs = getStaticItems(table).map((item) => item.slug);

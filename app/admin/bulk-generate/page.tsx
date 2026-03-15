@@ -2,10 +2,13 @@
 
 import { useMemo, useState } from "react";
 import type { AdminCategory, GeneratedAdminContent } from "@/lib/admin-content";
+import { normalizeRelatedSlugs, slugify } from "@/lib/admin-content";
 import {
-  normalizeRelatedSlugs,
-  slugify,
-} from "@/lib/admin-content";
+  ENGINE_OPTIONS,
+  inferEngineType,
+  normalizeEngineConfig,
+  type EngineType,
+} from "@/lib/engine-metadata";
 
 const categoryOptions: { label: string; value: AdminCategory }[] = [
   { label: "Tool", value: "tool" },
@@ -22,6 +25,7 @@ const saveRouteMap: Record<AdminCategory, string> = {
 type BulkItem = GeneratedAdminContent & {
   localId: string;
   selected: boolean;
+  engineConfigText: string;
 };
 
 export default function AdminBulkGeneratePage() {
@@ -40,6 +44,8 @@ export default function AdminBulkGeneratePage() {
     () => items.filter((item) => item.selected).length,
     [items]
   );
+
+  const engineOptions = ENGINE_OPTIONS[category];
 
   function replaceItem(localId: string, next: Partial<BulkItem>) {
     setItems((prev) =>
@@ -74,17 +80,21 @@ export default function AdminBulkGeneratePage() {
         }),
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as {
+        items?: GeneratedAdminContent[];
+        error?: string;
+      };
 
-      if (!response.ok) {
+      if (!response.ok || !Array.isArray(data.items)) {
         throw new Error(data?.error || "Failed to bulk generate content.");
       }
 
-      const nextItems: BulkItem[] = (data.items || []).map(
+      const nextItems: BulkItem[] = data.items.map(
         (item: GeneratedAdminContent, index: number) => ({
           ...item,
           localId: `${Date.now()}-${index}-${item.slug}`,
           selected: true,
+          engineConfigText: JSON.stringify(item.engine_config || {}, null, 2),
         })
       );
 
@@ -127,10 +137,12 @@ export default function AdminBulkGeneratePage() {
             slug: item.slug,
             description: item.description,
             related_slugs: item.related_slugs,
+            engine_type: item.engine_type,
+            engine_config: normalizeEngineConfig(item.engineConfigText),
           }),
         });
 
-        const data = await response.json();
+        const data = (await response.json()) as { error?: string };
 
         if (response.ok) {
           successCount += 1;
@@ -167,7 +179,6 @@ export default function AdminBulkGeneratePage() {
         <h2 className="text-2xl font-semibold text-white">Bulk Generate Content</h2>
         <p className="mt-2 max-w-3xl text-sm text-gray-400">
           Generate multiple tools, calculators, or AI tools at once from a single theme.
-          Review the output, edit anything you want, and save only the selected items.
         </p>
 
         <div className="mt-6 grid gap-5 md:grid-cols-3">
@@ -209,7 +220,7 @@ export default function AdminBulkGeneratePage() {
             <input
               value={theme}
               onChange={(e) => setTheme(e.target.value)}
-              placeholder="e.g. developer utilities, text tools, startup calculators, marketing AI tools"
+              placeholder="e.g. developer utilities, finance calculators, SEO AI tools"
               className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-white outline-none"
             />
           </div>
@@ -265,7 +276,7 @@ export default function AdminBulkGeneratePage() {
           <div>
             <h3 className="text-xl font-semibold text-white">Generated Items</h3>
             <p className="mt-1 text-sm text-gray-400">
-              Edit content before saving. Selected items will be inserted into the chosen category.
+              Edit content, engine type, and config before saving.
             </p>
           </div>
           <div className="text-sm text-gray-400">
@@ -316,10 +327,14 @@ export default function AdminBulkGeneratePage() {
                       value={item.name}
                       onChange={(e) => {
                         const nextName = e.target.value;
-                        const autoSlug = slugify(nextName);
+                        const nextSlug = slugify(nextName);
                         replaceItem(item.localId, {
                           name: nextName,
-                          slug: item.slug === slugify(item.name) ? autoSlug : item.slug,
+                          slug: item.slug === slugify(item.name) ? nextSlug : item.slug,
+                          engine_type:
+                            item.slug === slugify(item.name)
+                              ? (inferEngineType(category, nextSlug) as EngineType)
+                              : item.engine_type,
                         });
                       }}
                       className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none"
@@ -332,8 +347,47 @@ export default function AdminBulkGeneratePage() {
                     </label>
                     <input
                       value={item.slug}
+                      onChange={(e) => {
+                        const nextSlug = slugify(e.target.value);
+                        replaceItem(item.localId, {
+                          slug: nextSlug,
+                          engine_type: inferEngineType(category, nextSlug) as EngineType,
+                        });
+                      }}
+                      className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-gray-200">
+                      Engine type
+                    </label>
+                    <select
+                      value={item.engine_type || "generic-directory"}
                       onChange={(e) =>
-                        replaceItem(item.localId, { slug: slugify(e.target.value) })
+                        replaceItem(item.localId, {
+                          engine_type: e.target.value as EngineType,
+                        })
+                      }
+                      className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none"
+                    >
+                      {engineOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-gray-200">
+                      Engine config (JSON)
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={item.engineConfigText}
+                      onChange={(e) =>
+                        replaceItem(item.localId, { engineConfigText: e.target.value })
                       }
                       className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none"
                     />

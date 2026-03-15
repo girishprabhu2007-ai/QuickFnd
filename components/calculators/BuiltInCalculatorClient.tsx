@@ -1,9 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { PublicContentItem } from "@/lib/content-pages";
+import { inferEngineType } from "@/lib/engine-metadata";
 
 type Props = {
-  slug: string;
+  item: PublicContentItem;
 };
 
 function Card({
@@ -59,7 +61,6 @@ function AgeCalculator() {
           onChange={(e) => setBirthDate(e.target.value)}
           className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
         />
-
         <div className="rounded-xl border border-gray-800 bg-gray-950 p-5 text-gray-300">
           {result ? (
             <span>
@@ -113,7 +114,6 @@ function BMICalculator() {
           placeholder="Weight in kg"
           className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
         />
-
         <div className="rounded-xl border border-gray-800 bg-gray-950 p-5 text-gray-300">
           {result ? (
             <span>
@@ -188,7 +188,6 @@ function LoanCalculator() {
           placeholder="Repayment years"
           className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
         />
-
         <div className="rounded-xl border border-gray-800 bg-gray-950 p-5 text-gray-300">
           {result ? (
             <div className="grid gap-2">
@@ -211,20 +210,168 @@ function LoanCalculator() {
   );
 }
 
-function GenericCalculator() {
+function EMICalculator() {
+  const [principal, setPrincipal] = useState("");
+  const [annualRate, setAnnualRate] = useState("");
+  const [months, setMonths] = useState("");
+
+  const result = useMemo(() => {
+    const p = Number(principal);
+    const m = Number(months);
+    const monthlyRate = Number(annualRate) / 100 / 12;
+
+    if (!p || !m || m <= 0) return null;
+
+    if (monthlyRate === 0) {
+      const emi = p / m;
+      return {
+        emi: emi.toFixed(2),
+        total: (emi * m).toFixed(2),
+        interest: "0.00",
+      };
+    }
+
+    const emi =
+      (p * monthlyRate * Math.pow(1 + monthlyRate, m)) /
+      (Math.pow(1 + monthlyRate, m) - 1);
+
+    const total = emi * m;
+    const interest = total - p;
+
+    return {
+      emi: emi.toFixed(2),
+      total: total.toFixed(2),
+      interest: interest.toFixed(2),
+    };
+  }, [principal, annualRate, months]);
+
   return (
-    <Card title="Calculator Interface">
-      <div className="rounded-xl border border-gray-800 bg-gray-950 p-5 text-gray-300">
-        This calculator page is live and database-driven. You can add a custom
-        formula interface for this calculator later.
+    <Card title="EMI Calculator">
+      <div className="grid gap-4">
+        <input
+          type="number"
+          value={principal}
+          onChange={(e) => setPrincipal(e.target.value)}
+          placeholder="Loan amount"
+          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+        />
+        <input
+          type="number"
+          value={annualRate}
+          onChange={(e) => setAnnualRate(e.target.value)}
+          placeholder="Annual interest rate (%)"
+          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+        />
+        <input
+          type="number"
+          value={months}
+          onChange={(e) => setMonths(e.target.value)}
+          placeholder="Loan tenure in months"
+          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+        />
+        <div className="rounded-xl border border-gray-800 bg-gray-950 p-5 text-gray-300">
+          {result ? (
+            <div className="grid gap-2">
+              <div>
+                Monthly EMI: <strong>{result.emi}</strong>
+              </div>
+              <div>
+                Total Payment: <strong>{result.total}</strong>
+              </div>
+              <div>
+                Total Interest: <strong>{result.interest}</strong>
+              </div>
+            </div>
+          ) : (
+            "Enter EMI values to calculate payment."
+          )}
+        </div>
       </div>
     </Card>
   );
 }
 
-export default function BuiltInCalculatorClient({ slug }: Props) {
-  if (slug === "age-calculator") return <AgeCalculator />;
-  if (slug === "bmi-calculator") return <BMICalculator />;
-  if (slug === "loan-calculator") return <LoanCalculator />;
+function PercentageCalculator() {
+  const [mode, setMode] = useState<"of" | "whatPercent" | "change">("of");
+  const [a, setA] = useState("");
+  const [b, setB] = useState("");
+
+  const result = useMemo(() => {
+    const first = Number(a);
+    const second = Number(b);
+
+    if (!Number.isFinite(first) || !Number.isFinite(second) || a === "" || b === "") {
+      return "";
+    }
+
+    if (mode === "of") {
+      return `${((first / 100) * second).toFixed(2)}`;
+    }
+
+    if (mode === "whatPercent") {
+      if (second === 0) return "Cannot divide by zero";
+      return `${((first / second) * 100).toFixed(2)}%`;
+    }
+
+    if (second === 0) return "Cannot divide by zero";
+    return `${(((first - second) / second) * 100).toFixed(2)}%`;
+  }, [mode, a, b]);
+
+  return (
+    <Card title="Percentage Calculator">
+      <div className="grid gap-4">
+        <select
+          value={mode}
+          onChange={(e) => setMode(e.target.value as "of" | "whatPercent" | "change")}
+          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+        >
+          <option value="of">What is A% of B?</option>
+          <option value="whatPercent">A is what percent of B?</option>
+          <option value="change">Percentage change from B to A</option>
+        </select>
+
+        <input
+          type="number"
+          value={a}
+          onChange={(e) => setA(e.target.value)}
+          placeholder="Value A"
+          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+        />
+        <input
+          type="number"
+          value={b}
+          onChange={(e) => setB(e.target.value)}
+          placeholder="Value B"
+          className="w-full rounded-xl border border-gray-700 bg-gray-950 p-4 text-white outline-none"
+        />
+
+        <div className="rounded-xl border border-gray-800 bg-gray-950 p-5 text-gray-300">
+          Result: <strong>{result || "Enter values to calculate."}</strong>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function GenericCalculator() {
+  return (
+    <Card title="Calculator Interface">
+      <div className="rounded-xl border border-gray-800 bg-gray-950 p-5 text-gray-300">
+        This calculator page is live and database-driven. You can attach a
+        more specific calculator engine later.
+      </div>
+    </Card>
+  );
+}
+
+export default function BuiltInCalculatorClient({ item }: Props) {
+  const engine = item.engine_type || inferEngineType("calculator", item.slug);
+
+  if (engine === "age-calculator") return <AgeCalculator />;
+  if (engine === "bmi-calculator") return <BMICalculator />;
+  if (engine === "loan-calculator") return <LoanCalculator />;
+  if (engine === "emi-calculator") return <EMICalculator />;
+  if (engine === "percentage-calculator") return <PercentageCalculator />;
+
   return <GenericCalculator />;
 }

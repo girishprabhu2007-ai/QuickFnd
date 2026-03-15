@@ -5,6 +5,7 @@ import {
   type AdminCategory,
 } from "@/lib/admin-content";
 import { getAdminUser } from "@/lib/admin-auth";
+import { inferEngineType } from "@/lib/engine-metadata";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -46,16 +47,16 @@ type RequestBody = {
   };
 };
 
-function parseAdminContent(raw: string) {
+function parseAdminContent(raw: string, category: AdminCategory) {
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
-    return normalizeGeneratedContent(parsed);
+    return normalizeGeneratedContent(parsed, category);
   } catch {
     return null;
   }
 }
 
-function parseBulkAdminContent(raw: string) {
+function parseBulkAdminContent(raw: string, category: AdminCategory) {
   try {
     const parsed = JSON.parse(raw) as unknown;
 
@@ -74,12 +75,48 @@ function parseBulkAdminContent(raw: string) {
 
     return items
       .map((item: unknown) =>
-        normalizeGeneratedContent((item ?? {}) as Record<string, unknown>)
+        normalizeGeneratedContent((item ?? {}) as Record<string, unknown>, category)
       )
       .filter((item) => item.name && item.slug && item.description);
   } catch {
     return [];
   }
+}
+
+function getEnginePrompt(category: AdminCategory) {
+  if (category === "tool") {
+    return `Use one of these engine_type values when appropriate:
+password-generator
+json-formatter
+word-counter
+uuid-generator
+slug-generator
+random-string-generator
+base64-encoder
+base64-decoder
+url-encoder
+url-decoder
+text-case-converter
+code-formatter
+code-snippet-manager
+generic-directory`;
+  }
+
+  if (category === "calculator") {
+    return `Use one of these engine_type values when appropriate:
+age-calculator
+bmi-calculator
+loan-calculator
+emi-calculator
+percentage-calculator
+generic-directory`;
+  }
+
+  return `Use one of these engine_type values when appropriate:
+ai-prompt-generator
+ai-email-writer
+ai-blog-outline-generator
+generic-directory`;
 }
 
 export async function POST(req: Request) {
@@ -122,7 +159,9 @@ Required JSON shape:
   "name": "string",
   "slug": "string",
   "description": "string",
-  "related_slugs": ["string", "string", "string"]
+  "related_slugs": ["string", "string", "string"],
+  "engine_type": "string",
+  "engine_config": {}
 }
 
 Rules:
@@ -130,6 +169,9 @@ Rules:
 - "slug" must be lowercase, hyphen-separated, URL-safe.
 - "description" should be 2 to 4 sentences, concise, useful, and SEO-friendly.
 - "related_slugs" should contain 3 to 6 realistic related slugs.
+- "engine_config" should usually be {} unless a small config is clearly useful.
+- If no specific engine fits, use "generic-directory".
+- ${getEnginePrompt(category)}
 - Do not include explanations outside the JSON.
             `.trim(),
           },
@@ -149,13 +191,17 @@ Rules:
         );
       }
 
-      const item = parseAdminContent(raw);
+      const item = parseAdminContent(raw, category);
 
       if (!item || !item.name || !item.slug || !item.description) {
         return NextResponse.json(
           { error: "AI returned an invalid admin content payload." },
           { status: 500 }
         );
+      }
+
+      if (!item.engine_type) {
+        item.engine_type = inferEngineType(category, item.slug);
       }
 
       return NextResponse.json({ item });
@@ -200,7 +246,9 @@ Return this exact shape:
       "name": "string",
       "slug": "string",
       "description": "string",
-      "related_slugs": ["string", "string", "string"]
+      "related_slugs": ["string", "string", "string"],
+      "engine_type": "string",
+      "engine_config": {}
     }
   ]
 }
@@ -212,6 +260,9 @@ Rules:
 - "slug" must be lowercase, hyphen-separated, URL-safe.
 - "description" should be 2 to 4 sentences, concise, useful, and SEO-friendly.
 - "related_slugs" should contain 3 to 6 realistic related slugs.
+- "engine_config" should usually be {} unless a small config is clearly useful.
+- If no specific engine fits, use "generic-directory".
+- ${getEnginePrompt(category)}
 - Avoid duplicates.
 - Do not include explanations outside the JSON.
             `.trim(),
@@ -232,7 +283,7 @@ Rules:
         );
       }
 
-      const items = parseBulkAdminContent(raw);
+      const items = parseBulkAdminContent(raw, category);
 
       if (items.length === 0) {
         return NextResponse.json(

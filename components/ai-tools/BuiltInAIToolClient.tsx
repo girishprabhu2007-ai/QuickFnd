@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import type { PublicContentItem } from "@/lib/content-pages";
+import { inferEngineType } from "@/lib/engine-metadata";
 
 type Props = {
-  slug: string;
+  item: PublicContentItem;
 };
 
 function Card({
@@ -210,9 +212,7 @@ function AIBlogOutlineGenerator() {
 
       setResult(data.result || "");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to generate outline."
-      );
+      setError(err instanceof Error ? err.message : "Failed to generate outline.");
     } finally {
       setLoading(false);
     }
@@ -250,17 +250,18 @@ function GenericDirectoryCard() {
   return (
     <Card title="Directory Listing">
       <div className="rounded-xl border border-gray-800 bg-gray-950 p-5 text-gray-300">
-        This AI tool page is live as a searchable, indexable QuickFnd directory
-        entry. You can later extend this page with richer details, pricing,
-        FAQs, or external links.
+        This AI tool page is live as a searchable, indexable QuickFnd directory entry.
       </div>
     </Card>
   );
 }
 
-export default function BuiltInAIToolClient({ slug }: Props) {
-  if (slug === "ai-prompt-generator") return <AIPromptGenerator />;
-  if (slug === "ai-email-writer") return <AIEmailWriter />;
-  if (slug === "ai-blog-outline-generator") return <AIBlogOutlineGenerator />;
+export default function BuiltInAIToolClient({ item }: Props) {
+  const engine = item.engine_type || inferEngineType("ai-tool", item.slug);
+
+  if (engine === "ai-prompt-generator") return <AIPromptGenerator />;
+  if (engine === "ai-email-writer") return <AIEmailWriter />;
+  if (engine === "ai-blog-outline-generator") return <AIBlogOutlineGenerator />;
+
   return <GenericDirectoryCard />;
 }

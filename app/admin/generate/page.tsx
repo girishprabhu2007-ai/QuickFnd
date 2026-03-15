@@ -3,6 +3,12 @@
 import { useMemo, useState } from "react";
 import type { AdminCategory, GeneratedAdminContent } from "@/lib/admin-content";
 import { normalizeRelatedSlugs, slugify } from "@/lib/admin-content";
+import {
+  ENGINE_OPTIONS,
+  inferEngineType,
+  normalizeEngineConfig,
+  type EngineType,
+} from "@/lib/engine-metadata";
 
 const categoryOptions: { label: string; value: AdminCategory }[] = [
   { label: "Tool", value: "tool" },
@@ -20,8 +26,11 @@ export default function AdminGeneratePage() {
   const [topic, setTopic] = useState("");
   const [category, setCategory] = useState<AdminCategory>("tool");
   const [generated, setGenerated] = useState<GeneratedAdminContent | null>(null);
+  const [engineConfigText, setEngineConfigText] = useState("{}");
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -53,13 +62,17 @@ export default function AdminGeneratePage() {
         }),
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as {
+        item?: GeneratedAdminContent;
+        error?: string;
+      };
 
-      if (!response.ok) {
+      if (!response.ok || !data.item) {
         throw new Error(data?.error || "Failed to generate content.");
       }
 
       setGenerated(data.item);
+      setEngineConfigText(JSON.stringify(data.item.engine_config || {}, null, 2));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate content.");
     } finally {
@@ -89,10 +102,13 @@ export default function AdminGeneratePage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(generated),
+        body: JSON.stringify({
+          ...generated,
+          engine_config: normalizeEngineConfig(engineConfigText),
+        }),
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as { error?: string };
 
       if (!response.ok) {
         throw new Error(data?.error || "Failed to save content.");
@@ -101,6 +117,7 @@ export default function AdminGeneratePage() {
       setSuccess(`Saved successfully to ${category}.`);
       setTopic("");
       setGenerated(null);
+      setEngineConfigText("{}");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save content.");
     } finally {
@@ -117,6 +134,8 @@ export default function AdminGeneratePage() {
       return { ...prev, [key]: value };
     });
   }
+
+  const engineOptions = ENGINE_OPTIONS[category];
 
   return (
     <div className="grid gap-8 lg:grid-cols-[420px_1fr]">
@@ -196,9 +215,14 @@ export default function AdminGeneratePage() {
                 value={generated.name}
                 onChange={(e) => {
                   const nextName = e.target.value;
+                  const nextSlug = slugify(nextName);
                   updateGenerated("name", nextName);
                   if (!generated.slug.trim() || generated.slug === slugify(generated.name)) {
-                    updateGenerated("slug", slugify(nextName));
+                    updateGenerated("slug", nextSlug);
+                    updateGenerated(
+                      "engine_type",
+                      inferEngineType(category, nextSlug) as EngineType | null
+                    );
                   }
                 }}
                 className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-white outline-none"
@@ -209,7 +233,45 @@ export default function AdminGeneratePage() {
               <label className="mb-2 block text-sm font-medium text-gray-200">Slug</label>
               <input
                 value={generated.slug}
-                onChange={(e) => updateGenerated("slug", slugify(e.target.value))}
+                onChange={(e) => {
+                  const nextSlug = slugify(e.target.value);
+                  updateGenerated("slug", nextSlug);
+                  updateGenerated(
+                    "engine_type",
+                    inferEngineType(category, nextSlug) as EngineType | null
+                  );
+                }}
+                className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-white outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-200">
+                Engine type
+              </label>
+              <select
+                value={generated.engine_type || "generic-directory"}
+                onChange={(e) =>
+                  updateGenerated("engine_type", e.target.value as EngineType)
+                }
+                className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-white outline-none"
+              >
+                {engineOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-200">
+                Engine config (JSON)
+              </label>
+              <textarea
+                rows={6}
+                value={engineConfigText}
+                onChange={(e) => setEngineConfigText(e.target.value)}
                 className="w-full rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 text-white outline-none"
               />
             </div>

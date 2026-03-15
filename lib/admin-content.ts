@@ -1,3 +1,11 @@
+import {
+  normalizeEngineConfig,
+  normalizeEngineType,
+  type EngineCategory,
+  type EngineConfig,
+  type EngineType,
+} from "@/lib/engine-metadata";
+
 export type AdminCategory = "tool" | "calculator" | "ai-tool";
 
 export type GeneratedAdminContent = {
@@ -5,6 +13,8 @@ export type GeneratedAdminContent = {
   slug: string;
   description: string;
   related_slugs: string[];
+  engine_type: EngineType | null;
+  engine_config: EngineConfig;
 };
 
 export function slugify(value: string) {
@@ -47,17 +57,27 @@ export function normalizeRelatedSlugs(input: unknown): string[] {
 }
 
 export function normalizeGeneratedContent(
-  input: Partial<GeneratedAdminContent>
+  input: Partial<GeneratedAdminContent> & Record<string, unknown>,
+  category?: AdminCategory
 ): GeneratedAdminContent {
   const name = String(input.name || "").trim();
-  const slug = slugify(input.slug || input.name || "");
+  const slug = slugify(String(input.slug || input.name || ""));
   const description = String(input.description || "").trim();
   const related_slugs = normalizeRelatedSlugs(input.related_slugs);
+
+  const engineCategory: EngineCategory | undefined = category;
+  const engine_type = engineCategory
+    ? normalizeEngineType(engineCategory, input.engine_type, slug)
+    : null;
+
+  const engine_config = normalizeEngineConfig(input.engine_config);
 
   return {
     name,
     slug,
     description,
     related_slugs,
+    engine_type,
+    engine_config,
   };
 }

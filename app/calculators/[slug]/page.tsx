@@ -87,15 +87,14 @@ export default async function CalculatorDetailPage({ params }: Props) {
         </div>
 
         <div className="grid gap-8 lg:grid-cols-[1.3fr_0.7fr]">
-          <BuiltInCalculatorClient slug={item.slug} />
+          <BuiltInCalculatorClient item={item} />
 
           <aside className="space-y-6">
             <section className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
               <h2 className="text-xl font-semibold">About this calculator</h2>
               <p className="mt-4 text-sm leading-7 text-gray-400">
                 {item.name} is published as a live QuickFnd calculator page with
-                its own URL, metadata, and internal links. This lets the site
-                scale while keeping each calculator independently indexable.
+                metadata, internal links, and engine-based rendering.
               </p>
             </section>
 
@@ -111,6 +110,10 @@ export default async function CalculatorDetailPage({ params }: Props) {
                   <dd className="mt-1 text-gray-200">Calculator</dd>
                 </div>
                 <div>
+                  <dt className="text-gray-500">Engine</dt>
+                  <dd className="mt-1 text-gray-200">{item.engine_type || "auto"}</dd>
+                </div>
+                <div>
                   <dt className="text-gray-500">URL</dt>
                   <dd className="mt-1 break-all text-gray-200">
                     {getSiteUrl() + getCategoryPath("calculators") + "/" + item.slug}
@@ -120,21 +123,6 @@ export default async function CalculatorDetailPage({ params }: Props) {
             </section>
           </aside>
         </div>
-
-        <section className="mt-10 rounded-2xl border border-gray-800 bg-gray-900 p-6">
-          <h2 className="text-2xl font-semibold">How to use</h2>
-          <div className="mt-4 grid gap-4 text-sm leading-7 text-gray-400 md:grid-cols-3">
-            <div className="rounded-xl border border-gray-800 bg-gray-950 p-4">
-              1. Enter the required values into the calculator fields.
-            </div>
-            <div className="rounded-xl border border-gray-800 bg-gray-950 p-4">
-              2. Let the calculator process the inputs instantly in the browser.
-            </div>
-            <div className="rounded-xl border border-gray-800 bg-gray-950 p-4">
-              3. Review the result and explore related calculators if needed.
-            </div>
-          </div>
-        </section>
 
         <section className="mt-10">
           <h2 className="text-2xl font-semibold">Related calculators</h2>

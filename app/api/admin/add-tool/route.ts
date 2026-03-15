@@ -11,8 +11,15 @@ export async function POST(req: Request) {
   }
 
   try {
-    const body = await req.json();
-    const { name, slug, description, related_slugs } = normalizeGeneratedContent(body);
+    const body = (await req.json()) as Record<string, unknown>;
+    const {
+      name,
+      slug,
+      description,
+      related_slugs,
+      engine_type,
+      engine_config,
+    } = normalizeGeneratedContent(body, "tool");
 
     if (!name || !slug || !description) {
       return NextResponse.json(
@@ -22,7 +29,14 @@ export async function POST(req: Request) {
     }
 
     const { error } = await supabase.from("tools").insert([
-      { name, slug, description, related_slugs },
+      {
+        name,
+        slug,
+        description,
+        related_slugs,
+        engine_type,
+        engine_config,
+      },
     ]);
 
     if (error) {

@@ -1,3 +1,5 @@
+import type { EngineConfig, EngineType } from "@/lib/engine-metadata";
+
 export type PublicTable = "tools" | "calculators" | "ai_tools";
 
 export type PublicContentItem = {
@@ -6,6 +8,8 @@ export type PublicContentItem = {
   slug: string;
   description: string;
   related_slugs: string[];
+  engine_type?: EngineType | null;
+  engine_config?: EngineConfig;
   created_at?: string | null;
 };
 
@@ -14,78 +18,100 @@ const STATIC_TOOLS: PublicContentItem[] = [
     name: "Password Generator",
     slug: "password-generator",
     description:
-      "Create strong random passwords with customizable length and character settings. Useful for account security, development work, and quick password generation.",
+      "Create strong random passwords with customizable length and character settings.",
     related_slugs: ["json-formatter", "word-counter", "random-string-generator"],
+    engine_type: "password-generator",
+    engine_config: {},
   },
   {
     name: "JSON Formatter",
     slug: "json-formatter",
     description:
-      "Format, validate, and minify JSON instantly in the browser. Useful for debugging APIs, cleaning payloads, and improving readability.",
+      "Format, validate, and minify JSON instantly in the browser.",
     related_slugs: ["word-counter", "password-generator", "base64-encoder"],
+    engine_type: "json-formatter",
+    engine_config: {},
   },
   {
     name: "Word Counter",
     slug: "word-counter",
     description:
-      "Count words, characters, and reading time instantly. Useful for content writing, editing, blog drafts, and quick text analysis.",
+      "Count words, characters, and reading time instantly.",
     related_slugs: ["json-formatter", "password-generator", "text-case-converter"],
+    engine_type: "word-counter",
+    engine_config: {},
   },
   {
     name: "UUID Generator",
     slug: "uuid-generator",
     description:
-      "Generate UUID values instantly in the browser for development, identifiers, database entries, and testing workflows.",
+      "Generate UUID values instantly in the browser.",
     related_slugs: ["random-string-generator", "slug-generator", "password-generator"],
+    engine_type: "uuid-generator",
+    engine_config: {},
   },
   {
     name: "Slug Generator",
     slug: "slug-generator",
     description:
-      "Convert text into clean URL-friendly slugs instantly. Useful for SEO, CMS publishing, content systems, and developer workflows.",
+      "Convert text into clean URL-friendly slugs instantly.",
     related_slugs: ["text-case-converter", "url-encoder", "uuid-generator"],
+    engine_type: "slug-generator",
+    engine_config: {},
   },
   {
     name: "Random String Generator",
     slug: "random-string-generator",
     description:
-      "Generate random strings with adjustable length and character options for testing, tokens, placeholders, and development workflows.",
+      "Generate random strings with adjustable length and options.",
     related_slugs: ["uuid-generator", "password-generator", "base64-encoder"],
+    engine_type: "random-string-generator",
+    engine_config: {},
   },
   {
     name: "Base64 Encoder",
     slug: "base64-encoder",
     description:
-      "Encode text into Base64 instantly in the browser. Useful for data transformation, development, APIs, and quick encoding tasks.",
+      "Encode text into Base64 instantly in the browser.",
     related_slugs: ["base64-decoder", "url-encoder", "json-formatter"],
+    engine_type: "base64-encoder",
+    engine_config: {},
   },
   {
     name: "Base64 Decoder",
     slug: "base64-decoder",
     description:
-      "Decode Base64 text instantly in the browser. Useful for debugging payloads, inspecting encoded data, and development workflows.",
+      "Decode Base64 text instantly in the browser.",
     related_slugs: ["base64-encoder", "json-formatter", "url-decoder"],
+    engine_type: "base64-decoder",
+    engine_config: {},
   },
   {
     name: "URL Encoder",
     slug: "url-encoder",
     description:
-      "Encode text for safe use in URLs and query strings. Useful for developers, marketers, and quick web utility tasks.",
+      "Encode text for safe use in URLs and query strings.",
     related_slugs: ["url-decoder", "slug-generator", "base64-encoder"],
+    engine_type: "url-encoder",
+    engine_config: {},
   },
   {
     name: "URL Decoder",
     slug: "url-decoder",
     description:
-      "Decode URL-encoded text instantly to readable form. Useful for debugging links, query strings, and encoded parameters.",
+      "Decode URL-encoded text instantly to readable form.",
     related_slugs: ["url-encoder", "base64-decoder", "json-formatter"],
+    engine_type: "url-decoder",
+    engine_config: {},
   },
   {
     name: "Text Case Converter",
     slug: "text-case-converter",
     description:
-      "Convert text into lowercase, uppercase, title case, and slug case instantly. Useful for writing, formatting, and content workflows.",
+      "Convert text into lowercase, uppercase, title case, and slug case instantly.",
     related_slugs: ["slug-generator", "word-counter", "json-formatter"],
+    engine_type: "text-case-converter",
+    engine_config: {},
   },
 ];
 
@@ -94,22 +120,46 @@ const STATIC_CALCULATORS: PublicContentItem[] = [
     name: "Loan Calculator",
     slug: "loan-calculator",
     description:
-      "Estimate monthly loan payments based on principal, interest rate, and repayment period. Helpful for planning loans and comparing scenarios.",
-    related_slugs: ["bmi-calculator", "age-calculator"],
+      "Estimate monthly loan payments based on principal, interest rate, and repayment period.",
+    related_slugs: ["bmi-calculator", "age-calculator", "emi-calculator"],
+    engine_type: "loan-calculator",
+    engine_config: {},
   },
   {
     name: "BMI Calculator",
     slug: "bmi-calculator",
     description:
-      "Calculate body mass index from your height and weight. Useful for a quick health category estimate using standard BMI ranges.",
-    related_slugs: ["age-calculator", "loan-calculator"],
+      "Calculate body mass index from your height and weight.",
+    related_slugs: ["age-calculator", "loan-calculator", "percentage-calculator"],
+    engine_type: "bmi-calculator",
+    engine_config: {},
   },
   {
     name: "Age Calculator",
     slug: "age-calculator",
     description:
-      "Calculate age from a birth date in years, months, and days. Useful for forms, planning, and quick date-based calculations.",
+      "Calculate age from a birth date in years, months, and days.",
     related_slugs: ["bmi-calculator", "loan-calculator"],
+    engine_type: "age-calculator",
+    engine_config: {},
+  },
+  {
+    name: "EMI Calculator",
+    slug: "emi-calculator",
+    description:
+      "Calculate EMI, total payment, and total interest for a loan instantly.",
+    related_slugs: ["loan-calculator", "percentage-calculator"],
+    engine_type: "emi-calculator",
+    engine_config: {},
+  },
+  {
+    name: "Percentage Calculator",
+    slug: "percentage-calculator",
+    description:
+      "Calculate percentages, reverse percentages, and percentage change instantly.",
+    related_slugs: ["emi-calculator", "loan-calculator", "bmi-calculator"],
+    engine_type: "percentage-calculator",
+    engine_config: {},
   },
 ];
 
@@ -118,57 +168,28 @@ const STATIC_AI_TOOLS: PublicContentItem[] = [
     name: "AI Prompt Generator",
     slug: "ai-prompt-generator",
     description:
-      "Generate better prompts for AI tools based on your goal and desired style. Useful for improving outputs across writing, coding, and research tasks.",
+      "Generate better prompts for AI tools based on your goal and desired style.",
     related_slugs: ["ai-email-writer", "ai-blog-outline-generator"],
+    engine_type: "ai-prompt-generator",
+    engine_config: {},
   },
   {
     name: "AI Email Writer",
     slug: "ai-email-writer",
     description:
-      "Generate polished emails with AI using your purpose, recipient, and tone. Useful for business communication, outreach, and everyday writing.",
+      "Generate polished emails with AI using your purpose, recipient, and tone.",
     related_slugs: ["ai-prompt-generator", "ai-blog-outline-generator"],
+    engine_type: "ai-email-writer",
+    engine_config: {},
   },
   {
     name: "AI Blog Outline Generator",
     slug: "ai-blog-outline-generator",
     description:
-      "Create structured blog outlines with AI for a target audience and topic. Useful for content planning, SEO writing, and draft preparation.",
+      "Create structured blog outlines with AI for a target audience and topic.",
     related_slugs: ["ai-email-writer", "ai-prompt-generator"],
-  },
-  {
-    name: "ChatGPT",
-    slug: "chatgpt",
-    description:
-      "ChatGPT is a conversational AI assistant used for writing, research, coding, and productivity. This page serves as a directory listing within QuickFnd.",
-    related_slugs: ["claude", "perplexity", "notion-ai"],
-  },
-  {
-    name: "Claude",
-    slug: "claude",
-    description:
-      "Claude is an AI assistant used for writing, reasoning, and document work. This page serves as a directory listing within QuickFnd.",
-    related_slugs: ["chatgpt", "perplexity", "notion-ai"],
-  },
-  {
-    name: "Perplexity",
-    slug: "perplexity",
-    description:
-      "Perplexity is an AI-powered answer and research tool. This page serves as a directory listing within QuickFnd.",
-    related_slugs: ["chatgpt", "claude", "notion-ai"],
-  },
-  {
-    name: "Notion AI",
-    slug: "notion-ai",
-    description:
-      "Notion AI adds writing and productivity assistance inside Notion workflows. This page serves as a directory listing within QuickFnd.",
-    related_slugs: ["chatgpt", "claude", "perplexity"],
-  },
-  {
-    name: "Midjourney",
-    slug: "midjourney",
-    description:
-      "Midjourney is an image-generation platform for creative visual outputs. This page serves as a directory listing within QuickFnd.",
-    related_slugs: ["chatgpt", "claude", "perplexity"],
+    engine_type: "ai-blog-outline-generator",
+    engine_config: {},
   },
 ];
 
