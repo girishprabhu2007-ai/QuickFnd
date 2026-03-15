@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getCalculators } from "@/lib/db";
+import { getDisplayDescription } from "@/lib/display-content";
 
 export const revalidate = 300;
 
@@ -43,7 +44,7 @@ export default async function CalculatorsPage() {
                   {calculator.name}
                 </h2>
                 <p className="mt-3 text-sm leading-6 text-q-muted">
-                  {calculator.description}
+                  {getDisplayDescription("calculators", calculator, "card")}
                 </p>
                 <div className="mt-4 text-sm font-medium text-blue-500 transition-transform duration-200 group-hover:translate-x-1">
                   Open calculator →

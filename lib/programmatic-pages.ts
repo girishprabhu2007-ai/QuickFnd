@@ -96,7 +96,7 @@ function buildFaqs(
 function buildBenefits(table: PublicTable, item: PublicContentItem) {
   if (table === "tools") {
     return [
-      `Find ${item.name.toLowerCase()} through a more specific search-focused landing page.`,
+      `Find ${item.name} through a more specific search-focused landing page.`,
       `Jump quickly from discovery content into the main working tool.`,
       `Explore related QuickFnd tools from the same context.`,
     ];
@@ -104,14 +104,14 @@ function buildBenefits(table: PublicTable, item: PublicContentItem) {
 
   if (table === "calculators") {
     return [
-      `Reach ${item.name.toLowerCase()} from a more targeted calculator search query.`,
+      `Reach ${item.name} from a more targeted calculator search query.`,
       `Understand the calculator intent before opening the main calculator page.`,
       `Continue into related calculators for deeper comparison.`,
     ];
   }
 
   return [
-    `Discover ${item.name.toLowerCase()} from a more targeted AI search phrase.`,
+    `Discover ${item.name} from a more targeted AI search phrase.`,
     `Use a structured landing page before moving into the main AI tool page.`,
     `Explore adjacent AI workflows through related QuickFnd pages.`,
   ];
@@ -124,13 +124,13 @@ const TOOL_VARIANTS: Variant[] = [
     titleBuilder: (item) => `${item.name} Online | QuickFnd`,
     headingBuilder: (item) => `${item.name} Online`,
     descriptionBuilder: (item) =>
-      `Use ${item.name.toLowerCase()} online with QuickFnd. Explore the browser-based page, benefits, FAQs, and the main tool experience.`,
+      `Use ${item.name} online with QuickFnd. Explore the browser-based page, benefits, FAQs, and the main tool experience.`,
     introBuilder: (item) =>
       `${item.name} Online is a search-focused QuickFnd landing page designed for users who want to find and use the tool quickly in the browser.`,
   },
   {
     slugBuilder: (item) => `free-${item.slug}`,
-    keywordBuilder: (item) => `free ${item.name.toLowerCase()}`,
+    keywordBuilder: (item) => `free ${item.name}`,
     titleBuilder: (item) => `Free ${item.name} | QuickFnd`,
     headingBuilder: (item) => `Free ${item.name}`,
     descriptionBuilder: (item) =>
@@ -140,11 +140,11 @@ const TOOL_VARIANTS: Variant[] = [
   },
   {
     slugBuilder: (item) => `best-${item.slug}`,
-    keywordBuilder: (item) => `best ${item.name.toLowerCase()}`,
+    keywordBuilder: (item) => `best ${item.name}`,
     titleBuilder: (item) => `Best ${item.name} | QuickFnd`,
     headingBuilder: (item) => `Best ${item.name}`,
     descriptionBuilder: (item) =>
-      `Looking for the best ${item.name.toLowerCase()} experience? Explore QuickFnd's dedicated page, related tools, FAQs, and direct access.`,
+      `Looking for the best ${item.name} experience? Explore QuickFnd's dedicated page, related tools, FAQs, and direct access.`,
     introBuilder: (item) =>
       `Best ${item.name} is a QuickFnd landing page created for users comparing options and looking for a focused browser-based experience.`,
   },
@@ -157,7 +157,7 @@ const CALCULATOR_VARIANTS: Variant[] = [
     titleBuilder: (item) => `${item.name} Online | QuickFnd`,
     headingBuilder: (item) => `${item.name} Online`,
     descriptionBuilder: (item) =>
-      `Use ${item.name.toLowerCase()} online with QuickFnd. Discover the calculator, FAQs, benefits, and the main calculation page.`,
+      `Use ${item.name} online with QuickFnd. Discover the calculator, FAQs, benefits, and the main calculation page.`,
     introBuilder: (item) =>
       `${item.name} Online is a search-focused QuickFnd landing page designed for users who want to calculate results quickly in the browser.`,
   },
@@ -167,13 +167,13 @@ const CALCULATOR_VARIANTS: Variant[] = [
     titleBuilder: (item) => `${item.name} Formula | QuickFnd`,
     headingBuilder: (item) => `${item.name} Formula`,
     descriptionBuilder: (item) =>
-      `Explore ${item.name.toLowerCase()} formula intent with QuickFnd, then continue into the main calculator for fast online calculation.`,
+      `Explore ${item.name} formula intent with QuickFnd, then continue into the main calculator for fast online calculation.`,
     introBuilder: (item) =>
       `${item.name} Formula is a QuickFnd landing page built for users searching for formula-related context before using the calculator itself.`,
   },
   {
     slugBuilder: (item) => `free-${item.slug}`,
-    keywordBuilder: (item) => `free ${item.name.toLowerCase()}`,
+    keywordBuilder: (item) => `free ${item.name}`,
     titleBuilder: (item) => `Free ${item.name} | QuickFnd`,
     headingBuilder: (item) => `Free ${item.name}`,
     descriptionBuilder: (item) =>
@@ -190,7 +190,7 @@ const AI_TOOL_VARIANTS: Variant[] = [
     titleBuilder: (item) => `${item.name} Online | QuickFnd`,
     headingBuilder: (item) => `${item.name} Online`,
     descriptionBuilder: (item) =>
-      `Explore ${item.name.toLowerCase()} online on QuickFnd with a dedicated landing page, FAQs, and direct access to the main AI tool page.`,
+      `Explore ${item.name} online on QuickFnd with a dedicated landing page, FAQs, and direct access to the main AI tool page.`,
     introBuilder: (item) =>
       `${item.name} Online is a QuickFnd landing page designed for users who want to find this AI workflow quickly through a focused search phrase.`,
   },
@@ -200,17 +200,17 @@ const AI_TOOL_VARIANTS: Variant[] = [
     titleBuilder: (item) => `${item.name} for Beginners | QuickFnd`,
     headingBuilder: (item) => `${item.name} for Beginners`,
     descriptionBuilder: (item) =>
-      `New to ${item.name.toLowerCase()}? Explore this QuickFnd landing page, understand the workflow, and continue into the main AI tool page.`,
+      `New to ${item.name}? Explore this QuickFnd landing page, understand the workflow, and continue into the main AI tool page.`,
     introBuilder: (item) =>
       `${item.name} for Beginners is a QuickFnd landing page created for users who want a clearer introduction before using or exploring the AI workflow.`,
   },
   {
     slugBuilder: (item) => `best-${item.slug}`,
-    keywordBuilder: (item) => `best ${item.name.toLowerCase()}`,
+    keywordBuilder: (item) => `best ${item.name}`,
     titleBuilder: (item) => `Best ${item.name} | QuickFnd`,
     headingBuilder: (item) => `Best ${item.name}`,
     descriptionBuilder: (item) =>
-      `Looking for the best ${item.name.toLowerCase()} workflow? Explore QuickFnd's landing page, related AI tools, and the main tool page.`,
+      `Looking for the best ${item.name} workflow? Explore QuickFnd's landing page, related AI tools, and the main tool page.`,
     introBuilder: (item) =>
       `Best ${item.name} is a QuickFnd landing page built for users comparing AI workflows and searching for a strong starting point.`,
   },

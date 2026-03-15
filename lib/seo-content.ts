@@ -53,7 +53,7 @@ function buildIntro(table: PublicTable, item: PublicContentItem) {
 function buildBenefits(table: PublicTable, item: PublicContentItem) {
   if (table === "tools") {
     return [
-      `Use ${item.name.toLowerCase()} directly in your browser without installing extra software.`,
+      `Use ${item.name} directly in your browser without installing extra software.`,
       `Complete repeat tasks faster with a focused and lightweight interface.`,
       `Access a dedicated public page that is easy to bookmark and revisit.`,
       `Discover related QuickFnd tools for adjacent tasks and workflows.`,
@@ -70,7 +70,7 @@ function buildBenefits(table: PublicTable, item: PublicContentItem) {
   }
 
   return [
-    `Explore ${item.name.toLowerCase()} from a dedicated AI tool page.`,
+    `Explore ${item.name} from a dedicated AI tool page.`,
     `Use or evaluate the workflow in a cleaner and more structured environment.`,
     `Discover related AI tools without jumping across multiple directories.`,
     `Benefit from supporting content, internal links, and clearer navigation.`,
@@ -265,7 +265,6 @@ export function buildSoftwareSchema(
   item: PublicContentItem
 ) {
   const data = buildSEOSectionData(table, item);
-
   const baseType =
     table === "ai_tools" ? "WebApplication" : "SoftwareApplication";
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { PublicContentItem, PublicTable } from "@/lib/content-pages";
 import type { ProgrammaticPage } from "@/lib/programmatic-pages";
+import { getDisplayDescription } from "@/lib/display-content";
 
 type Props = {
   table: PublicTable;
@@ -141,6 +142,9 @@ export default function ProgrammaticLandingPage({
               <p className="mt-3 text-sm leading-7 text-q-muted">
                 This topic page is built around <strong>{item.name}</strong>.
               </p>
+              <p className="mt-3 text-sm leading-7 text-q-muted">
+                {getDisplayDescription(table, item, "detail")}
+              </p>
               <Link
                 href={mainItemHref}
                 className="mt-4 inline-flex text-sm font-medium text-blue-500 hover:text-blue-400"
@@ -160,6 +164,7 @@ export default function ProgrammaticLandingPage({
                 <div className="mt-4 space-y-4">
                   {relatedItems.slice(0, 4).map((related) => {
                     const href = `${relatedBasePath}/${related.slug}`;
+
                     return (
                       <Link
                         key={related.slug}
@@ -170,7 +175,7 @@ export default function ProgrammaticLandingPage({
                           {related.name}
                         </h3>
                         <p className="mt-2 text-sm leading-6 text-q-muted">
-                          {related.description}
+                          {getDisplayDescription(table, related, "card")}
                         </p>
                       </Link>
                     );

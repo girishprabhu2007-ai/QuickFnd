@@ -79,7 +79,7 @@ export default function PageSEOSections({ table, item }: Props) {
           </h2>
           <p className="mt-3 text-sm leading-7 text-q-muted md:text-base">
             QuickFnd also organizes more specific landing pages related to{" "}
-            {item.name.toLowerCase()} for different search intents.
+            {item.name} for different search intents.
           </p>
 
           <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -137,7 +137,7 @@ export default function PageSEOSections({ table, item }: Props) {
           >
             {seo.categoryTitle.toLowerCase()}
           </Link>{" "}
-          section for more pages related to {item.name.toLowerCase()}.
+          section for more pages related to {item.name}.
         </p>
       </section>
     </div>
