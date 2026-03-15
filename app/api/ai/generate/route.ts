@@ -10,31 +10,40 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-type PublicToolInput =
-  | {
-      tool: "ai-prompt-generator";
-      input: { goal: string; style: string };
-    }
-  | {
-      tool: "ai-email-writer";
-      input: { purpose: string; recipient: string; tone: string };
-    }
-  | {
-      tool: "ai-blog-outline-generator";
-      input: { topic: string; audience: string };
-    };
+type PublicToolName =
+  | "ai-prompt-generator"
+  | "ai-email-writer"
+  | "ai-blog-outline-generator";
 
-type AdminContentInput = {
-  mode: "admin-content";
-  topic: string;
-  category: AdminCategory;
+type PublicToolBody = {
+  tool?: PublicToolName;
+  input?: {
+    goal?: string;
+    style?: string;
+    purpose?: string;
+    recipient?: string;
+    tone?: string;
+    topic?: string;
+    audience?: string;
+  };
 };
 
-type BulkAdminContentInput = {
-  mode: "bulk-admin-content";
-  theme: string;
-  category: AdminCategory;
-  count: number;
+type RequestBody = {
+  mode?: "admin-content" | "bulk-admin-content";
+  topic?: string;
+  theme?: string;
+  category?: AdminCategory;
+  count?: number;
+  tool?: PublicToolName;
+  input?: {
+    goal?: string;
+    style?: string;
+    purpose?: string;
+    recipient?: string;
+    tone?: string;
+    topic?: string;
+    audience?: string;
+  };
 };
 
 function parseAdminContent(raw: string) {
@@ -75,9 +84,7 @@ function parseBulkAdminContent(raw: string) {
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as Partial<
-      PublicToolInput & AdminContentInput & BulkAdminContentInput
-    >;
+    const body = (await req.json()) as RequestBody;
 
     if (body.mode === "admin-content") {
       const adminUser = await getAdminUser();
@@ -237,7 +244,9 @@ Rules:
       return NextResponse.json({ items });
     }
 
-    const { tool, input } = body as PublicToolInput;
+    const publicBody = body as PublicToolBody;
+    const tool = publicBody.tool;
+    const input = publicBody.input || {};
 
     let systemPrompt = "";
     let userPrompt = "";
@@ -245,18 +254,18 @@ Rules:
     if (tool === "ai-prompt-generator") {
       systemPrompt =
         "You create high-quality prompts for AI tools. Return only the final prompt text, clearly written and optimized.";
-      userPrompt = `Create a strong AI prompt for this goal: ${input.goal}. Use this style: ${input.style}.`;
+      userPrompt = `Create a strong AI prompt for this goal: ${input.goal || ""}. Use this style: ${input.style || ""}.`;
     } else if (tool === "ai-email-writer") {
       systemPrompt =
         "You write professional emails. Return only the email draft, ready to use.";
       userPrompt = `Write an email with these details:
-Purpose: ${input.purpose}
-Recipient: ${input.recipient}
-Tone: ${input.tone}`;
+Purpose: ${input.purpose || ""}
+Recipient: ${input.recipient || ""}
+Tone: ${input.tone || ""}`;
     } else if (tool === "ai-blog-outline-generator") {
       systemPrompt =
         "You create SEO-friendly blog outlines. Return only the final blog outline in a clean structure.";
-      userPrompt = `Create a blog outline for this topic: ${input.topic}. Target audience: ${input.audience}.`;
+      userPrompt = `Create a blog outline for this topic: ${input.topic || ""}. Target audience: ${input.audience || ""}.`;
     } else {
       return NextResponse.json({ error: "Invalid tool type" }, { status: 400 });
     }
