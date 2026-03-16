@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import JsonLd from "@/components/seo/JsonLd";
 import PublicDetailPage from "@/components/seo/PublicDetailPage";
 import BuiltInToolClient from "@/components/tools/BuiltInToolClient";
-import DynamicToolEngineClient from "@/components/tools/DynamicToolEngineClient";
 import { getContentItem, getRelatedContent } from "@/lib/db";
 import { buildMetaDescription, buildPageTitle } from "@/lib/content-pages";
 import {
@@ -12,7 +11,6 @@ import {
   buildSoftwareSchema,
 } from "@/lib/seo-content";
 import { getSiteUrl } from "@/lib/site-url";
-import { hasEngine } from "@/lib/engine-loader";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -70,30 +68,29 @@ export default async function ToolDetailPage({ params }: Props) {
     notFound();
   }
 
-  const relatedItems = await getRelatedContent("tools", item.related_slugs, item.slug);
-
-  const engineType =
-    typeof item.engine_type === "string" ? item.engine_type.trim() : "";
-
-  const pluginAvailable = engineType ? await hasEngine(engineType) : false;
+  const relatedItems = await getRelatedContent(
+    "tools",
+    item.related_slugs,
+    item.slug
+  );
 
   return (
     <>
-      <JsonLd id="tool-breadcrumb-schema" data={buildBreadcrumbSchema("tools", item)} />
+      <JsonLd
+        id="tool-breadcrumb-schema"
+        data={buildBreadcrumbSchema("tools", item)}
+      />
       <JsonLd id="tool-faq-schema" data={buildFaqSchema("tools", item)} />
-      <JsonLd id="tool-software-schema" data={buildSoftwareSchema("tools", item)} />
+      <JsonLd
+        id="tool-software-schema"
+        data={buildSoftwareSchema("tools", item)}
+      />
 
       <PublicDetailPage
         table="tools"
         item={item}
         relatedItems={relatedItems}
-        primaryContent={
-          pluginAvailable ? (
-            <DynamicToolEngineClient engineType={engineType} toolName={item.name} />
-          ) : (
-            <BuiltInToolClient item={item} />
-          )
-        }
+        primaryContent={<BuiltInToolClient item={item} />}
       />
     </>
   );
