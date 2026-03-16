@@ -1,227 +1,202 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
-type SuggestionItem = {
+type BulkCreatedTool = {
   name: string;
-  category: "tool" | "calculator" | "ai-tool";
-  reason: string;
   slug: string;
+  description: string;
+  related_slugs: string[];
+  engine_type: string;
+  engine_config: Record<string, unknown>;
+};
+
+type BulkSkippedTool = {
+  slug: string;
+  reason: string;
 };
 
 export default function AdminBulkGeneratePage() {
-  const [ideas, setIdeas] = useState<SuggestionItem[]>([]);
-  const [selected, setSelected] = useState<Record<string, boolean>>({});
-  const [loadingIdeas, setLoadingIdeas] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [message, setMessage] = useState("");
+  const [theme, setTheme] = useState("");
+  const [count, setCount] = useState("8");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [summary, setSummary] = useState("");
+  const [createdItems, setCreatedItems] = useState<BulkCreatedTool[]>([]);
+  const [skippedItems, setSkippedItems] = useState<BulkSkippedTool[]>([]);
 
-  async function loadIdeas() {
-    setLoadingIdeas(true);
-    setMessage("");
+  const canSubmit = useMemo(() => {
+    return theme.trim().length > 0 && !busy;
+  }, [theme, busy]);
+
+  async function handleGenerate() {
+    setBusy(true);
+    setError("");
+    setSummary("");
+    setCreatedItems([]);
+    setSkippedItems([]);
 
     try {
-      const res = await fetch("/api/admin/tool-suggestions", {
-        method: "GET",
-        cache: "no-store",
+      const response = await fetch("/api/admin/bulk-create-tools", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          theme,
+          count: Number(count),
+        }),
       });
 
-      const text = await res.text();
-      const data = text ? JSON.parse(text) : { suggestions: [] };
+      const data = await response.json();
 
-      if (!res.ok) {
-        throw new Error(data?.error || "Failed to load suggestions.");
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to bulk create tools.");
       }
 
-      const items = Array.isArray(data.suggestions) ? data.suggestions : [];
-      setIdeas(items);
+      setSummary(
+        `Created ${data.createdCount} tool(s), skipped ${data.skippedCount}, from ${data.supportedCount} supported AI suggestions.`
+      );
 
-      const nextSelected: Record<string, boolean> = {};
-      for (const item of items) {
-        nextSelected[item.slug] = false;
-      }
-      setSelected(nextSelected);
-    } catch (error) {
-      console.error("bulk loadIdeas error:", error);
-      setIdeas([]);
-      setSelected({});
-      setMessage(
-        error instanceof Error ? error.message : "Failed to load suggestions."
+      setCreatedItems(Array.isArray(data.created) ? data.created : []);
+      setSkippedItems(Array.isArray(data.skipped) ? data.skipped : []);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to bulk create tools."
       );
     } finally {
-      setLoadingIdeas(false);
+      setBusy(false);
     }
   }
 
-  useEffect(() => {
-    loadIdeas();
-  }, []);
-
-  const selectedItems = useMemo(
-    () => ideas.filter((item) => selected[item.slug]),
-    [ideas, selected]
-  );
-
-  async function createSelected() {
-    if (selectedItems.length === 0) return;
-
-    setCreating(true);
-    setMessage("");
-
-    const createdSlugs: string[] = [];
-    const messages: string[] = [];
-
-    for (const item of selectedItems) {
-      try {
-        const res = await fetch("/api/admin/create-tool", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            idea: item.name,
-            category: item.category,
-          }),
-        });
-
-        const text = await res.text();
-        const data = text ? JSON.parse(text) : {};
-
-        if (!res.ok || !data.success) {
-          messages.push(`${item.name}: ${data?.error || "failed"}`);
-          continue;
-        }
-
-        createdSlugs.push(item.slug);
-        messages.push(
-          data.alreadyExists
-            ? `${item.name}: already exists`
-            : `${item.name}: created`
-        );
-      } catch {
-        messages.push(`${item.name}: failed`);
-      }
-    }
-
-    setIdeas((prev) => prev.filter((item) => !createdSlugs.includes(item.slug)));
-    setSelected((prev) => {
-      const next = { ...prev };
-      for (const slug of createdSlugs) {
-        delete next[slug];
-      }
-      return next;
-    });
-
-    setMessage(messages.join(" | "));
-    setCreating(false);
-  }
-
-  function toggleAll(value: boolean) {
-    const next: Record<string, boolean> = {};
-    for (const item of ideas) {
-      next[item.slug] = value;
-    }
-    setSelected(next);
+  function fillExample(value: string) {
+    setTheme(value);
   }
 
   return (
-    <section className="space-y-6">
-      <div className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold text-q-text">
-              Bulk Generate
-            </h2>
-            <p className="mt-3 text-sm leading-7 text-q-muted md:text-base">
-              Review AI-suggested high-demand ideas, select the ones you want, and create them in bulk.
-            </p>
-          </div>
+    <div className="grid gap-8">
+      <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
+        <h2 className="text-3xl font-semibold text-q-text">Bulk Generate</h2>
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-q-muted md:text-base">
+          Enter a niche or theme. AI will generate multiple tool ideas, but only
+          ideas that match supported engine families will be published.
+        </p>
 
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => toggleAll(true)}
-              className="rounded-xl border border-q-border bg-q-bg px-4 py-3 text-sm font-medium text-q-text transition hover:border-blue-400/50 hover:text-blue-500"
-            >
-              Select All
-            </button>
-            <button
-              onClick={() => toggleAll(false)}
-              className="rounded-xl border border-q-border bg-q-bg px-4 py-3 text-sm font-medium text-q-text transition hover:border-blue-400/50 hover:text-blue-500"
-            >
-              Clear
-            </button>
-            <button
-              onClick={loadIdeas}
-              disabled={loadingIdeas}
-              className="rounded-xl border border-q-border bg-q-bg px-4 py-3 text-sm font-medium text-q-text transition hover:border-blue-400/50 hover:text-blue-500 disabled:opacity-60"
-            >
-              {loadingIdeas ? "Refreshing..." : "Refresh Suggestions"}
-            </button>
-            <button
-              onClick={createSelected}
-              disabled={creating || selectedItems.length === 0}
-              className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {creating
-                ? "Creating..."
-                : `Create Selected (${selectedItems.length})`}
-            </button>
-          </div>
+        <div className="mt-6 grid gap-4 md:grid-cols-[1fr_120px_auto]">
+          <input
+            value={theme}
+            onChange={(e) => setTheme(e.target.value)}
+            placeholder="Example: youtube tools"
+            className="w-full rounded-2xl border border-q-border bg-q-bg px-4 py-4 text-q-text outline-none placeholder:text-q-muted"
+          />
+
+          <input
+            type="number"
+            min={2}
+            max={30}
+            value={count}
+            onChange={(e) => setCount(e.target.value)}
+            className="w-full rounded-2xl border border-q-border bg-q-bg px-4 py-4 text-q-text outline-none"
+          />
+
+          <button
+            onClick={handleGenerate}
+            disabled={!canSubmit}
+            className="rounded-2xl bg-q-primary px-5 py-4 font-medium text-white transition hover:bg-q-primary-hover disabled:opacity-60"
+          >
+            {busy ? "Generating..." : "Generate Tools"}
+          </button>
         </div>
 
-        {message ? (
-          <div className="mt-6 rounded-2xl border border-q-border bg-q-bg p-4 text-sm text-q-text">
-            {message}
+        <div className="mt-5 flex flex-wrap gap-3">
+          <button
+            onClick={() => fillExample("youtube tools")}
+            className="rounded-xl border border-q-border bg-q-bg px-4 py-2 text-sm font-medium text-q-text transition hover:bg-q-card-hover"
+          >
+            youtube tools
+          </button>
+          <button
+            onClick={() => fillExample("seo tools")}
+            className="rounded-xl border border-q-border bg-q-bg px-4 py-2 text-sm font-medium text-q-text transition hover:bg-q-card-hover"
+          >
+            seo tools
+          </button>
+          <button
+            onClick={() => fillExample("developer tools")}
+            className="rounded-xl border border-q-border bg-q-bg px-4 py-2 text-sm font-medium text-q-text transition hover:bg-q-card-hover"
+          >
+            developer tools
+          </button>
+          <button
+            onClick={() => fillExample("text tools")}
+            className="rounded-xl border border-q-border bg-q-bg px-4 py-2 text-sm font-medium text-q-text transition hover:bg-q-card-hover"
+          >
+            text tools
+          </button>
+        </div>
+
+        {summary ? (
+          <div className="mt-5 rounded-2xl border border-green-300 bg-green-50 p-4 text-sm text-green-700">
+            {summary}
           </div>
         ) : null}
-      </div>
 
-      {loadingIdeas ? (
-        <div className="rounded-2xl border border-q-border bg-q-card p-6 text-q-muted">
-          Loading suggestions...
-        </div>
-      ) : ideas.length === 0 ? (
-        <div className="rounded-2xl border border-q-border bg-q-card p-6 text-q-muted">
-          No suggestions available right now.
-        </div>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {ideas.map((idea) => (
-            <label
-              key={idea.slug}
-              className="block rounded-2xl border border-q-border bg-q-card p-6 transition hover:border-blue-400/50"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <input
-                  type="checkbox"
-                  checked={!!selected[idea.slug]}
-                  onChange={(e) =>
-                    setSelected((prev) => ({
-                      ...prev,
-                      [idea.slug]: e.target.checked,
-                    }))
-                  }
-                  className="mt-1 h-4 w-4"
-                />
+        {error ? (
+          <div className="mt-5 rounded-2xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">
+            {error}
+          </div>
+        ) : null}
+      </section>
 
-                <span className="rounded-full border border-q-border bg-q-bg px-3 py-1 text-xs font-medium uppercase tracking-wide text-q-muted">
-                  {idea.category}
-                </span>
+      <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
+        <h3 className="text-2xl font-semibold text-q-text">Created Tools</h3>
+
+        {createdItems.length === 0 ? (
+          <div className="mt-4 rounded-2xl border border-q-border bg-q-bg p-5 text-sm text-q-muted">
+            No tools created yet in this session.
+          </div>
+        ) : (
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {createdItems.map((item) => (
+              <div
+                key={item.slug}
+                className="rounded-2xl border border-q-border bg-q-bg p-5"
+              >
+                <div className="text-lg font-semibold text-q-text">{item.name}</div>
+                <div className="mt-2 text-sm text-q-muted">/{item.slug}</div>
+                <div className="mt-2 text-sm text-q-muted">
+                  Engine: {item.engine_type}
+                </div>
+                <div className="mt-3 text-sm leading-6 text-q-muted">
+                  {item.description}
+                </div>
               </div>
+            ))}
+          </div>
+        )}
+      </section>
 
-              <h3 className="mt-4 text-xl font-semibold text-q-text">
-                {idea.name}
-              </h3>
+      <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
+        <h3 className="text-2xl font-semibold text-q-text">Skipped Items</h3>
 
-              <p className="mt-3 text-sm leading-6 text-q-muted">
-                {idea.reason}
-              </p>
-
-              <div className="mt-4 text-xs text-q-muted">{idea.slug}</div>
-            </label>
-          ))}
-        </div>
-      )}
-    </section>
+        {skippedItems.length === 0 ? (
+          <div className="mt-4 rounded-2xl border border-q-border bg-q-bg p-5 text-sm text-q-muted">
+            No skipped items in this session.
+          </div>
+        ) : (
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {skippedItems.map((item) => (
+              <div
+                key={`${item.slug}-${item.reason}`}
+                className="rounded-2xl border border-q-border bg-q-bg p-5"
+              >
+                <div className="text-lg font-semibold text-q-text">{item.slug}</div>
+                <div className="mt-2 text-sm text-q-muted">{item.reason}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
   );
 }

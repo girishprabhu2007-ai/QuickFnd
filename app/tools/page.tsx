@@ -3,7 +3,10 @@ import Link from "next/link";
 import SiteFooter from "@/components/site/SiteFooter";
 import { getTools } from "@/lib/db";
 import { getDisplayDescription } from "@/lib/display-content";
-import { filterItemsByGroup, buildHomepageTaxonomy } from "@/lib/admin-taxonomy";
+import {
+  buildHomepageTaxonomy,
+  filterItemsByGroup,
+} from "@/lib/admin-taxonomy";
 import type { PublicContentItem } from "@/lib/content-pages";
 
 export const revalidate = 300;
@@ -22,6 +25,7 @@ export default async function ToolsPage({ searchParams }: Props) {
   const tools: PublicContentItem[] = await getTools();
   const params = (await searchParams) || {};
   const activeGroup = params.group || "";
+
   const filteredTools: PublicContentItem[] = activeGroup
     ? filterItemsByGroup("tools", tools, activeGroup)
     : tools;
@@ -44,7 +48,9 @@ export default async function ToolsPage({ searchParams }: Props) {
               <p className="text-sm uppercase tracking-[0.2em] text-blue-500">
                 QuickFnd Directory
               </p>
+
               <h1 className="mt-4 text-3xl font-bold md:text-5xl">Tools</h1>
+
               <p className="mt-4 max-w-3xl text-base leading-7 text-q-muted md:text-lg md:leading-8">
                 Explore browser-based utility tools for developers, writers,
                 marketers, students, and everyday productivity workflows.
@@ -55,6 +61,7 @@ export default async function ToolsPage({ searchParams }: Props) {
                   <span className="rounded-full border border-q-border bg-q-bg px-4 py-2 text-sm text-q-text">
                     Filter: {activeLabel}
                   </span>
+
                   <Link
                     href="/tools"
                     className="text-sm text-blue-500 hover:text-blue-400"
@@ -80,9 +87,11 @@ export default async function ToolsPage({ searchParams }: Props) {
                     <h2 className="text-xl font-semibold text-q-text transition-colors duration-200 group-hover:text-blue-500">
                       {tool.name}
                     </h2>
+
                     <p className="mt-3 text-sm leading-6 text-q-muted">
                       {getDisplayDescription("tools", tool, "card")}
                     </p>
+
                     <div className="mt-4 text-sm font-medium text-blue-500 transition-transform duration-200 group-hover:translate-x-1">
                       Open tool →
                     </div>
@@ -95,6 +104,7 @@ export default async function ToolsPage({ searchParams }: Props) {
           <aside className="self-start xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto">
             <section className="rounded-2xl border border-q-border bg-q-card p-6">
               <h2 className="text-xl font-semibold text-q-text">Tool categories</h2>
+
               <div className="mt-4 space-y-2">
                 {taxonomy.tools.map((group) => (
                   <Link
