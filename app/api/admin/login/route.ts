@@ -7,15 +7,32 @@ import {
   isAllowedAdminEmail,
 } from "@/lib/admin-auth";
 
-function createAuthClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+function getSupabaseUrl() {
+  const value =
+    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error("Supabase environment variables are not configured.");
+  if (!value.trim()) {
+    throw new Error("Supabase URL is not configured.");
   }
 
-  return createClient(supabaseUrl, supabaseAnonKey, {
+  return value;
+}
+
+function getSupabaseAuthKey() {
+  const value =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    "";
+
+  if (!value.trim()) {
+    throw new Error("Supabase auth key is not configured.");
+  }
+
+  return value;
+}
+
+function createAuthClient() {
+  return createClient(getSupabaseUrl(), getSupabaseAuthKey(), {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
