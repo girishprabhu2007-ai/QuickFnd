@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabaseClient } from "@/lib/supabase";
+import { getSupabaseAdmin } from "@/lib/admin-publishing";
 
 type UsageRow = {
   item_slug: string;
@@ -8,16 +8,72 @@ type UsageRow = {
   created_at: string;
 };
 
+type UsagePayload = {
+  item_slug?: string;
+  item_type?: "tool" | "calculator" | "ai-tool";
+  event_type?: string;
+};
+
 function monthKey(dateString: string) {
   const date = new Date(dateString);
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
+export async function POST(req: Request) {
+  try {
+    const body = (await req.json()) as UsagePayload;
+
+    const itemSlug = String(body.item_slug || "").trim();
+    const itemType = String(body.item_type || "").trim();
+    const eventType = String(body.event_type || "page_view").trim();
+
+    if (!itemSlug) {
+      return NextResponse.json(
+        { error: "item_slug is required." },
+        { status: 400 }
+      );
+    }
+
+    if (!["tool", "calculator", "ai-tool"].includes(itemType)) {
+      return NextResponse.json(
+        { error: "item_type must be tool, calculator, or ai-tool." },
+        { status: 400 }
+      );
+    }
+
+    const supabaseAdmin = getSupabaseAdmin();
+
+    const { error } = await supabaseAdmin.from("usage_events").insert([
+      {
+        item_slug: itemSlug,
+        item_type: itemType,
+        event_type: eventType,
+      },
+    ]);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("usage track POST error:", error);
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to track usage.",
+      },
+      { status: 500 }
+    );
+  }
+}
+
 export async function GET() {
   try {
-    const supabase = getSupabaseClient();
+    const supabaseAdmin = getSupabaseAdmin();
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("usage_events")
       .select("item_slug,item_type,event_type,created_at")
       .order("created_at", { ascending: false })
@@ -68,7 +124,10 @@ export async function GET() {
     console.error("usage-summary route error:", error);
 
     return NextResponse.json(
-      { error: "Failed to load usage summary." },
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to load usage summary.",
+      },
       { status: 500 }
     );
   }
