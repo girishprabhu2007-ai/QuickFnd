@@ -3,6 +3,8 @@ import HomeSearch from "@/components/search/HomeSearch";
 import { getAITools, getCalculators, getTools } from "@/lib/db";
 import { getDisplayDescription } from "@/lib/display-content";
 
+export const revalidate = 300;
+
 export default async function HomePage() {
   const [tools, calculators, aiTools] = await Promise.all([
     getTools(),
@@ -62,7 +64,10 @@ export default async function HomePage() {
                 Popular utility pages from the tools directory.
               </p>
             </div>
-            <Link href="/tools" className="text-sm text-blue-500 hover:text-blue-400">
+            <Link
+              href="/tools"
+              className="text-sm text-blue-500 hover:text-blue-400"
+            >
               View all →
             </Link>
           </div>
@@ -72,12 +77,17 @@ export default async function HomePage() {
               <Link
                 key={item.slug}
                 href={`/tools/${item.slug}`}
-                className="rounded-2xl border border-q-border bg-q-card p-6 transition hover:bg-q-card-hover"
+                className="group rounded-2xl border border-q-border bg-q-card p-6 transition-all duration-200 hover:-translate-y-1 hover:border-blue-400/50 hover:shadow-[0_12px_30px_rgba(59,130,246,0.12)]"
               >
-                <h3 className="text-xl font-semibold">{item.name}</h3>
+                <h3 className="text-xl font-semibold text-q-text transition-colors duration-200 group-hover:text-blue-500">
+                  {item.name}
+                </h3>
                 <p className="mt-3 text-sm leading-6 text-q-muted">
                   {getDisplayDescription("tools", item, "card")}
                 </p>
+                <div className="mt-4 text-sm font-medium text-blue-500 transition-transform duration-200 group-hover:translate-x-1">
+                  Open tool →
+                </div>
               </Link>
             ))}
           </div>
@@ -91,7 +101,10 @@ export default async function HomePage() {
                 Practical calculators for everyday use.
               </p>
             </div>
-            <Link href="/calculators" className="text-sm text-blue-500 hover:text-blue-400">
+            <Link
+              href="/calculators"
+              className="text-sm text-blue-500 hover:text-blue-400"
+            >
               View all →
             </Link>
           </div>
@@ -101,12 +114,17 @@ export default async function HomePage() {
               <Link
                 key={item.slug}
                 href={`/calculators/${item.slug}`}
-                className="rounded-2xl border border-q-border bg-q-card p-6 transition hover:bg-q-card-hover"
+                className="group rounded-2xl border border-q-border bg-q-card p-6 transition-all duration-200 hover:-translate-y-1 hover:border-blue-400/50 hover:shadow-[0_12px_30px_rgba(59,130,246,0.12)]"
               >
-                <h3 className="text-xl font-semibold">{item.name}</h3>
+                <h3 className="text-xl font-semibold text-q-text transition-colors duration-200 group-hover:text-blue-500">
+                  {item.name}
+                </h3>
                 <p className="mt-3 text-sm leading-6 text-q-muted">
                   {getDisplayDescription("calculators", item, "card")}
                 </p>
+                <div className="mt-4 text-sm font-medium text-blue-500 transition-transform duration-200 group-hover:translate-x-1">
+                  Open calculator →
+                </div>
               </Link>
             ))}
           </div>
@@ -120,7 +138,10 @@ export default async function HomePage() {
                 AI-powered utilities and discoverable AI listings.
               </p>
             </div>
-            <Link href="/ai-tools" className="text-sm text-blue-500 hover:text-blue-400">
+            <Link
+              href="/ai-tools"
+              className="text-sm text-blue-500 hover:text-blue-400"
+            >
               View all →
             </Link>
           </div>
@@ -130,12 +151,17 @@ export default async function HomePage() {
               <Link
                 key={item.slug}
                 href={`/ai-tools/${item.slug}`}
-                className="rounded-2xl border border-q-border bg-q-card p-6 transition hover:bg-q-card-hover"
+                className="group rounded-2xl border border-q-border bg-q-card p-6 transition-all duration-200 hover:-translate-y-1 hover:border-blue-400/50 hover:shadow-[0_12px_30px_rgba(59,130,246,0.12)]"
               >
-                <h3 className="text-xl font-semibold">{item.name}</h3>
+                <h3 className="text-xl font-semibold text-q-text transition-colors duration-200 group-hover:text-blue-500">
+                  {item.name}
+                </h3>
                 <p className="mt-3 text-sm leading-6 text-q-muted">
                   {getDisplayDescription("ai_tools", item, "card")}
                 </p>
+                <div className="mt-4 text-sm font-medium text-blue-500 transition-transform duration-200 group-hover:translate-x-1">
+                  Open AI tool →
+                </div>
               </Link>
             ))}
           </div>
