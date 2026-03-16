@@ -1,24 +1,9 @@
-export type EngineCategory = "tool" | "calculator" | "ai-tool";
+import {
+  inferToolEngineType,
+  type ToolEngineType,
+} from "@/lib/tool-engine-registry";
 
-export type ToolEngineType =
-  | "password-generator"
-  | "json-formatter"
-  | "word-counter"
-  | "uuid-generator"
-  | "slug-generator"
-  | "random-string-generator"
-  | "base64-encoder"
-  | "base64-decoder"
-  | "url-encoder"
-  | "url-decoder"
-  | "text-case-converter"
-  | "code-formatter"
-  | "code-snippet-manager"
-  | "text-transformer"
-  | "number-generator"
-  | "unit-converter"
-  | "currency-converter"
-  | "generic-directory";
+export type EngineCategory = "tool" | "calculator" | "ai-tool";
 
 export type CalculatorEngineType =
   | "age-calculator"
@@ -37,10 +22,7 @@ export type AIToolEngineType =
   | "ai-blog-outline-generator"
   | "generic-directory";
 
-export type EngineType =
-  | ToolEngineType
-  | CalculatorEngineType
-  | AIToolEngineType;
+export type EngineType = ToolEngineType | CalculatorEngineType | AIToolEngineType;
 
 export type EngineConfig = Record<string, unknown>;
 
@@ -51,7 +33,7 @@ type EngineOption = {
 
 export const ENGINE_OPTIONS: Record<EngineCategory, EngineOption[]> = {
   tool: [
-    { value: "generic-directory", label: "Generic Directory Page" },
+    { value: "password-strength-checker", label: "Password Strength Checker" },
     { value: "password-generator", label: "Password Generator" },
     { value: "json-formatter", label: "JSON Formatter" },
     { value: "word-counter", label: "Word Counter" },
@@ -63,15 +45,13 @@ export const ENGINE_OPTIONS: Record<EngineCategory, EngineOption[]> = {
     { value: "url-encoder", label: "URL Encoder" },
     { value: "url-decoder", label: "URL Decoder" },
     { value: "text-case-converter", label: "Text Case Converter" },
-    { value: "code-formatter", label: "Code Formatter" },
-    { value: "code-snippet-manager", label: "Code Snippet Manager" },
-    { value: "text-transformer", label: "Text Transformer (Config)" },
-    { value: "number-generator", label: "Number Generator (Config)" },
-    { value: "unit-converter", label: "Unit Converter (Config)" },
-    { value: "currency-converter", label: "Currency Converter (Live Rates)" },
+    { value: "text-transformer", label: "Text Transformer" },
+    { value: "number-generator", label: "Random Number Generator" },
+    { value: "unit-converter", label: "Unit Converter" },
+    { value: "currency-converter", label: "Currency Converter" },
+    { value: "generic-directory", label: "Unsupported / Directory Only" },
   ],
   calculator: [
-    { value: "generic-directory", label: "Generic Directory Page" },
     { value: "age-calculator", label: "Age Calculator" },
     { value: "bmi-calculator", label: "BMI Calculator" },
     { value: "loan-calculator", label: "Loan Calculator" },
@@ -79,13 +59,14 @@ export const ENGINE_OPTIONS: Record<EngineCategory, EngineOption[]> = {
     { value: "percentage-calculator", label: "Percentage Calculator" },
     { value: "simple-interest-calculator", label: "Simple Interest Calculator" },
     { value: "gst-calculator", label: "GST Calculator" },
+    { value: "generic-directory", label: "Unsupported / Directory Only" },
   ],
   "ai-tool": [
-    { value: "generic-directory", label: "Generic Directory Page" },
     { value: "openai-text-tool", label: "OpenAI Text Tool" },
     { value: "ai-prompt-generator", label: "AI Prompt Generator" },
     { value: "ai-email-writer", label: "AI Email Writer" },
     { value: "ai-blog-outline-generator", label: "AI Blog Outline Generator" },
+    { value: "generic-directory", label: "Unsupported / Directory Only" },
   ],
 };
 
@@ -122,60 +103,17 @@ export function inferEngineType(
   const value = safeSlug(slug);
 
   if (category === "tool") {
-    if (value === "password-generator") return "password-generator";
-    if (value === "json-formatter") return "json-formatter";
-    if (value === "word-counter") return "word-counter";
-    if (value.includes("uuid")) return "uuid-generator";
-    if (value === "slug-generator" || (value.includes("slug") && value.includes("generator"))) {
-      return "slug-generator";
-    }
-    if (
-      value === "random-string-generator" ||
-      value.includes("random-string") ||
-      value.includes("string-generator")
-    ) {
-      return "random-string-generator";
-    }
-    if (value === "base64-encoder") return "base64-encoder";
-    if (value === "base64-decoder") return "base64-decoder";
-    if (value === "url-encoder") return "url-encoder";
-    if (value === "url-decoder") return "url-decoder";
-    if (value === "text-case-converter" || value.includes("case-converter")) {
-      return "text-case-converter";
-    }
-    if (value === "code-formatter" || value.includes("code-formatter")) {
-      return "code-formatter";
-    }
-    if (value === "code-snippet-manager" || value.includes("snippet-manager")) {
-      return "code-snippet-manager";
-    }
-    if (value.includes("text") && value.includes("transform")) {
-      return "text-transformer";
-    }
-    if (value.includes("number") && value.includes("generator")) {
-      return "number-generator";
-    }
-    if (value === "currency-converter") {
-      return "currency-converter";
-    }
-    if (value.includes("converter")) {
-      return "unit-converter";
-    }
-    return "generic-directory";
+    return inferToolEngineType(value);
   }
 
   if (category === "calculator") {
-    if (value === "age-calculator") return "age-calculator";
-    if (value === "bmi-calculator") return "bmi-calculator";
-    if (value === "loan-calculator") return "loan-calculator";
-    if (value === "emi-calculator" || value.includes("emi")) {
-      return "emi-calculator";
-    }
-    if (value === "percentage-calculator" || value.includes("percentage")) {
-      return "percentage-calculator";
-    }
-    if (value.includes("simple-interest")) return "simple-interest-calculator";
-    if (value === "gst-calculator" || value.includes("gst")) return "gst-calculator";
+    if (value.includes("age")) return "age-calculator";
+    if (value.includes("bmi")) return "bmi-calculator";
+    if (value.includes("loan")) return "loan-calculator";
+    if (value.includes("emi")) return "emi-calculator";
+    if (value.includes("percentage")) return "percentage-calculator";
+    if (value.includes("simple-interest") || value.includes("interest")) return "simple-interest-calculator";
+    if (value.includes("gst")) return "gst-calculator";
     return "generic-directory";
   }
 
@@ -183,7 +121,7 @@ export function inferEngineType(
     value === "ai-prompt-generator" ||
     value === "ai-email-writer" ||
     value === "ai-blog-outline-generator" ||
-    value === "notion-ai"
+    value.includes("ai-")
   ) {
     return "openai-text-tool";
   }

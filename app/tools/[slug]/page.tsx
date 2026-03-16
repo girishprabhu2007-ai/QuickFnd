@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import JsonLd from "@/components/seo/JsonLd";
 import PublicDetailPage from "@/components/seo/PublicDetailPage";
-import BuiltInToolClient from "@/components/tools/BuiltInToolClient";
-import CurrencyConverterClient from "@/components/tools/CurrencyConverterClient";
-import PasswordStrengthCheckerClient from "@/components/tools/PasswordStrengthCheckerClient";
+import ToolEngineRenderer from "@/components/tools/ToolEngineRenderer";
 import { getContentItem, getRelatedContent } from "@/lib/db";
 import { buildMetaDescription, buildPageTitle } from "@/lib/content-pages";
 import {
@@ -13,7 +11,6 @@ import {
   buildSoftwareSchema,
 } from "@/lib/seo-content";
 import { getSiteUrl } from "@/lib/site-url";
-import { inferLiveEngine } from "@/lib/admin-publishing";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -36,9 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const url = `${siteUrl}/tools/${item.slug}`;
   const title = buildPageTitle(item, "tools");
   const description = buildMetaDescription(item, "tools");
-  const ogImage = `${siteUrl}/api/og?title=${encodeURIComponent(
-    item.name
-  )}&subtitle=${encodeURIComponent(description)}`;
+  const ogImage = `${siteUrl}/api/og?title=${encodeURIComponent(item.name)}&subtitle=${encodeURIComponent(description)}`;
 
   return {
     title,
@@ -71,39 +66,19 @@ export default async function ToolDetailPage({ params }: Props) {
     notFound();
   }
 
-  const relatedItems = await getRelatedContent(
-    "tools",
-    item.related_slugs,
-    item.slug
-  );
-
-  const engine = item.engine_type || inferLiveEngine("tool", item.slug);
-
-  let primaryContent = <BuiltInToolClient item={item} />;
-
-  if (engine === "currency-converter") {
-    primaryContent = <CurrencyConverterClient />;
-  } else if (engine === "password-strength-checker") {
-    primaryContent = <PasswordStrengthCheckerClient />;
-  }
+  const relatedItems = await getRelatedContent("tools", item.related_slugs, item.slug);
 
   return (
     <>
-      <JsonLd
-        id="tool-breadcrumb-schema"
-        data={buildBreadcrumbSchema("tools", item)}
-      />
+      <JsonLd id="tool-breadcrumb-schema" data={buildBreadcrumbSchema("tools", item)} />
       <JsonLd id="tool-faq-schema" data={buildFaqSchema("tools", item)} />
-      <JsonLd
-        id="tool-software-schema"
-        data={buildSoftwareSchema("tools", item)}
-      />
+      <JsonLd id="tool-software-schema" data={buildSoftwareSchema("tools", item)} />
 
       <PublicDetailPage
         table="tools"
         item={item}
         relatedItems={relatedItems}
-        primaryContent={primaryContent}
+        primaryContent={<ToolEngineRenderer item={item} />}
       />
     </>
   );
