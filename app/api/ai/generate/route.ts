@@ -16,7 +16,7 @@ type PublicToolName =
   | "ai-email-writer"
   | "ai-blog-outline-generator";
 
-type PublicToolBody = {
+type LegacyPublicToolBody = {
   tool?: PublicToolName;
   input?: {
     goal?: string;
@@ -29,23 +29,20 @@ type PublicToolBody = {
   };
 };
 
+type GenericPublicToolBody = {
+  toolSlug?: string;
+  prompt?: string;
+  systemPrompt?: string;
+};
+
 type RequestBody = {
   mode?: "admin-content" | "bulk-admin-content";
   topic?: string;
   theme?: string;
   category?: AdminCategory;
   count?: number;
-  tool?: PublicToolName;
-  input?: {
-    goal?: string;
-    style?: string;
-    purpose?: string;
-    recipient?: string;
-    tone?: string;
-    topic?: string;
-    audience?: string;
-  };
-};
+} & LegacyPublicToolBody &
+  GenericPublicToolBody;
 
 function parseAdminContent(raw: string, category: AdminCategory) {
   try {
@@ -102,6 +99,7 @@ code-snippet-manager
 text-transformer
 number-generator
 unit-converter
+currency-converter
 generic-directory`;
   }
 
@@ -118,10 +116,45 @@ generic-directory`;
   }
 
   return `Use one of these engine_type values when appropriate:
+openai-text-tool
 ai-prompt-generator
 ai-email-writer
 ai-blog-outline-generator
 generic-directory`;
+}
+
+function buildLegacyPrompt(body: LegacyPublicToolBody) {
+  const tool = body.tool;
+  const input = body.input || {};
+
+  if (tool === "ai-prompt-generator") {
+    return {
+      systemPrompt:
+        "You create high-quality prompts for AI tools. Return only the final prompt text, clearly written and optimized.",
+      userPrompt: `Create a strong AI prompt for this goal: ${input.goal || ""}. Use this style: ${input.style || ""}.`,
+    };
+  }
+
+  if (tool === "ai-email-writer") {
+    return {
+      systemPrompt:
+        "You write professional emails. Return only the email draft, ready to use.",
+      userPrompt: `Write an email with these details:
+Purpose: ${input.purpose || ""}
+Recipient: ${input.recipient || ""}
+Tone: ${input.tone || ""}`,
+    };
+  }
+
+  if (tool === "ai-blog-outline-generator") {
+    return {
+      systemPrompt:
+        "You create SEO-friendly blog outlines. Return only the final blog outline in a clean structure.",
+      userPrompt: `Create a blog outline for this topic: ${input.topic || ""}. Target audience: ${input.audience || ""}.`,
+    };
+  }
+
+  return null;
 }
 
 export async function POST(req: Request) {
@@ -290,37 +323,46 @@ Rules:
       return NextResponse.json({ items });
     }
 
-    const publicBody = body as PublicToolBody;
-    const tool = publicBody.tool;
-    const input = publicBody.input || {};
+    const genericPrompt = String(body.prompt || "").trim();
+    const genericSystemPrompt = String(body.systemPrompt || "").trim();
 
-    let systemPrompt = "";
-    let userPrompt = "";
+    if (genericPrompt) {
+      const response = await client.responses.create({
+        model: "gpt-4.1-mini",
+        input: [
+          {
+            role: "system",
+            content:
+              genericSystemPrompt ||
+              "You are a helpful AI assistant. Return useful, user-ready output.",
+          },
+          {
+            role: "user",
+            content: genericPrompt,
+          },
+        ],
+      });
 
-    if (tool === "ai-prompt-generator") {
-      systemPrompt =
-        "You create high-quality prompts for AI tools. Return only the final prompt text, clearly written and optimized.";
-      userPrompt = `Create a strong AI prompt for this goal: ${input.goal || ""}. Use this style: ${input.style || ""}.`;
-    } else if (tool === "ai-email-writer") {
-      systemPrompt =
-        "You write professional emails. Return only the email draft, ready to use.";
-      userPrompt = `Write an email with these details:
-Purpose: ${input.purpose || ""}
-Recipient: ${input.recipient || ""}
-Tone: ${input.tone || ""}`;
-    } else if (tool === "ai-blog-outline-generator") {
-      systemPrompt =
-        "You create SEO-friendly blog outlines. Return only the final blog outline in a clean structure.";
-      userPrompt = `Create a blog outline for this topic: ${input.topic || ""}. Target audience: ${input.audience || ""}.`;
-    } else {
+      const output = response.output_text?.trim();
+
+      if (!output) {
+        return NextResponse.json({ error: "No output returned from AI." }, { status: 500 });
+      }
+
+      return NextResponse.json({ result: output });
+    }
+
+    const legacyPrompt = buildLegacyPrompt(body);
+
+    if (!legacyPrompt) {
       return NextResponse.json({ error: "Invalid tool type" }, { status: 400 });
     }
 
     const response = await client.responses.create({
       model: "gpt-4.1-mini",
       input: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
+        { role: "system", content: legacyPrompt.systemPrompt },
+        { role: "user", content: legacyPrompt.userPrompt },
       ],
     });
 

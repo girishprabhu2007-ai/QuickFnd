@@ -35,7 +35,7 @@ export default function CurrencyConverterClient() {
   async function convert() {
     const numericAmount = Number(amount);
 
-    if (!numericAmount || numericAmount <= 0) {
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
       setError("Enter a valid amount.");
       return;
     }
@@ -58,11 +58,13 @@ export default function CurrencyConverterClient() {
       const res = await fetch(url);
       const data = await res.json();
 
-      if (!res.ok || !data?.rates?.[to]) {
+      const converted = data?.rates?.[to];
+
+      if (!res.ok || !Number.isFinite(converted)) {
         throw new Error("Conversion failed.");
       }
 
-      setResult(data.rates[to]);
+      setResult(converted);
       setRateDate(data.date || "");
     } catch (err) {
       console.error(err);
@@ -91,8 +93,7 @@ export default function CurrencyConverterClient() {
             Real-Time Currency Converter
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-7 text-q-muted md:text-base">
-            Convert currencies using live ECB-backed exchange rates via
-            Frankfurter.
+            Convert currencies using live ECB-backed exchange rates via Frankfurter.
           </p>
         </div>
       </div>
@@ -139,9 +140,9 @@ export default function CurrencyConverterClient() {
             <div className="flex items-end">
               <button
                 onClick={() => {
-                  const prevFrom = from;
+                  const previousFrom = from;
                   setFrom(to);
-                  setTo(prevFrom);
+                  setTo(previousFrom);
                 }}
                 className="w-full rounded-xl border border-q-border bg-q-bg px-4 py-3 text-sm font-semibold text-q-text transition hover:border-blue-400/50 hover:text-blue-500"
               >

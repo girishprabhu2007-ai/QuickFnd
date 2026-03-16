@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import BuiltInAIToolClient from "@/components/ai-tools/BuiltInAIToolClient";
+import OpenAITextToolClient from "@/components/ai-tools/OpenAITextToolClient";
 import JsonLd from "@/components/seo/JsonLd";
 import PublicDetailPage from "@/components/seo/PublicDetailPage";
 import { getContentItem, getRelatedContent } from "@/lib/db";
@@ -11,6 +12,7 @@ import {
   buildSoftwareSchema,
 } from "@/lib/seo-content";
 import { getSiteUrl } from "@/lib/site-url";
+import { inferEngineType } from "@/lib/engine-metadata";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -74,6 +76,15 @@ export default async function AIToolDetailPage({ params }: Props) {
     item.slug
   );
 
+  const engine = item.engine_type || inferEngineType("ai-tool", item.slug);
+
+  const primaryContent =
+    engine === "openai-text-tool" ? (
+      <OpenAITextToolClient item={item} />
+    ) : (
+      <BuiltInAIToolClient item={item} />
+    );
+
   return (
     <>
       <JsonLd
@@ -90,7 +101,7 @@ export default async function AIToolDetailPage({ params }: Props) {
         table="ai_tools"
         item={item}
         relatedItems={relatedItems}
-        primaryContent={<BuiltInAIToolClient item={item} />}
+        primaryContent={primaryContent}
       />
     </>
   );

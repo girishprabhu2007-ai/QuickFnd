@@ -103,7 +103,7 @@ export default function PublicDetailPage({
             </div>
           </div>
 
-          <aside className="space-y-6 xl:sticky xl:top-24 self-start">
+          <aside className="self-start space-y-6 xl:sticky xl:top-24">
             <section className="rounded-2xl border border-q-border bg-q-card p-6">
               <h2 className="text-xl font-semibold text-q-text">
                 About this {entityLabel.toLowerCase()}

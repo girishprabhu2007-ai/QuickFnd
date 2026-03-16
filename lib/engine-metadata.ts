@@ -17,6 +17,7 @@ export type ToolEngineType =
   | "text-transformer"
   | "number-generator"
   | "unit-converter"
+  | "currency-converter"
   | "generic-directory";
 
 export type CalculatorEngineType =
@@ -30,6 +31,7 @@ export type CalculatorEngineType =
   | "generic-directory";
 
 export type AIToolEngineType =
+  | "openai-text-tool"
   | "ai-prompt-generator"
   | "ai-email-writer"
   | "ai-blog-outline-generator"
@@ -66,6 +68,7 @@ export const ENGINE_OPTIONS: Record<EngineCategory, EngineOption[]> = {
     { value: "text-transformer", label: "Text Transformer (Config)" },
     { value: "number-generator", label: "Number Generator (Config)" },
     { value: "unit-converter", label: "Unit Converter (Config)" },
+    { value: "currency-converter", label: "Currency Converter (Live Rates)" },
   ],
   calculator: [
     { value: "generic-directory", label: "Generic Directory Page" },
@@ -79,6 +82,7 @@ export const ENGINE_OPTIONS: Record<EngineCategory, EngineOption[]> = {
   ],
   "ai-tool": [
     { value: "generic-directory", label: "Generic Directory Page" },
+    { value: "openai-text-tool", label: "OpenAI Text Tool" },
     { value: "ai-prompt-generator", label: "AI Prompt Generator" },
     { value: "ai-email-writer", label: "AI Email Writer" },
     { value: "ai-blog-outline-generator", label: "AI Blog Outline Generator" },
@@ -151,6 +155,9 @@ export function inferEngineType(
     if (value.includes("number") && value.includes("generator")) {
       return "number-generator";
     }
+    if (value === "currency-converter") {
+      return "currency-converter";
+    }
     if (value.includes("converter")) {
       return "unit-converter";
     }
@@ -172,9 +179,15 @@ export function inferEngineType(
     return "generic-directory";
   }
 
-  if (value === "ai-prompt-generator") return "ai-prompt-generator";
-  if (value === "ai-email-writer") return "ai-email-writer";
-  if (value === "ai-blog-outline-generator") return "ai-blog-outline-generator";
+  if (
+    value === "ai-prompt-generator" ||
+    value === "ai-email-writer" ||
+    value === "ai-blog-outline-generator" ||
+    value === "notion-ai"
+  ) {
+    return "openai-text-tool";
+  }
+
   return "generic-directory";
 }
 

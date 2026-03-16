@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import JsonLd from "@/components/seo/JsonLd";
 import PublicDetailPage from "@/components/seo/PublicDetailPage";
 import BuiltInToolClient from "@/components/tools/BuiltInToolClient";
+import CurrencyConverterClient from "@/components/tools/CurrencyConverterClient";
 import { getContentItem, getRelatedContent } from "@/lib/db";
 import { buildMetaDescription, buildPageTitle } from "@/lib/content-pages";
 import {
@@ -11,6 +12,7 @@ import {
   buildSoftwareSchema,
 } from "@/lib/seo-content";
 import { getSiteUrl } from "@/lib/site-url";
+import { inferEngineType } from "@/lib/engine-metadata";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -74,6 +76,15 @@ export default async function ToolDetailPage({ params }: Props) {
     item.slug
   );
 
+  const engine = item.engine_type || inferEngineType("tool", item.slug);
+
+  const primaryContent =
+    engine === "currency-converter" ? (
+      <CurrencyConverterClient />
+    ) : (
+      <BuiltInToolClient item={item} />
+    );
+
   return (
     <>
       <JsonLd
@@ -90,7 +101,7 @@ export default async function ToolDetailPage({ params }: Props) {
         table="tools"
         item={item}
         relatedItems={relatedItems}
-        primaryContent={<BuiltInToolClient item={item} />}
+        primaryContent={primaryContent}
       />
     </>
   );
