@@ -4,11 +4,11 @@ import {
   buildPublicPath,
   ensureUniqueSlug,
   findExistingBySlug,
+  getSupabaseAdmin,
   getTable,
   inferLiveEngine,
   normalizeCategory,
   safeSlug,
-  supabaseAdmin,
   type AdminCategory,
 } from "@/lib/admin-publishing";
 
@@ -141,6 +141,7 @@ Rules:
       const path = buildPublicPath(category, item.slug);
 
       if (requestId) {
+        const supabaseAdmin = getSupabaseAdmin();
         await supabaseAdmin
           .from("tool_requests")
           .update({
@@ -172,6 +173,7 @@ Rules:
       engine_config: item.engine_config || {},
     };
 
+    const supabaseAdmin = getSupabaseAdmin();
     const { error } = await supabaseAdmin.from(table).insert([payload]);
 
     if (error) {

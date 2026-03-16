@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/admin-publishing";
+import { getSupabaseAdmin } from "@/lib/admin-publishing";
 
 export async function GET() {
   try {
+    const supabaseAdmin = getSupabaseAdmin();
+
     const [tools, calculators, aiTools, requests] = await Promise.all([
       supabaseAdmin.from("tools").select("id,name,slug", { count: "exact" }),
       supabaseAdmin.from("calculators").select("id,name,slug", { count: "exact" }),

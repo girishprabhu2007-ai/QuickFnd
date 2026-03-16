@@ -1,10 +1,10 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import {
+  getSupabaseAdmin,
   inferLiveEngine,
   normalizeCategory,
   safeSlug,
-  supabaseAdmin,
 } from "@/lib/admin-publishing";
 
 const openai = new OpenAI({
@@ -13,7 +13,10 @@ const openai = new OpenAI({
 
 type Verdict = "build-now" | "needs-engine" | "not-recommended";
 
-function fallbackVerdict(category: "tool" | "calculator" | "ai-tool", name: string) {
+function fallbackVerdict(
+  category: "tool" | "calculator" | "ai-tool",
+  name: string
+) {
   const slug = safeSlug(name);
   const engine = inferLiveEngine(category, slug);
 
@@ -102,11 +105,15 @@ Description: ${description}`,
         ai_summary: String(parsed.ai_summary || assessment.ai_summary),
         ai_verdict: String(parsed.ai_verdict || assessment.ai_verdict) as Verdict,
         recommended_category: normalizeCategory(parsed.recommended_category),
-        recommended_engine: String(parsed.recommended_engine || assessment.recommended_engine),
+        recommended_engine: String(
+          parsed.recommended_engine || assessment.recommended_engine
+        ),
       };
     } catch {
       // keep fallback
     }
+
+    const supabaseAdmin = getSupabaseAdmin();
 
     const { error } = await supabaseAdmin.from("tool_requests").insert([
       {

@@ -1,11 +1,28 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 export type AdminCategory = "tool" | "calculator" | "ai-tool";
 
-export const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let cachedAdminClient: SupabaseClient | null = null;
+
+function requireEnv(name: string) {
+  const value = process.env[name];
+  if (!value || !value.trim()) {
+    throw new Error(`${name} is required.`);
+  }
+  return value;
+}
+
+export function getSupabaseAdmin() {
+  if (cachedAdminClient) {
+    return cachedAdminClient;
+  }
+
+  const url = requireEnv("SUPABASE_URL");
+  const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+
+  cachedAdminClient = createClient(url, serviceRoleKey);
+  return cachedAdminClient;
+}
 
 export function safeSlug(value: string) {
   return String(value || "")
@@ -92,7 +109,9 @@ export function isSupportedLiveItem(category: AdminCategory, slug: string) {
 }
 
 export async function findExistingBySlug(category: AdminCategory, slug: string) {
+  const supabaseAdmin = getSupabaseAdmin();
   const table = getTable(category);
+
   const { data, error } = await supabaseAdmin
     .from(table)
     .select("slug,name")
@@ -119,6 +138,8 @@ export async function ensureUniqueSlug(category: AdminCategory, baseSlug: string
 }
 
 export async function getAllExistingSlugs() {
+  const supabaseAdmin = getSupabaseAdmin();
+
   const [tools, calculators, aiTools] = await Promise.all([
     supabaseAdmin.from("tools").select("slug"),
     supabaseAdmin.from("calculators").select("slug"),

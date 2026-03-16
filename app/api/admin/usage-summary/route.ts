@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/admin-publishing";
+import { getSupabaseAdmin } from "@/lib/admin-publishing";
 
 type UsageRow = {
   item_slug: string;
@@ -15,6 +15,8 @@ function monthKey(dateString: string) {
 
 export async function GET() {
   try {
+    const supabaseAdmin = getSupabaseAdmin();
+
     const { data, error } = await supabaseAdmin
       .from("usage_events")
       .select("item_slug,item_type,event_type,created_at")

@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { getTable, normalizeCategory, supabaseAdmin } from "@/lib/admin-publishing";
+import {
+  getSupabaseAdmin,
+  getTable,
+  normalizeCategory,
+} from "@/lib/admin-publishing";
 
 export async function POST(req: Request) {
   try {
@@ -12,6 +16,7 @@ export async function POST(req: Request) {
     }
 
     const table = getTable(category);
+    const supabaseAdmin = getSupabaseAdmin();
 
     const { error } = await supabaseAdmin
       .from(table)

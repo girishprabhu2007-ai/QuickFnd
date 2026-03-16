@@ -1,9 +1,11 @@
 import DeleteItemButton from "@/components/admin/DeleteItemButton";
-import { supabaseAdmin } from "@/lib/admin-publishing";
+import { getSupabaseAdmin } from "@/lib/admin-publishing";
 
 export const revalidate = 0;
 
 export default async function AdminToolsPage() {
+  const supabaseAdmin = getSupabaseAdmin();
+
   const { data, error } = await supabaseAdmin
     .from("tools")
     .select("name,slug,description,engine_type")

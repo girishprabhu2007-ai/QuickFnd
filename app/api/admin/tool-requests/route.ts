@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/admin-publishing";
+import { getSupabaseAdmin } from "@/lib/admin-publishing";
 
 export async function GET() {
   try {
+    const supabaseAdmin = getSupabaseAdmin();
+
     const { data, error } = await supabaseAdmin
       .from("tool_requests")
       .select("*")
@@ -10,7 +12,15 @@ export async function GET() {
       .limit(200);
 
     if (error) {
-      throw new Error(error.message);
+      console.error("tool_requests query error:", error);
+      return NextResponse.json(
+        {
+          items: [],
+          error:
+            error.message || "Failed to load tool requests.",
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
@@ -20,7 +30,10 @@ export async function GET() {
     console.error("admin tool-requests route error:", error);
 
     return NextResponse.json(
-      { error: "Failed to load tool requests." },
+      {
+        items: [],
+        error: "Failed to load tool requests.",
+      },
       { status: 500 }
     );
   }
