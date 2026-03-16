@@ -8,6 +8,7 @@ import {
   filterItemsByGroup,
 } from "@/lib/admin-taxonomy";
 import type { PublicContentItem } from "@/lib/content-pages";
+import { filterVisibleTools } from "@/lib/public-tool-visibility";
 
 export const revalidate = 300;
 
@@ -22,7 +23,9 @@ type Props = {
 };
 
 export default async function ToolsPage({ searchParams }: Props) {
-  const tools: PublicContentItem[] = await getTools();
+  const allTools: PublicContentItem[] = await getTools();
+  const tools = filterVisibleTools(allTools);
+
   const params = (await searchParams) || {};
   const activeGroup = params.group || "";
 

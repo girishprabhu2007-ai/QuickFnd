@@ -9,30 +9,33 @@ const tabs = [
   { href: "/admin/bulk-generate", label: "Bulk Generate" },
   { href: "/admin/tools", label: "Tools" },
   { href: "/admin/requests", label: "Requests" },
+  { href: "/admin/placeholders", label: "Placeholders" },
 ];
 
 export default function AdminTabs() {
   const pathname = usePathname();
 
   return (
-    <div className="mb-8 flex flex-wrap gap-3">
+    <nav className="flex flex-wrap gap-3">
       {tabs.map((tab) => {
-        const active = pathname === tab.href;
+        const active =
+          pathname === tab.href ||
+          (tab.href !== "/admin" && pathname.startsWith(tab.href));
 
         return (
           <Link
             key={tab.href}
             href={tab.href}
-            className={`rounded-xl border px-4 py-3 text-sm font-medium transition ${
+            className={`rounded-2xl border px-5 py-3 text-sm font-medium transition ${
               active
-                ? "border-blue-500 bg-blue-600 text-white"
-                : "border-q-border bg-q-card text-q-text hover:border-blue-400/50 hover:text-blue-500"
+                ? "border-q-primary bg-q-primary text-white"
+                : "border-q-border bg-q-card text-q-text hover:bg-q-card-hover"
             }`}
           >
             {tab.label}
           </Link>
         );
       })}
-    </div>
+    </nav>
   );
 }
