@@ -1,4 +1,3 @@
-import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import {
   getAllExistingSlugs,
@@ -6,10 +5,7 @@ import {
   normalizeCategory,
   safeSlug,
 } from "@/lib/admin-publishing";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
+import { getOpenAIClient } from "@/lib/openai-server";
 
 type SuggestionItem = {
   name: string;
@@ -104,6 +100,7 @@ function tryParseSuggestions(text: string): SuggestionItem[] {
 export async function GET() {
   try {
     const existingSlugs = await getAllExistingSlugs();
+    const openai = getOpenAIClient();
 
     const response = await openai.responses.create({
       model: "gpt-4.1-mini",
@@ -143,19 +140,20 @@ Rules:
     const parsed = tryParseSuggestions(raw);
     const source = parsed.length > 0 ? parsed : FALLBACK_SUGGESTIONS;
 
-    const filtered = source.filter((item) => !existingSlugs.has(item.slug));
+    const suggestions = source
+      .filter((item) => !existingSlugs.has(item.slug))
+      .slice(0, 16);
 
-    return NextResponse.json({
-      suggestions: filtered,
-    });
+    return NextResponse.json({ suggestions });
   } catch (error) {
     console.error("tool-suggestions route error:", error);
 
     const existingSlugs = await getAllExistingSlugs().catch(() => new Set<string>());
-    const filtered = FALLBACK_SUGGESTIONS.filter((item) => !existingSlugs.has(item.slug));
 
-    return NextResponse.json({
-      suggestions: filtered,
-    });
+    const suggestions = FALLBACK_SUGGESTIONS.filter(
+      (item) => !existingSlugs.has(item.slug)
+    ).slice(0, 16);
+
+    return NextResponse.json({ suggestions });
   }
 }

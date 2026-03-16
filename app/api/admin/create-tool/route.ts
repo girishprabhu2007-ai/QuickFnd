@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
 import {
   buildPublicPath,
   ensureUniqueSlug,
@@ -11,10 +10,7 @@ import {
   safeSlug,
   type AdminCategory,
 } from "@/lib/admin-publishing";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
+import { getOpenAIClient } from "@/lib/openai-server";
 
 type GeneratedItem = {
   name: string;
@@ -38,7 +34,9 @@ function normalizeGeneratedItem(
   const engine_type =
     String(input.engine_type || "").trim() || inferLiveEngine(category, slug);
   const engine_config =
-    input.engine_config && typeof input.engine_config === "object" && !Array.isArray(input.engine_config)
+    input.engine_config &&
+    typeof input.engine_config === "object" &&
+    !Array.isArray(input.engine_config)
       ? (input.engine_config as Record<string, unknown>)
       : {};
 
@@ -108,6 +106,8 @@ Rules:
 - for tools/calculators, only use a real engine if the idea clearly matches a common live utility
 - if no clear live engine exists, still return the best slug and a reasonable description
     `.trim();
+
+    const openai = getOpenAIClient();
 
     const response = await openai.responses.create({
       model: "gpt-4.1-mini",

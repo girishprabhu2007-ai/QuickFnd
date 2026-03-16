@@ -1,4 +1,3 @@
-import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import {
   normalizeGeneratedContent,
@@ -6,10 +5,7 @@ import {
 } from "@/lib/admin-content";
 import { getAdminUser } from "@/lib/admin-auth";
 import { inferEngineType } from "@/lib/engine-metadata";
-
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { getOpenAIClient } from "@/lib/openai-server";
 
 type PublicToolName =
   | "ai-prompt-generator"
@@ -160,6 +156,7 @@ Tone: ${input.tone || ""}`,
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as RequestBody;
+    const client = getOpenAIClient();
 
     if (body.mode === "admin-content") {
       const adminUser = await getAdminUser();
