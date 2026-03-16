@@ -1,11 +1,34 @@
-import { ToolEngine } from "@/engines/types"
+import type { ToolEngineDefinition } from "@/engines/types";
 
-export async function loadEngine(engineType: string): Promise<ToolEngine | null> {
-  try {
-    const engine = await import(`@/engines/${engineType}.ts`)
-    return engine.default
-  } catch (err) {
-    console.error("Engine not found:", engineType)
-    return null
+function sanitizeEngineType(engineType: string) {
+  const value = String(engineType || "").trim().toLowerCase();
+
+  if (!/^[a-z0-9-]+$/.test(value)) {
+    return "";
   }
+
+  return value;
+}
+
+export async function loadEngine(
+  engineType: string
+): Promise<ToolEngineDefinition | null> {
+  const safeEngineType = sanitizeEngineType(engineType);
+
+  if (!safeEngineType) {
+    return null;
+  }
+
+  try {
+    const module = await import(`../engines/${safeEngineType}`);
+    return (module.default || null) as ToolEngineDefinition | null;
+  } catch (error) {
+    console.warn(`Engine not found for type: ${safeEngineType}`, error);
+    return null;
+  }
+}
+
+export async function hasEngine(engineType: string): Promise<boolean> {
+  const engine = await loadEngine(engineType);
+  return Boolean(engine);
 }
