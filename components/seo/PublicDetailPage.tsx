@@ -6,6 +6,8 @@ import { getDisplayDescription } from "@/lib/display-content";
 import { getSiteUrl } from "@/lib/site-url";
 import PageSEOSections from "@/components/seo/PageSEOSections";
 import ShareButtons from "@/components/social/ShareButtons";
+import TrackUsage from "@/components/analytics/TrackUsage";
+import SiteFooter from "@/components/site/SiteFooter";
 
 type Props = {
   table: PublicTable;
@@ -24,6 +26,12 @@ function getEntityLabel(table: PublicTable) {
   if (table === "tools") return "Tool";
   if (table === "calculators") return "Calculator";
   return "AI Tool";
+}
+
+function getItemType(table: PublicTable): "tool" | "calculator" | "ai-tool" {
+  if (table === "tools") return "tool";
+  if (table === "calculators") return "calculator";
+  return "ai-tool";
 }
 
 function getBackHref(table: PublicTable) {
@@ -57,126 +65,141 @@ export default function PublicDetailPage({
   const backHref = getBackHref(table);
   const pageUrl = `${getSiteUrl()}${getCategoryPath(table)}/${item.slug}`;
   const description = getDisplayDescription(table, item, "detail");
+  const itemType = getItemType(table);
 
   return (
-    <main className="min-h-screen bg-q-bg px-4 py-8 text-q-text sm:px-6 lg:px-8 lg:py-12">
-      <section className="mx-auto max-w-7xl">
-        <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm text-q-muted">
-          <Link href="/" className="hover:text-q-text">
-            Home
-          </Link>
-          <span>/</span>
-          <Link href={backHref} className="hover:text-q-text">
-            {categoryTitle}
-          </Link>
-          <span>/</span>
-          <span className="text-q-text">{item.name}</span>
-        </nav>
+    <>
+      <main className="min-h-screen bg-q-bg px-4 py-8 text-q-text sm:px-6 lg:px-8 lg:py-12">
+        <TrackUsage itemSlug={item.slug} itemType={itemType} />
 
-        <div className="mb-10">
-          <Link
-            href={backHref}
-            className="text-sm text-blue-500 hover:text-blue-400"
-          >
-            ← Back to {categoryTitle.toLowerCase()}
-          </Link>
+        <section className="mx-auto max-w-7xl">
+          <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm text-q-muted">
+            <Link href="/" className="hover:text-q-text">
+              Home
+            </Link>
+            <span>/</span>
+            <Link href={backHref} className="hover:text-q-text">
+              {categoryTitle}
+            </Link>
+            <span>/</span>
+            <span className="text-q-text">{item.name}</span>
+          </nav>
 
-          <p className="mt-5 text-sm uppercase tracking-[0.2em] text-blue-500">
-            QuickFnd {entityLabel}
-          </p>
+          <div className="mb-10">
+            <Link
+              href={backHref}
+              className="text-sm text-blue-500 hover:text-blue-400"
+            >
+              ← Back to {categoryTitle.toLowerCase()}
+            </Link>
 
-          <h1 className="mt-3 text-3xl font-bold md:text-4xl lg:text-5xl">
-            {item.name}
-          </h1>
+            <p className="mt-5 text-sm uppercase tracking-[0.2em] text-blue-500">
+              QuickFnd {entityLabel}
+            </p>
 
-          <p className="mt-4 max-w-4xl text-base leading-7 text-q-muted md:text-lg md:leading-8">
-            {description}
-          </p>
+            <h1 className="mt-3 text-3xl font-bold md:text-4xl lg:text-5xl">
+              {item.name}
+            </h1>
 
-          <ShareButtons url={pageUrl} title={item.name} />
-        </div>
+            <p className="mt-4 max-w-4xl text-base leading-7 text-q-muted md:text-lg md:leading-8">
+              {description}
+            </p>
 
-        <div className="grid gap-8 xl:grid-cols-[minmax(0,2fr)_320px]">
-          <div className="min-w-0">
-            <div className="rounded-3xl border border-q-border bg-q-card/60 p-3 md:p-4">
-              {primaryContent}
+            <div className="mt-5 flex flex-wrap gap-3">
+              <ShareButtons url={pageUrl} title={item.name} />
+              <Link
+                href="/request-tool"
+                className="rounded-xl border border-q-border bg-q-bg px-4 py-3 text-sm font-medium text-q-text transition hover:border-blue-400/50 hover:text-blue-500"
+              >
+                Request a Tool
+              </Link>
             </div>
           </div>
 
-          <aside className="self-start space-y-6 xl:sticky xl:top-24">
-            <section className="rounded-2xl border border-q-border bg-q-card p-6">
-              <h2 className="text-xl font-semibold text-q-text">
-                About this {entityLabel.toLowerCase()}
-              </h2>
-              <p className="mt-4 text-sm leading-7 text-q-muted">
-                {getAboutText(table, item)}
-              </p>
-            </section>
-
-            <section className="rounded-2xl border border-q-border bg-q-card p-6">
-              <h2 className="text-xl font-semibold text-q-text">
-                {entityLabel} details
-              </h2>
-              <dl className="mt-4 grid gap-4 text-sm">
-                <div>
-                  <dt className="text-q-muted">Slug</dt>
-                  <dd className="mt-1 break-words text-q-text">{item.slug}</dd>
-                </div>
-                <div>
-                  <dt className="text-q-muted">Category</dt>
-                  <dd className="mt-1 text-q-text">{entityLabel}</dd>
-                </div>
-                <div>
-                  <dt className="text-q-muted">Engine</dt>
-                  <dd className="mt-1 break-words text-q-text">
-                    {item.engine_type || "auto"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-q-muted">URL</dt>
-                  <dd className="mt-1 break-all text-q-text">{pageUrl}</dd>
-                </div>
-              </dl>
-            </section>
-          </aside>
-        </div>
-
-        <section className="mt-10">
-          <PageSEOSections table={table} item={item} />
-        </section>
-
-        <section className="mt-10">
-          <h2 className="text-2xl font-semibold text-q-text">
-            Related {categoryTitle.toLowerCase()}
-          </h2>
-
-          {relatedItems.length === 0 ? (
-            <div className="mt-4 rounded-2xl border border-q-border bg-q-card p-6 text-q-muted">
-              No related {categoryTitle.toLowerCase()} available yet.
+          <div className="grid gap-8 xl:grid-cols-[minmax(0,2fr)_320px]">
+            <div className="min-w-0">
+              <div className="rounded-3xl border border-q-border bg-q-card/60 p-3 md:p-4">
+                {primaryContent}
+              </div>
             </div>
-          ) : (
-            <div className="mt-6 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {relatedItems.map((related) => (
-                <Link
-                  key={related.slug}
-                  href={getRelatedHref(table, related.slug)}
-                  className="group rounded-2xl border border-q-border bg-q-card p-6 transition-all duration-200 hover:-translate-y-1 hover:border-blue-400/50 hover:shadow-[0_12px_30px_rgba(59,130,246,0.12)]"
-                >
-                  <h3 className="text-lg font-semibold text-q-text transition-colors duration-200 group-hover:text-blue-500">
-                    {related.name}
-                  </h3>
-                  <p className="mt-3 text-sm leading-6 text-q-muted">
-                    {getDisplayDescription(table, related, "card")}
-                  </p>
-                  <div className="mt-4 text-sm font-medium text-blue-500 transition-transform duration-200 group-hover:translate-x-1">
-                    Open {entityLabel.toLowerCase()} →
+
+            <aside className="self-start space-y-6 xl:sticky xl:top-24">
+              <section className="rounded-2xl border border-q-border bg-q-card p-6">
+                <h2 className="text-xl font-semibold text-q-text">
+                  About this {entityLabel.toLowerCase()}
+                </h2>
+                <p className="mt-4 text-sm leading-7 text-q-muted">
+                  {getAboutText(table, item)}
+                </p>
+              </section>
+
+              <section className="rounded-2xl border border-q-border bg-q-card p-6">
+                <h2 className="text-xl font-semibold text-q-text">
+                  {entityLabel} details
+                </h2>
+                <dl className="mt-4 grid gap-4 text-sm">
+                  <div>
+                    <dt className="text-q-muted">Slug</dt>
+                    <dd className="mt-1 break-words text-q-text">{item.slug}</dd>
                   </div>
-                </Link>
-              ))}
-            </div>
-          )}
+                  <div>
+                    <dt className="text-q-muted">Category</dt>
+                    <dd className="mt-1 text-q-text">{entityLabel}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-q-muted">Engine</dt>
+                    <dd className="mt-1 break-words text-q-text">
+                      {item.engine_type || "auto"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-q-muted">URL</dt>
+                    <dd className="mt-1 break-all text-q-text">{pageUrl}</dd>
+                  </div>
+                </dl>
+              </section>
+            </aside>
+          </div>
+
+          <section className="mt-10">
+            <PageSEOSections table={table} item={item} />
+          </section>
+
+          <section className="mt-10">
+            <h2 className="text-2xl font-semibold text-q-text">
+              Related {categoryTitle.toLowerCase()}
+            </h2>
+
+            {relatedItems.length === 0 ? (
+              <div className="mt-4 rounded-2xl border border-q-border bg-q-card p-6 text-q-muted">
+                No related {categoryTitle.toLowerCase()} available yet.
+              </div>
+            ) : (
+              <div className="mt-6 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                {relatedItems.map((related) => (
+                  <Link
+                    key={related.slug}
+                    href={getRelatedHref(table, related.slug)}
+                    className="group rounded-2xl border border-q-border bg-q-card p-6 transition-all duration-200 hover:-translate-y-1 hover:border-blue-400/50 hover:shadow-[0_12px_30px_rgba(59,130,246,0.12)]"
+                  >
+                    <h3 className="text-lg font-semibold text-q-text transition-colors duration-200 group-hover:text-blue-500">
+                      {related.name}
+                    </h3>
+                    <p className="mt-3 text-sm leading-6 text-q-muted">
+                      {getDisplayDescription(table, related, "card")}
+                    </p>
+                    <div className="mt-4 text-sm font-medium text-blue-500 transition-transform duration-200 group-hover:translate-x-1">
+                      Open {entityLabel.toLowerCase()} →
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
         </section>
-      </section>
-    </main>
+      </main>
+
+      <SiteFooter />
+    </>
   );
 }

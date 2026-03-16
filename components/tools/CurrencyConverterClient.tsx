@@ -32,6 +32,26 @@ export default function CurrencyConverterClient() {
     loadCurrencies();
   }, []);
 
+  async function trackConvert() {
+    try {
+      await fetch("/api/usage/track", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          item_slug: "currency-converter",
+          item_type: "tool",
+          event_type: "convert",
+          metadata: {
+            from,
+            to,
+          },
+        }),
+      });
+    } catch {}
+  }
+
   async function convert() {
     const numericAmount = Number(amount);
 
@@ -66,6 +86,7 @@ export default function CurrencyConverterClient() {
 
       setResult(converted);
       setRateDate(data.date || "");
+      await trackConvert();
     } catch (err) {
       console.error(err);
       setError("Could not fetch real-time exchange rates.");

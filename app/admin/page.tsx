@@ -1,87 +1,204 @@
-import Link from "next/link";
-import { getAdminUser } from "@/lib/admin-auth";
+"use client";
 
-const cards = [
-  {
-    title: "Generate Content",
-    description:
-      "Create a single tool, calculator, or AI tool with AI assistance and edit it before saving.",
-    href: "/admin/generate",
-    cta: "Open generator",
-  },
-  {
-    title: "Bulk Generate",
-    description:
-      "Generate multiple items at once, review them, adjust engine settings, and save selected entries.",
-    href: "/admin/bulk-generate",
-    cta: "Open bulk generator",
-  },
-  {
-    title: "Manage Tools",
-    description:
-      "Review saved tool entries, remove outdated records, and maintain the tools directory.",
-    href: "/admin/tools",
-    cta: "Manage tools",
-  },
-  {
-    title: "Manage Calculators",
-    description:
-      "Review calculator entries, remove duplicates, and keep calculator listings clean.",
-    href: "/admin/calculators",
-    cta: "Manage calculators",
-  },
-  {
-    title: "Manage AI Tools",
-    description:
-      "Maintain AI tool listings and interactive AI utility pages from one place.",
-    href: "/admin/ai-tools",
-    cta: "Manage AI tools",
-  },
-];
+import { useEffect, useState } from "react";
 
-export default async function AdminDashboardPage() {
-  const adminUser = await getAdminUser();
+type DashboardStats = {
+  counts: {
+    tools: number;
+    calculators: number;
+    aiTools: number;
+    total: number;
+    requests: number;
+    implementedRequests: number;
+  };
+  recent: {
+    tools: { name: string; slug: string }[];
+    calculators: { name: string; slug: string }[];
+    aiTools: { name: string; slug: string }[];
+  };
+};
+
+type UsageItem = {
+  item_slug: string;
+  item_type: string;
+  total: number;
+  thisMonth: number;
+};
+
+export default function AdminDashboardPage() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [usage, setUsage] = useState<UsageItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  async function loadData() {
+    setLoading(true);
+
+    try {
+      const [statsRes, usageRes] = await Promise.all([
+        fetch("/api/admin/dashboard-stats", { cache: "no-store" }),
+        fetch("/api/admin/usage-summary", { cache: "no-store" }),
+      ]);
+
+      const statsText = await statsRes.text();
+      const statsData = statsText ? JSON.parse(statsText) : null;
+
+      const usageText = await usageRes.text();
+      const usageData = usageText ? JSON.parse(usageText) : { items: [] };
+
+      if (statsRes.ok) {
+        setStats(statsData);
+      }
+
+      if (usageRes.ok) {
+        setUsage(Array.isArray(usageData.items) ? usageData.items : []);
+      }
+    } catch (error) {
+      console.error("dashboard load error:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   return (
-    <div className="space-y-8">
-      <section className="rounded-3xl border border-q-border bg-q-card p-6 md:p-8">
-        <p className="text-sm uppercase tracking-[0.2em] text-blue-500">
-          Admin Dashboard
-        </p>
-        <h2 className="mt-3 text-3xl font-bold text-q-text md:text-4xl">
-          Control the QuickFnd platform
-        </h2>
-        <p className="mt-4 max-w-3xl text-base leading-7 text-q-muted">
-          Use the admin panel to create, edit, organize, and manage tools,
-          calculators, and AI tools. Theme switching and responsive layouts are
-          now shared across the platform.
-        </p>
+    <div className="grid gap-8 xl:grid-cols-[320px_minmax(0,1fr)]">
+      <aside className="space-y-6">
+        <section className="rounded-2xl border border-q-border bg-q-card p-6">
+          <h2 className="text-xl font-semibold text-q-text">Content counts</h2>
 
-        {adminUser ? (
-          <div className="mt-6 rounded-2xl border border-q-border bg-q-bg p-4 text-sm text-q-muted">
-            Logged in as <span className="font-medium text-q-text">{adminUser.email}</span>
-          </div>
-        ) : null}
-      </section>
-
-      <section>
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {cards.map((card) => (
-            <Link
-              key={card.href}
-              href={card.href}
-              className="rounded-2xl border border-q-border bg-q-card p-6 transition hover:bg-q-card-hover"
-            >
-              <h3 className="text-xl font-semibold text-q-text">{card.title}</h3>
-              <p className="mt-3 text-sm leading-6 text-q-muted">
-                {card.description}
-              </p>
-              <div className="mt-4 text-sm font-medium text-blue-500">
-                {card.cta} →
+          {loading || !stats ? (
+            <p className="mt-4 text-sm text-q-muted">Loading counts...</p>
+          ) : (
+            <div className="mt-4 space-y-3 text-sm">
+              <div className="rounded-xl border border-q-border bg-q-bg p-4">
+                <div className="text-q-muted">Total Pages</div>
+                <div className="mt-1 text-2xl font-bold text-q-text">
+                  {stats.counts.total}
+                </div>
               </div>
-            </Link>
-          ))}
-        </div>
+              <div className="rounded-xl border border-q-border bg-q-bg p-4">
+                <div className="text-q-muted">Tools</div>
+                <div className="mt-1 text-2xl font-bold text-q-text">
+                  {stats.counts.tools}
+                </div>
+              </div>
+              <div className="rounded-xl border border-q-border bg-q-bg p-4">
+                <div className="text-q-muted">Calculators</div>
+                <div className="mt-1 text-2xl font-bold text-q-text">
+                  {stats.counts.calculators}
+                </div>
+              </div>
+              <div className="rounded-xl border border-q-border bg-q-bg p-4">
+                <div className="text-q-muted">AI Tools</div>
+                <div className="mt-1 text-2xl font-bold text-q-text">
+                  {stats.counts.aiTools}
+                </div>
+              </div>
+              <div className="rounded-xl border border-q-border bg-q-bg p-4">
+                <div className="text-q-muted">Tool Requests</div>
+                <div className="mt-1 text-2xl font-bold text-q-text">
+                  {stats.counts.requests}
+                </div>
+              </div>
+              <div className="rounded-xl border border-q-border bg-q-bg p-4">
+                <div className="text-q-muted">Implemented Requests</div>
+                <div className="mt-1 text-2xl font-bold text-q-text">
+                  {stats.counts.implementedRequests}
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className="rounded-2xl border border-q-border bg-q-card p-6">
+          <h2 className="text-xl font-semibold text-q-text">Top usage</h2>
+
+          {loading ? (
+            <p className="mt-4 text-sm text-q-muted">Loading usage...</p>
+          ) : usage.length === 0 ? (
+            <p className="mt-4 text-sm text-q-muted">
+              No usage data yet. Open some live tools and then refresh this page.
+            </p>
+          ) : (
+            <div className="mt-4 space-y-3">
+              {usage.slice(0, 8).map((item) => (
+                <div
+                  key={`${item.item_type}-${item.item_slug}`}
+                  className="rounded-xl border border-q-border bg-q-bg p-4"
+                >
+                  <div className="text-sm font-semibold text-q-text">
+                    {item.item_slug}
+                  </div>
+                  <div className="mt-2 text-xs uppercase tracking-wide text-q-muted">
+                    {item.item_type}
+                  </div>
+                  <div className="mt-3 text-sm text-q-muted">
+                    Total: <span className="font-medium text-q-text">{item.total}</span>
+                  </div>
+                  <div className="text-sm text-q-muted">
+                    This month:{" "}
+                    <span className="font-medium text-q-text">{item.thisMonth}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </aside>
+
+      <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
+        <h2 className="text-2xl font-semibold text-q-text">Recently available items</h2>
+
+        {loading || !stats ? (
+          <p className="mt-4 text-sm text-q-muted">Loading recent items...</p>
+        ) : (
+          <div className="mt-6 grid gap-6 md:grid-cols-3">
+            <div>
+              <h3 className="text-lg font-semibold text-q-text">Tools</h3>
+              <div className="mt-3 space-y-2">
+                {stats.recent.tools.map((item) => (
+                  <div
+                    key={item.slug}
+                    className="rounded-xl border border-q-border bg-q-bg p-3 text-sm text-q-text"
+                  >
+                    {item.name}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-q-text">Calculators</h3>
+              <div className="mt-3 space-y-2">
+                {stats.recent.calculators.map((item) => (
+                  <div
+                    key={item.slug}
+                    className="rounded-xl border border-q-border bg-q-bg p-3 text-sm text-q-text"
+                  >
+                    {item.name}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-q-text">AI Tools</h3>
+              <div className="mt-3 space-y-2">
+                {stats.recent.aiTools.map((item) => (
+                  <div
+                    key={item.slug}
+                    className="rounded-xl border border-q-border bg-q-bg p-3 text-sm text-q-text"
+                  >
+                    {item.name}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </section>
     </div>
   );

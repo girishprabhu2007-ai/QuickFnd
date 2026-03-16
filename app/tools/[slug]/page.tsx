@@ -4,6 +4,7 @@ import JsonLd from "@/components/seo/JsonLd";
 import PublicDetailPage from "@/components/seo/PublicDetailPage";
 import BuiltInToolClient from "@/components/tools/BuiltInToolClient";
 import CurrencyConverterClient from "@/components/tools/CurrencyConverterClient";
+import PasswordStrengthCheckerClient from "@/components/tools/PasswordStrengthCheckerClient";
 import { getContentItem, getRelatedContent } from "@/lib/db";
 import { buildMetaDescription, buildPageTitle } from "@/lib/content-pages";
 import {
@@ -12,7 +13,7 @@ import {
   buildSoftwareSchema,
 } from "@/lib/seo-content";
 import { getSiteUrl } from "@/lib/site-url";
-import { inferEngineType } from "@/lib/engine-metadata";
+import { inferLiveEngine } from "@/lib/admin-publishing";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -76,14 +77,15 @@ export default async function ToolDetailPage({ params }: Props) {
     item.slug
   );
 
-  const engine = item.engine_type || inferEngineType("tool", item.slug);
+  const engine = item.engine_type || inferLiveEngine("tool", item.slug);
 
-  const primaryContent =
-    engine === "currency-converter" ? (
-      <CurrencyConverterClient />
-    ) : (
-      <BuiltInToolClient item={item} />
-    );
+  let primaryContent = <BuiltInToolClient item={item} />;
+
+  if (engine === "currency-converter") {
+    primaryContent = <CurrencyConverterClient />;
+  } else if (engine === "password-strength-checker") {
+    primaryContent = <PasswordStrengthCheckerClient />;
+  }
 
   return (
     <>

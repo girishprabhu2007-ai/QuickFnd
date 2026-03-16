@@ -47,6 +47,22 @@ export default function OpenAITextToolClient({ item }: Props) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  async function trackGenerate() {
+    try {
+      await fetch("/api/usage/track", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          item_slug: item.slug,
+          item_type: "ai-tool",
+          event_type: "generate",
+        }),
+      });
+    } catch {}
+  }
+
   async function generate() {
     if (!prompt.trim()) return;
 
@@ -74,6 +90,7 @@ export default function OpenAITextToolClient({ item }: Props) {
       }
 
       setResult(String(data.result || ""));
+      await trackGenerate();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate result.");
     } finally {
