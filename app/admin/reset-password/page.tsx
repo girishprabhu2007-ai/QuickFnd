@@ -82,48 +82,85 @@ export default function AdminResetPasswordPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-950 p-10 text-white">
-      <div className="w-full max-w-md rounded-2xl bg-gray-900 p-8 shadow-lg">
-        <h1 className="mb-2 text-3xl font-bold">Reset admin password</h1>
-        <p className="mb-6 text-sm text-gray-400">
-          Set a strong new password for your admin account.
-        </p>
-
-        <input
-          type="password"
-          placeholder="New password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="mb-4 w-full rounded-xl bg-gray-800 p-4 text-white outline-none ring-1 ring-gray-700"
-        />
-
-        <input
-          type="password"
-          placeholder="Confirm new password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          className="mb-4 w-full rounded-xl bg-gray-800 p-4 text-white outline-none ring-1 ring-gray-700"
-        />
-
-        {error ? (
-          <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
-            {error}
+    <main className="min-h-screen bg-q-bg px-4 py-10 text-q-text sm:px-6 lg:px-8">
+      <div className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-5xl items-center gap-8 lg:grid-cols-[1fr_0.95fr]">
+        <section className="rounded-3xl border border-q-border bg-q-card p-8 shadow-sm md:p-10">
+          <div className="inline-flex items-center rounded-full border border-q-border bg-q-bg px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-q-muted">
+            Password Recovery
           </div>
-        ) : null}
 
-        {success ? (
-          <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-300">
-            {success}
+          <h1 className="mt-5 text-4xl font-bold tracking-tight md:text-5xl">
+            Reset your admin password
+          </h1>
+
+          <p className="mt-5 max-w-2xl text-base leading-8 text-q-muted md:text-lg">
+            Set a strong new password for your QuickFnd admin account and return to the
+            control panel securely.
+          </p>
+
+          <div className="mt-8 rounded-2xl border border-q-border bg-q-bg p-5">
+            <h2 className="text-sm font-semibold text-q-text">Password guidance</h2>
+            <p className="mt-2 text-sm leading-6 text-q-muted">
+              Use at least 12 characters and combine uppercase, lowercase, numbers,
+              and symbols for better security.
+            </p>
           </div>
-        ) : null}
+        </section>
 
-        <button
-          onClick={handleSubmit}
-          disabled={isSubmitting}
-          className="w-full rounded-xl bg-blue-600 px-5 py-3 font-medium hover:bg-blue-700 disabled:opacity-60"
-        >
-          {isSubmitting ? "Updating..." : "Update password"}
-        </button>
+        <section className="rounded-3xl border border-q-border bg-q-card p-8 shadow-sm md:p-10">
+          <h2 className="text-3xl font-bold">Create a new password</h2>
+          <p className="mt-3 text-sm leading-7 text-q-muted md:text-base">
+            Enter your new password below and confirm it before saving.
+          </p>
+
+          <div className="mt-6 space-y-4">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-q-text">
+                New password
+              </label>
+              <input
+                type="password"
+                placeholder="Enter new password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-2xl border border-q-border bg-q-bg px-4 py-3 outline-none transition focus:border-q-primary"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-q-text">
+                Confirm new password
+              </label>
+              <input
+                type="password"
+                placeholder="Confirm new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full rounded-2xl border border-q-border bg-q-bg px-4 py-3 outline-none transition focus:border-q-primary"
+              />
+            </div>
+          </div>
+
+          {error ? (
+            <div className="mt-5 rounded-2xl border border-q-danger bg-q-danger-soft p-4 text-sm text-q-danger">
+              {error}
+            </div>
+          ) : null}
+
+          {success ? (
+            <div className="mt-5 rounded-2xl border border-q-success bg-q-success-soft p-4 text-sm text-q-success">
+              {success}
+            </div>
+          ) : null}
+
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="mt-6 w-full rounded-2xl bg-q-primary px-5 py-3 font-medium text-white transition hover:bg-q-primary-hover disabled:opacity-60"
+          >
+            {isSubmitting ? "Updating..." : "Update password"}
+          </button>
+        </section>
       </div>
     </main>
   );

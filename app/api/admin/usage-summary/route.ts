@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getAdminUser } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/admin-publishing";
 
 type UsageRow = {
@@ -15,6 +16,12 @@ function monthKey(dateString: string) {
 
 export async function GET() {
   try {
+    const adminUser = await getAdminUser();
+
+    if (!adminUser) {
+      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    }
+
     const supabaseAdmin = getSupabaseAdmin();
 
     const { data, error } = await supabaseAdmin
@@ -68,7 +75,10 @@ export async function GET() {
     console.error("usage-summary route error:", error);
 
     return NextResponse.json(
-      { error: "Failed to load usage summary." },
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to load usage summary.",
+      },
       { status: 500 }
     );
   }

@@ -1,15 +1,33 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { inferToolEngineType } from "@/lib/tool-engine-registry";
 
 export type AdminCategory = "tool" | "calculator" | "ai-tool";
 
 let cachedAdminClient: SupabaseClient | null = null;
 
-function requireEnv(name: string) {
-  const value = process.env[name];
-  if (!value || !value.trim()) {
-    throw new Error(`${name} is required.`);
+function getAdminSupabaseUrl() {
+  const value =
+    process.env.SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    "";
+
+  if (!value.trim()) {
+    throw new Error(
+      "Missing Supabase URL. Add SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL."
+    );
   }
+
+  return value;
+}
+
+function getAdminServiceRoleKey() {
+  const value = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+
+  if (!value.trim()) {
+    throw new Error(
+      "Missing SUPABASE_SERVICE_ROLE_KEY. Admin routes require the service role key."
+    );
+  }
+
   return value;
 }
 
@@ -18,10 +36,17 @@ export function getSupabaseAdmin() {
     return cachedAdminClient;
   }
 
-  const url = requireEnv("SUPABASE_URL");
-  const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+  cachedAdminClient = createClient(
+    getAdminSupabaseUrl(),
+    getAdminServiceRoleKey(),
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    }
+  );
 
-  cachedAdminClient = createClient(url, serviceRoleKey);
   return cachedAdminClient;
 }
 
@@ -60,7 +85,32 @@ export function inferLiveEngine(category: AdminCategory, slug: string) {
   const value = safeSlug(slug);
 
   if (category === "tool") {
-    return inferToolEngineType(value);
+    if (value === "currency-converter") return "currency-converter";
+    if (value === "password-strength-checker" || value.includes("password-strength")) {
+      return "password-strength-checker";
+    }
+    if (
+      value === "password-generator" ||
+      (value.includes("password") && value.includes("generator"))
+    ) {
+      return "password-generator";
+    }
+    if (value.includes("json")) return "json-formatter";
+    if (value.includes("word-counter")) return "word-counter";
+    if (value.includes("uuid")) return "uuid-generator";
+    if (value.includes("slug")) return "slug-generator";
+    if (value.includes("random-string")) return "random-string-generator";
+    if (value.includes("base64") && value.includes("decode")) return "base64-decoder";
+    if (value.includes("base64")) return "base64-encoder";
+    if (value.includes("url") && value.includes("decode")) return "url-decoder";
+    if (value.includes("url")) return "url-encoder";
+    if (value.includes("case")) return "text-case-converter";
+    if (value.includes("code") && value.includes("format")) return "code-formatter";
+    if (value.includes("snippet")) return "code-snippet-manager";
+    if (value.includes("text") && value.includes("transform")) return "text-transformer";
+    if (value.includes("number") && value.includes("generator")) return "number-generator";
+    if (value.includes("converter")) return "unit-converter";
+    return "generic-directory";
   }
 
   if (category === "calculator") {

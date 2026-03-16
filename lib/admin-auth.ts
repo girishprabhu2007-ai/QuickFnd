@@ -6,10 +6,12 @@ export const ADMIN_REFRESH_COOKIE = "quickfnd_admin_refresh_token";
 
 function getSupabaseUrl() {
   const value =
-    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    "";
 
   if (!value.trim()) {
-    throw new Error("Supabase URL is not configured.");
+    throw new Error("Missing Supabase URL for admin auth.");
   }
 
   return value;
@@ -22,7 +24,7 @@ function getSupabaseAuthKey() {
     "";
 
   if (!value.trim()) {
-    throw new Error("Supabase auth key is not configured.");
+    throw new Error("Missing Supabase auth key for admin auth.");
   }
 
   return value;

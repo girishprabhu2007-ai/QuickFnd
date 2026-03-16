@@ -4,10 +4,12 @@ import { isAllowedAdminEmail } from "@/lib/admin-auth";
 
 function getSupabaseUrl() {
   const value =
-    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    "";
 
   if (!value.trim()) {
-    throw new Error("Supabase URL is not configured.");
+    throw new Error("Missing Supabase URL.");
   }
 
   return value;
@@ -20,7 +22,7 @@ function getSupabaseAuthKey() {
     "";
 
   if (!value.trim()) {
-    throw new Error("Supabase auth key is not configured.");
+    throw new Error("Missing Supabase auth key.");
   }
 
   return value;
@@ -63,9 +65,8 @@ export async function POST(req: Request) {
     });
 
     if (error) {
-      console.error("Password reset request error:", error);
       return NextResponse.json(
-        { error: "Failed to send reset email." },
+        { error: error.message || "Failed to send reset email." },
         { status: 500 }
       );
     }
@@ -77,7 +78,10 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Password reset request error:", error);
     return NextResponse.json(
-      { error: "Failed to send reset email." },
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to send reset email.",
+      },
       { status: 500 }
     );
   }

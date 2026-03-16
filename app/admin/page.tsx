@@ -29,9 +29,13 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [usage, setUsage] = useState<UsageItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statsError, setStatsError] = useState("");
+  const [usageError, setUsageError] = useState("");
 
   async function loadData() {
     setLoading(true);
+    setStatsError("");
+    setUsageError("");
 
     try {
       const [statsRes, usageRes] = await Promise.all([
@@ -45,15 +49,27 @@ export default function AdminDashboardPage() {
       const usageText = await usageRes.text();
       const usageData = usageText ? JSON.parse(usageText) : { items: [] };
 
-      if (statsRes.ok) {
+      if (!statsRes.ok) {
+        setStats(null);
+        setStatsError(statsData?.error || "Failed to load dashboard stats.");
+      } else {
         setStats(statsData);
       }
 
-      if (usageRes.ok) {
+      if (!usageRes.ok) {
+        setUsage([]);
+        setUsageError(usageData?.error || "Failed to load usage summary.");
+      } else {
         setUsage(Array.isArray(usageData.items) ? usageData.items : []);
       }
     } catch (error) {
       console.error("dashboard load error:", error);
+      const message =
+        error instanceof Error ? error.message : "Failed to load dashboard data.";
+      setStats(null);
+      setUsage([]);
+      setStatsError(message);
+      setUsageError(message);
     } finally {
       setLoading(false);
     }
@@ -69,8 +85,16 @@ export default function AdminDashboardPage() {
         <section className="rounded-2xl border border-q-border bg-q-card p-6">
           <h2 className="text-xl font-semibold text-q-text">Content counts</h2>
 
-          {loading || !stats ? (
+          {loading ? (
             <p className="mt-4 text-sm text-q-muted">Loading counts...</p>
+          ) : statsError ? (
+            <div className="mt-4 rounded-2xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">
+              {statsError}
+            </div>
+          ) : !stats ? (
+            <div className="mt-4 rounded-2xl border border-q-border bg-q-bg p-4 text-sm text-q-muted">
+              No dashboard data available.
+            </div>
           ) : (
             <div className="mt-4 space-y-3 text-sm">
               <div className="rounded-xl border border-q-border bg-q-bg p-4">
@@ -118,6 +142,10 @@ export default function AdminDashboardPage() {
 
           {loading ? (
             <p className="mt-4 text-sm text-q-muted">Loading usage...</p>
+          ) : usageError ? (
+            <div className="mt-4 rounded-2xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">
+              {usageError}
+            </div>
           ) : usage.length === 0 ? (
             <p className="mt-4 text-sm text-q-muted">
               No usage data yet. Open some live tools and then refresh this page.
@@ -150,51 +178,86 @@ export default function AdminDashboardPage() {
       </aside>
 
       <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
-        <h2 className="text-2xl font-semibold text-q-text">Recently available items</h2>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-2xl font-semibold text-q-text">Recently available items</h2>
 
-        {loading || !stats ? (
+          <button
+            onClick={loadData}
+            className="rounded-xl border border-q-border bg-q-bg px-4 py-2 text-sm font-medium text-q-text transition hover:bg-q-card-hover"
+          >
+            Refresh
+          </button>
+        </div>
+
+        {loading ? (
           <p className="mt-4 text-sm text-q-muted">Loading recent items...</p>
+        ) : statsError ? (
+          <div className="mt-6 rounded-2xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">
+            {statsError}
+          </div>
+        ) : !stats ? (
+          <div className="mt-6 rounded-2xl border border-q-border bg-q-bg p-6 text-q-muted">
+            No recent item data available.
+          </div>
         ) : (
           <div className="mt-6 grid gap-6 md:grid-cols-3">
             <div>
               <h3 className="text-lg font-semibold text-q-text">Tools</h3>
               <div className="mt-3 space-y-2">
-                {stats.recent.tools.map((item) => (
-                  <div
-                    key={item.slug}
-                    className="rounded-xl border border-q-border bg-q-bg p-3 text-sm text-q-text"
-                  >
-                    {item.name}
+                {stats.recent.tools.length === 0 ? (
+                  <div className="rounded-xl border border-q-border bg-q-bg p-3 text-sm text-q-muted">
+                    No tools yet.
                   </div>
-                ))}
+                ) : (
+                  stats.recent.tools.map((item) => (
+                    <div
+                      key={item.slug}
+                      className="rounded-xl border border-q-border bg-q-bg p-3 text-sm text-q-text"
+                    >
+                      {item.name}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
             <div>
               <h3 className="text-lg font-semibold text-q-text">Calculators</h3>
               <div className="mt-3 space-y-2">
-                {stats.recent.calculators.map((item) => (
-                  <div
-                    key={item.slug}
-                    className="rounded-xl border border-q-border bg-q-bg p-3 text-sm text-q-text"
-                  >
-                    {item.name}
+                {stats.recent.calculators.length === 0 ? (
+                  <div className="rounded-xl border border-q-border bg-q-bg p-3 text-sm text-q-muted">
+                    No calculators yet.
                   </div>
-                ))}
+                ) : (
+                  stats.recent.calculators.map((item) => (
+                    <div
+                      key={item.slug}
+                      className="rounded-xl border border-q-border bg-q-bg p-3 text-sm text-q-text"
+                    >
+                      {item.name}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
             <div>
               <h3 className="text-lg font-semibold text-q-text">AI Tools</h3>
               <div className="mt-3 space-y-2">
-                {stats.recent.aiTools.map((item) => (
-                  <div
-                    key={item.slug}
-                    className="rounded-xl border border-q-border bg-q-bg p-3 text-sm text-q-text"
-                  >
-                    {item.name}
+                {stats.recent.aiTools.length === 0 ? (
+                  <div className="rounded-xl border border-q-border bg-q-bg p-3 text-sm text-q-muted">
+                    No AI tools yet.
                   </div>
-                ))}
+                ) : (
+                  stats.recent.aiTools.map((item) => (
+                    <div
+                      key={item.slug}
+                      className="rounded-xl border border-q-border bg-q-bg p-3 text-sm text-q-text"
+                    >
+                      {item.name}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>

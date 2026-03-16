@@ -10,14 +10,14 @@ function getSupabaseUrl() {
 
   if (!value.trim()) {
     throw new Error(
-      "Supabase URL is missing. Add SUPABASE_URL in Vercel environment variables."
+      "Missing Supabase URL. Add NEXT_PUBLIC_SUPABASE_URL or SUPABASE_URL."
     );
   }
 
   return value;
 }
 
-function getSupabaseKey() {
+function getSupabaseAnonKey() {
   const value =
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
@@ -25,7 +25,7 @@ function getSupabaseKey() {
 
   if (!value.trim()) {
     throw new Error(
-      "Supabase key is missing. Add SUPABASE_SERVICE_ROLE_KEY in Vercel environment variables."
+      "Missing Supabase key. Add NEXT_PUBLIC_SUPABASE_ANON_KEY or SUPABASE_SERVICE_ROLE_KEY."
     );
   }
 
@@ -37,7 +37,7 @@ export function getSupabaseClient() {
     return cachedSupabase;
   }
 
-  cachedSupabase = createClient(getSupabaseUrl(), getSupabaseKey(), {
+  cachedSupabase = createClient(getSupabaseUrl(), getSupabaseAnonKey(), {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -47,13 +47,6 @@ export function getSupabaseClient() {
   return cachedSupabase;
 }
 
-/**
- * Lazy proxy client.
- * This lets existing files keep using:
- *   import { supabase } from "@/lib/supabase";
- *
- * without creating the real client during build-time module import.
- */
 export const supabase = new Proxy({} as SupabaseClient, {
   get(_target, prop, receiver) {
     const client = getSupabaseClient();

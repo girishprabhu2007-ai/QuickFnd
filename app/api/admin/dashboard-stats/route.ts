@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
+import { getAdminUser } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/admin-publishing";
 
 export async function GET() {
   try {
+    const adminUser = await getAdminUser();
+
+    if (!adminUser) {
+      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    }
+
     const supabaseAdmin = getSupabaseAdmin();
 
     const [tools, calculators, aiTools, requests] = await Promise.all([
@@ -46,7 +53,10 @@ export async function GET() {
     console.error("dashboard-stats route error:", error);
 
     return NextResponse.json(
-      { error: "Failed to load dashboard stats." },
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to load dashboard stats.",
+      },
       { status: 500 }
     );
   }

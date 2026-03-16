@@ -9,10 +9,12 @@ import {
 
 function getSupabaseUrl() {
   const value =
-    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    "";
 
   if (!value.trim()) {
-    throw new Error("Supabase URL is not configured.");
+    throw new Error("Missing Supabase URL.");
   }
 
   return value;
@@ -25,7 +27,7 @@ function getSupabaseAuthKey() {
     "";
 
   if (!value.trim()) {
-    throw new Error("Supabase auth key is not configured.");
+    throw new Error("Missing Supabase auth key.");
   }
 
   return value;
@@ -63,7 +65,7 @@ export async function POST(req: Request) {
 
     if (error || !data.session || !data.user) {
       return NextResponse.json(
-        { error: "Invalid email or password." },
+        { error: error?.message || "Invalid email or password." },
         { status: 401 }
       );
     }
@@ -96,7 +98,9 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Admin login error:", error);
     return NextResponse.json(
-      { error: "Failed to log in." },
+      {
+        error: error instanceof Error ? error.message : "Failed to log in.",
+      },
       { status: 500 }
     );
   }
