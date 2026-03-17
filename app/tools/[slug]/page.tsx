@@ -3,7 +3,17 @@ import Link from "next/link";
 import JsonLd from "@/components/seo/JsonLd";
 import PublicDetailPage from "@/components/seo/PublicDetailPage";
 import BuiltInToolClient from "@/components/tools/BuiltInToolClient";
-import { getContentItem, getRelatedContent, getTools } from "@/lib/db";
+import {
+  RelatedToolsSection,
+  TopicLinksSection,
+} from "@/components/seo/InternalLinkSections";
+import {
+  getContentItem,
+  getRelatedContent,
+  getTools,
+  getCalculators,
+  getAITools,
+} from "@/lib/db";
 import { buildMetaDescription, buildPageTitle } from "@/lib/content-pages";
 import {
   buildBreadcrumbSchema,
@@ -15,6 +25,12 @@ import {
   filterVisibleTools,
   isToolPubliclyVisible,
 } from "@/lib/public-tool-visibility";
+import {
+  getRelatedVisibleTools,
+  getToolTopicLinks,
+  getRelatedTopics,
+  getTopicByToolSlug,
+} from "@/lib/internal-linking";
 import type { PublicContentItem } from "@/lib/content-pages";
 
 type Props = {
@@ -84,7 +100,7 @@ function ToolUpgradeFallback({
 
       <p className="mt-4 max-w-3xl text-sm leading-7 text-q-muted md:text-base">
         This tool page exists in QuickFnd, but the live engine is not publicly available yet.
-        Instead of sending you to a dead end, here are similar working tools you can use right now.
+        Here are similar working tools you can use right now.
       </p>
 
       <div className="mt-6 flex flex-wrap gap-3">
@@ -215,9 +231,21 @@ export default async function ToolDetailPage({ params }: Props) {
     );
   }
 
-  const relatedItems = filterVisibleTools(
-    await getRelatedContent("tools", item.related_slugs, item.slug)
-  );
+  const [allTools, calculators, aiTools, relatedRaw] = await Promise.all([
+    getTools(),
+    getCalculators(),
+    getAITools(),
+    getRelatedContent("tools", item.related_slugs, item.slug),
+  ]);
+
+  const relatedItems = filterVisibleTools(relatedRaw);
+  const smartRelatedTools = getRelatedVisibleTools(item, allTools, 6);
+  const topicLinks = getToolTopicLinks(item, allTools, calculators, aiTools);
+
+  const primaryTopic = getTopicByToolSlug(item.slug, allTools, calculators, aiTools);
+  const relatedTopics = primaryTopic
+    ? getRelatedTopics(primaryTopic.key, allTools, calculators, aiTools, 4)
+    : [];
 
   return (
     <>
@@ -237,6 +265,14 @@ export default async function ToolDetailPage({ params }: Props) {
         relatedItems={relatedItems}
         primaryContent={<BuiltInToolClient item={item} />}
       />
+
+      <main className="bg-q-bg px-4 pb-12 text-q-text sm:px-6 lg:px-8">
+        <section className="mx-auto max-w-7xl space-y-8">
+          <TopicLinksSection title="Explore This Topic" items={topicLinks} />
+          <RelatedToolsSection title="Related Tools" items={smartRelatedTools} />
+          <TopicLinksSection title="Related Topics" items={relatedTopics} />
+        </section>
+      </main>
     </>
   );
 }
