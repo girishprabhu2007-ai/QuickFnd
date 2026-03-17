@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type TopicOpportunity = {
   key: string;
@@ -13,13 +13,19 @@ type TopicOpportunity = {
   example_ideas: string[];
 };
 
-type CreatedItem = {
+type SuggestedItem = {
   name: string;
   slug: string;
   description: string;
   related_slugs: string[];
   engine_type: string;
   engine_config: Record<string, unknown>;
+};
+
+type CreatedItem = {
+  name: string;
+  slug: string;
+  engine_type: string;
 };
 
 type SkippedItem = {
@@ -33,7 +39,13 @@ export default function AdminTopicsPage() {
   const [error, setError] = useState("");
 
   const [busyTopic, setBusyTopic] = useState("");
+  const [createBusy, setCreateBusy] = useState(false);
   const [message, setMessage] = useState("");
+
+  const [previewTopicKey, setPreviewTopicKey] = useState("");
+  const [previewTopicLabel, setPreviewTopicLabel] = useState("");
+  const [suggestedItems, setSuggestedItems] = useState<SuggestedItem[]>([]);
+  const [selectedMap, setSelectedMap] = useState<Record<string, boolean>>({});
 
   const [createdItems, setCreatedItems] = useState<CreatedItem[]>([]);
   const [skippedItems, setSkippedItems] = useState<SkippedItem[]>([]);
@@ -68,12 +80,16 @@ export default function AdminTopicsPage() {
     loadTopics();
   }, []);
 
-  async function expandTopic(topicKey: string) {
+  async function previewTopicExpansion(topicKey: string, topicLabel: string) {
     setBusyTopic(topicKey);
     setMessage("");
     setCreatedItems([]);
     setSkippedItems([]);
     setError("");
+    setSuggestedItems([]);
+    setSelectedMap({});
+    setPreviewTopicKey("");
+    setPreviewTopicLabel("");
 
     try {
       const response = await fetch("/api/admin/expand-topic", {
@@ -90,22 +106,102 @@ export default function AdminTopicsPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data?.error || "Failed to expand topic.");
+        throw new Error(data?.error || "Failed to preview topic expansion.");
       }
 
-      setMessage(
-        `Expanded ${data.topic_label}. Created ${data.createdCount} tool(s), skipped ${data.skippedCount}.`
-      );
-      setCreatedItems(Array.isArray(data.created) ? data.created : []);
-      setSkippedItems(Array.isArray(data.skipped) ? data.skipped : []);
+      const suggestions = Array.isArray(data.suggestions) ? data.suggestions : [];
 
-      await loadTopics();
+      const nextSelectedMap: Record<string, boolean> = {};
+      for (const item of suggestions) {
+        nextSelectedMap[item.slug] = true;
+      }
+
+      setPreviewTopicKey(topicKey);
+      setPreviewTopicLabel(topicLabel);
+      setSuggestedItems(suggestions);
+      setSelectedMap(nextSelectedMap);
+      setMessage(
+        `Preview ready for ${topicLabel}. Review the suggested tools and select what you want to create.`
+      );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to expand topic.");
+      setError(
+        err instanceof Error ? err.message : "Failed to preview topic expansion."
+      );
     } finally {
       setBusyTopic("");
     }
   }
+
+  async function createSelectedTools() {
+    const selectedItems = suggestedItems.filter((item) => selectedMap[item.slug]);
+
+    if (selectedItems.length === 0) {
+      setError("Select at least one suggested tool before creating.");
+      return;
+    }
+
+    setCreateBusy(true);
+    setError("");
+    setMessage("");
+    setCreatedItems([]);
+    setSkippedItems([]);
+
+    try {
+      const response = await fetch("/api/admin/create-selected-tools", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          items: selectedItems,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to create selected tools.");
+      }
+
+      setCreatedItems(Array.isArray(data.created) ? data.created : []);
+      setSkippedItems(Array.isArray(data.skipped) ? data.skipped : []);
+      setMessage(
+        `Created ${data.createdCount} tool(s), skipped ${data.skippedCount}.`
+      );
+
+      setSuggestedItems([]);
+      setSelectedMap({});
+      setPreviewTopicKey("");
+      setPreviewTopicLabel("");
+
+      await loadTopics();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to create selected tools."
+      );
+    } finally {
+      setCreateBusy(false);
+    }
+  }
+
+  function toggleSelected(slug: string) {
+    setSelectedMap((prev) => ({
+      ...prev,
+      [slug]: !prev[slug],
+    }));
+  }
+
+  function selectAllSuggestions(value: boolean) {
+    const next: Record<string, boolean> = {};
+    for (const item of suggestedItems) {
+      next[item.slug] = value;
+    }
+    setSelectedMap(next);
+  }
+
+  const selectedCount = useMemo(() => {
+    return Object.values(selectedMap).filter(Boolean).length;
+  }, [selectedMap]);
 
   return (
     <div className="grid gap-8">
@@ -115,8 +211,7 @@ export default function AdminTopicsPage() {
             <h2 className="text-3xl font-semibold text-q-text">Topic Expansion</h2>
             <p className="mt-3 max-w-4xl text-sm leading-7 text-q-muted md:text-base">
               Review niche opportunities with the strongest expansion potential.
-              Use demand signals, live tool coverage, and topic usage to decide which
-              clusters QuickFnd should expand next.
+              Preview suggested tools first, then choose which ones to create.
             </p>
           </div>
 
@@ -227,14 +322,87 @@ export default function AdminTopicsPage() {
 
                   <div className="w-full xl:max-w-xs">
                     <button
-                      onClick={() => expandTopic(item.key)}
+                      onClick={() => previewTopicExpansion(item.key, item.label)}
                       disabled={busyTopic === item.key}
                       className="w-full rounded-xl bg-q-primary px-4 py-3 font-medium text-white transition hover:bg-q-primary-hover disabled:opacity-60"
                     >
-                      {busyTopic === item.key ? "Expanding..." : "Expand Topic"}
+                      {busyTopic === item.key ? "Preparing..." : "Preview Expansion"}
                     </button>
                   </div>
                 </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h3 className="text-2xl font-semibold text-q-text">
+              {previewTopicLabel ? `Suggested Tools for ${previewTopicLabel}` : "Suggested Tools"}
+            </h3>
+            <p className="mt-2 text-sm text-q-muted">
+              Preview topic expansion suggestions, select what you want, then create only the chosen tools.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => selectAllSuggestions(true)}
+              disabled={suggestedItems.length === 0}
+              className="rounded-xl border border-q-border bg-q-bg px-4 py-2 text-sm font-medium text-q-text transition hover:bg-q-card-hover disabled:opacity-50"
+            >
+              Select All
+            </button>
+
+            <button
+              onClick={() => selectAllSuggestions(false)}
+              disabled={suggestedItems.length === 0}
+              className="rounded-xl border border-q-border bg-q-bg px-4 py-2 text-sm font-medium text-q-text transition hover:bg-q-card-hover disabled:opacity-50"
+            >
+              Clear
+            </button>
+
+            <button
+              onClick={createSelectedTools}
+              disabled={createBusy || selectedCount === 0}
+              className="rounded-xl bg-q-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-q-primary-hover disabled:opacity-60"
+            >
+              {createBusy ? "Creating..." : `Create Selected (${selectedCount})`}
+            </button>
+          </div>
+        </div>
+
+        {suggestedItems.length === 0 ? (
+          <div className="mt-5 rounded-2xl border border-q-border bg-q-bg p-5 text-sm text-q-muted">
+            No preview loaded yet. Choose a topic and click Preview Expansion first.
+          </div>
+        ) : (
+          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+            {suggestedItems.map((item) => (
+              <div
+                key={item.slug}
+                className="rounded-2xl border border-q-border bg-q-bg p-5"
+              >
+                <label className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(selectedMap[item.slug])}
+                    onChange={() => toggleSelected(item.slug)}
+                    className="mt-1"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-lg font-semibold text-q-text">{item.name}</div>
+                    <div className="mt-1 text-sm text-q-muted">/{item.slug}</div>
+                    <div className="mt-2 text-sm text-q-muted">
+                      Engine: {item.engine_type}
+                    </div>
+                    <div className="mt-3 text-sm leading-6 text-q-muted">
+                      {item.description}
+                    </div>
+                  </div>
+                </label>
               </div>
             ))}
           </div>

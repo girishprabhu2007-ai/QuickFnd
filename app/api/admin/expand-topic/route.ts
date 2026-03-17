@@ -3,7 +3,6 @@ import { getAdminUser } from "@/lib/admin-auth";
 import { getOpenAIClient } from "@/lib/openai-server";
 import {
   filterSupportedBulkTools,
-  insertBulkTools,
   parseBulkGeneratedTools,
 } from "@/lib/tool-bulk-generator";
 import { getTopicExpansionIntelligence } from "@/lib/topic-expansion-intelligence";
@@ -84,16 +83,13 @@ ${topic.recommended_engine_types.join("\n")}
 
     const parsed = parseBulkGeneratedTools(response.output_text || "");
     const supported = filterSupportedBulkTools(parsed);
-    const result = await insertBulkTools(supported);
 
     return NextResponse.json({
       success: true,
       topic_key: topic.key,
       topic_label: topic.label,
-      createdCount: result.created.length,
-      skippedCount: result.skipped.length,
-      created: result.created,
-      skipped: result.skipped,
+      suggestionsCount: supported.length,
+      suggestions: supported,
     });
   } catch (error) {
     console.error("expand-topic route error:", error);
@@ -101,7 +97,7 @@ ${topic.recommended_engine_types.join("\n")}
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : "Failed to expand topic.",
+          error instanceof Error ? error.message : "Failed to preview topic expansion.",
       },
       { status: 500 }
     );
