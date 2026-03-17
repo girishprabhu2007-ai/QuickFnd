@@ -40,12 +40,14 @@ function normalizeText(value: string | null | undefined) {
   return String(value || "").trim().toLowerCase();
 }
 
+function tokenize(value: string | null | undefined) {
+  return normalizeText(value)
+    .split(/[^a-z0-9]+/)
+    .filter((word) => word.length >= 3);
+}
+
 function wordSet(value: string | null | undefined) {
-  return new Set(
-    normalizeText(value)
-      .split(/[^a-z0-9]+/)
-      .filter((word) => word.length >= 3)
-  );
+  return new Set(tokenize(value));
 }
 
 function overlapScore(a: Set<string>, b: Set<string>) {
@@ -60,9 +62,31 @@ function itemText(item: { name: string; slug: string; description?: string | nul
   return `${item.name} ${item.slug} ${item.description || ""}`;
 }
 
+function getToolTopicKey(
+  slug: string,
+  allTools: MinimalTool[],
+  calculators: MinimalCalculator[],
+  aiTools: MinimalAITool[]
+) {
+  const visibleTools = filterVisibleTools(allTools);
+  const topics = getTopicCollections({
+    tools: visibleTools,
+    calculators,
+    aiTools,
+  });
+
+  const topic = topics.find((entry) =>
+    entry.tools.some((tool) => tool.slug === slug)
+  );
+
+  return topic?.key || "";
+}
+
 export function getRelatedVisibleTools(
   currentTool: MinimalTool,
   allTools: MinimalTool[],
+  calculators: MinimalCalculator[],
+  aiTools: MinimalAITool[],
   limit = 6
 ): InternalLinkItem[] {
   const visibleTools = filterVisibleTools(allTools).filter(
@@ -70,38 +94,57 @@ export function getRelatedVisibleTools(
   );
 
   const currentWords = wordSet(itemText(currentTool));
-  const currentRelatedSlugs = new Set(Array.isArray(currentTool.related_slugs) ? currentTool.related_slugs : []);
+  const currentRelatedSlugs = new Set(
+    Array.isArray(currentTool.related_slugs) ? currentTool.related_slugs : []
+  );
   const currentEngine = normalizeText(currentTool.engine_type);
+  const currentTopicKey = getToolTopicKey(
+    currentTool.slug,
+    allTools,
+    calculators,
+    aiTools
+  );
 
   const ranked = visibleTools
     .map((tool) => {
       let score = 0;
 
       if (currentRelatedSlugs.has(tool.slug)) {
-        score += 20;
+        score += 40;
       }
 
       const candidateWords = wordSet(itemText(tool));
-      score += overlapScore(currentWords, candidateWords) * 3;
+      const sharedWordCount = overlapScore(currentWords, candidateWords);
+      score += sharedWordCount * 4;
 
-      if (
-        currentEngine &&
-        normalizeText(tool.engine_type) &&
-        normalizeText(tool.engine_type) === currentEngine
-      ) {
-        score += 8;
+      const candidateEngine = normalizeText(tool.engine_type);
+      if (currentEngine && candidateEngine && candidateEngine === currentEngine) {
+        score += 18;
       }
 
-      if (normalizeText(tool.slug).includes(normalizeText(currentTool.slug))) {
-        score += 2;
+      const candidateTopicKey = getToolTopicKey(
+        tool.slug,
+        allTools,
+        calculators,
+        aiTools
+      );
+      if (currentTopicKey && candidateTopicKey === currentTopicKey) {
+        score += 16;
       }
+
+      const currentSlugTokens = tokenize(currentTool.slug);
+      const candidateSlugTokens = new Set(tokenize(tool.slug));
+      const sharedSlugTokens = currentSlugTokens.filter((token) =>
+        candidateSlugTokens.has(token)
+      ).length;
+      score += sharedSlugTokens * 3;
 
       return {
         tool,
         score,
       };
     })
-    .filter((entry) => entry.score > 0)
+    .filter((entry) => entry.score >= 10)
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       return a.tool.name.localeCompare(b.tool.name);
@@ -131,7 +174,7 @@ export function getToolTopicLinks(
     aiTools,
   });
 
-  const matchingTopics = topics
+  return topics
     .filter((topic) => topic.tools.some((item) => item.slug === currentTool.slug))
     .map((topic) => ({
       key: topic.key,
@@ -139,8 +182,6 @@ export function getToolTopicLinks(
       href: `/topics/${topic.key}`,
       totalCount: topic.totalCount,
     }));
-
-  return matchingTopics;
 }
 
 export function getRelatedTopics(
@@ -172,13 +213,16 @@ export function getRelatedTopics(
         `${topic.label} ${topic.tools.map((item) => item.slug).join(" ")}`
       );
 
-      let score = overlapScore(currentWords, topicWords);
-
+      const sharedWords = overlapScore(currentWords, topicWords);
       const sharedTools = topic.tools.filter((item) =>
         currentTopic.tools.some((currentItem) => currentItem.slug === item.slug)
       ).length;
 
-      score += sharedTools * 2;
+      const labelWordsCurrent = wordSet(currentTopic.label);
+      const labelWordsCandidate = wordSet(topic.label);
+      const sharedLabelWords = overlapScore(labelWordsCurrent, labelWordsCandidate);
+
+      const score = sharedWords + sharedTools * 5 + sharedLabelWords * 4;
 
       return {
         key: topic.key,
@@ -188,7 +232,7 @@ export function getRelatedTopics(
         score,
       };
     })
-    .filter((topic) => topic.score > 0)
+    .filter((topic) => topic.score >= 3)
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       if (b.totalCount !== a.totalCount) return b.totalCount - a.totalCount;

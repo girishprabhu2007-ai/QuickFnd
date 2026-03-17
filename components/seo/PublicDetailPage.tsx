@@ -1,57 +1,82 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
-import type { PublicContentItem, PublicTable } from "@/lib/content-pages";
-import { getCategoryPath } from "@/lib/content-pages";
-import { getDisplayDescription } from "@/lib/display-content";
-import { getSiteUrl } from "@/lib/site-url";
-import PageSEOSections from "@/components/seo/PageSEOSections";
-import ShareButtons from "@/components/social/ShareButtons";
-import TrackUsage from "@/components/analytics/TrackUsage";
 import SiteFooter from "@/components/site/SiteFooter";
+import type { ReactNode } from "react";
+import type { PublicContentItem } from "@/lib/content-pages";
+import { getDisplayDescription } from "@/lib/display-content";
+
+type TableName = "tools" | "calculators" | "ai_tools";
 
 type Props = {
-  table: PublicTable;
+  table: TableName;
   item: PublicContentItem;
   relatedItems: PublicContentItem[];
-  primaryContent: ReactNode;
+  primaryContent?: ReactNode;
+  secondaryContent?: ReactNode;
 };
 
-function getCategoryTitle(table: PublicTable) {
+type FaqItem = {
+  question: string;
+  answer: string;
+};
+
+function tableLabel(table: TableName) {
   if (table === "tools") return "Tools";
   if (table === "calculators") return "Calculators";
   return "AI Tools";
 }
 
-function getEntityLabel(table: PublicTable) {
-  if (table === "tools") return "Tool";
-  if (table === "calculators") return "Calculator";
-  return "AI Tool";
-}
-
-function getItemType(table: PublicTable): "tool" | "calculator" | "ai-tool" {
+function singularLabel(table: TableName) {
   if (table === "tools") return "tool";
   if (table === "calculators") return "calculator";
-  return "ai-tool";
+  return "AI tool";
 }
 
-function getBackHref(table: PublicTable) {
-  return getCategoryPath(table);
+function detailHref(table: TableName, slug: string) {
+  if (table === "tools") return `/tools/${slug}`;
+  if (table === "calculators") return `/calculators/${slug}`;
+  return `/ai-tools/${slug}`;
 }
 
-function getRelatedHref(table: PublicTable, slug: string) {
-  return `${getCategoryPath(table)}/${slug}`;
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => String(item || "").trim())
+    .filter(Boolean);
 }
 
-function getAboutText(table: PublicTable, item: PublicContentItem) {
-  if (table === "tools") {
-    return `${item.name} is available on QuickFnd as a live public page with its own slug, metadata, internal links, and engine-based rendering.`;
-  }
+function asFaqArray(value: unknown): FaqItem[] {
+  if (!Array.isArray(value)) return [];
 
-  if (table === "calculators") {
-    return `${item.name} is published as a live QuickFnd calculator page with metadata, internal links, and engine-based rendering.`;
-  }
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
 
-  return `${item.name} is published as a dedicated QuickFnd AI tool page. Some AI pages include an interactive engine, while others serve as structured discovery pages with related links and supporting content.`;
+      const record = item as Record<string, unknown>;
+      const question = String(record.question || "").trim();
+      const answer = String(record.answer || "").trim();
+
+      if (!question || !answer) return null;
+
+      return { question, answer };
+    })
+    .filter((item): item is FaqItem => Boolean(item));
+}
+
+function getItemFaqs(item: PublicContentItem): FaqItem[] {
+  const source = (item as Record<string, unknown>).faqs;
+  return asFaqArray(source);
+}
+
+function getItemHowToSteps(item: PublicContentItem): string[] {
+  const source =
+    (item as Record<string, unknown>).how_to_steps ??
+    (item as Record<string, unknown>).steps;
+  return asStringArray(source);
+}
+
+function getItemBenefits(item: PublicContentItem): string[] {
+  const source = (item as Record<string, unknown>).benefits;
+  return asStringArray(source);
 }
 
 export default function PublicDetailPage({
@@ -59,147 +84,161 @@ export default function PublicDetailPage({
   item,
   relatedItems,
   primaryContent,
+  secondaryContent,
 }: Props) {
-  const categoryTitle = getCategoryTitle(table);
-  const entityLabel = getEntityLabel(table);
-  const backHref = getBackHref(table);
-  const pageUrl = `${getSiteUrl()}${getCategoryPath(table)}/${item.slug}`;
-  const description = getDisplayDescription(table, item, "detail");
-  const itemType = getItemType(table);
+  const pageDescription = getDisplayDescription(table, item);
+  const faqs = getItemFaqs(item);
+  const steps = getItemHowToSteps(item);
+  const benefits = getItemBenefits(item);
+  const label = tableLabel(table);
+  const single = singularLabel(table);
 
   return (
-    <>
-      <main className="min-h-screen bg-q-bg px-4 py-8 text-q-text sm:px-6 lg:px-8 lg:py-12">
-        <TrackUsage itemSlug={item.slug} itemType={itemType} />
-
-        <section className="mx-auto max-w-7xl">
-          <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm text-q-muted">
+    <main className="min-h-screen bg-q-bg text-q-text">
+      <section className="px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+        <div className="mx-auto max-w-7xl space-y-8">
+          <nav className="text-sm text-q-muted">
             <Link href="/" className="hover:text-q-text">
               Home
             </Link>
-            <span>/</span>
-            <Link href={backHref} className="hover:text-q-text">
-              {categoryTitle}
+            <span className="mx-2">/</span>
+            <Link
+              href={
+                table === "tools"
+                  ? "/tools"
+                  : table === "calculators"
+                  ? "/calculators"
+                  : "/ai-tools"
+              }
+              className="hover:text-q-text"
+            >
+              {label}
             </Link>
-            <span>/</span>
+            <span className="mx-2">/</span>
             <span className="text-q-text">{item.name}</span>
           </nav>
 
-          <div className="mb-10">
-            <Link
-              href={backHref}
-              className="text-sm text-blue-500 hover:text-blue-400"
-            >
-              ← Back to {categoryTitle.toLowerCase()}
-            </Link>
-
-            <p className="mt-5 text-sm uppercase tracking-[0.2em] text-blue-500">
-              QuickFnd {entityLabel}
+          <section className="rounded-3xl border border-q-border bg-q-card p-6 md:p-8 lg:p-10">
+            <p className="text-sm uppercase tracking-[0.2em] text-blue-500">
+              QuickFnd {label.slice(0, -1)}
             </p>
 
-            <h1 className="mt-3 text-3xl font-bold md:text-4xl lg:text-5xl">
-              {item.name}
-            </h1>
+            <h1 className="mt-4 text-3xl font-bold md:text-5xl">{item.name}</h1>
 
             <p className="mt-4 max-w-4xl text-base leading-7 text-q-muted md:text-lg md:leading-8">
-              {description}
+              {pageDescription}
             </p>
 
-            <div className="mt-5 flex flex-wrap gap-3">
-              <ShareButtons url={pageUrl} title={item.name} />
-              <Link
-                href="/request-tool"
-                className="rounded-xl border border-q-border bg-q-bg px-4 py-3 text-sm font-medium text-q-text transition hover:border-blue-400/50 hover:text-blue-500"
-              >
-                Request a Tool
-              </Link>
-            </div>
-          </div>
-
-          <div className="grid gap-8 xl:grid-cols-[minmax(0,2fr)_320px]">
-            <div className="min-w-0">
-              <div className="rounded-3xl border border-q-border bg-q-card/60 p-3 md:p-4">
-                {primaryContent}
+            <div className="mt-6 flex flex-wrap gap-3">
+              <div className="rounded-full border border-q-border bg-q-bg px-4 py-2 text-sm text-q-text">
+                Slug: {item.slug}
               </div>
+              {item.engine_type ? (
+                <div className="rounded-full border border-q-border bg-q-bg px-4 py-2 text-sm text-q-text">
+                  Engine: {item.engine_type}
+                </div>
+              ) : null}
             </div>
-
-            <aside className="self-start space-y-6 xl:sticky xl:top-24">
-              <section className="rounded-2xl border border-q-border bg-q-card p-6">
-                <h2 className="text-xl font-semibold text-q-text">
-                  About this {entityLabel.toLowerCase()}
-                </h2>
-                <p className="mt-4 text-sm leading-7 text-q-muted">
-                  {getAboutText(table, item)}
-                </p>
-              </section>
-
-              <section className="rounded-2xl border border-q-border bg-q-card p-6">
-                <h2 className="text-xl font-semibold text-q-text">
-                  {entityLabel} details
-                </h2>
-                <dl className="mt-4 grid gap-4 text-sm">
-                  <div>
-                    <dt className="text-q-muted">Slug</dt>
-                    <dd className="mt-1 break-words text-q-text">{item.slug}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-q-muted">Category</dt>
-                    <dd className="mt-1 text-q-text">{entityLabel}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-q-muted">Engine</dt>
-                    <dd className="mt-1 break-words text-q-text">
-                      {item.engine_type || "auto"}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-q-muted">URL</dt>
-                    <dd className="mt-1 break-all text-q-text">{pageUrl}</dd>
-                  </div>
-                </dl>
-              </section>
-            </aside>
-          </div>
-
-          <section className="mt-10">
-            <PageSEOSections table={table} item={item} />
           </section>
 
-          <section className="mt-10">
-            <h2 className="text-2xl font-semibold text-q-text">
-              Related {categoryTitle.toLowerCase()}
-            </h2>
+          {primaryContent ? (
+            <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
+              {primaryContent}
+            </section>
+          ) : null}
 
-            {relatedItems.length === 0 ? (
-              <div className="mt-4 rounded-2xl border border-q-border bg-q-card p-6 text-q-muted">
-                No related {categoryTitle.toLowerCase()} available yet.
+          {steps.length > 0 ? (
+            <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
+              <h2 className="text-2xl font-semibold text-q-text">How to use</h2>
+              <ol className="mt-5 space-y-3">
+                {steps.map((step, index) => (
+                  <li
+                    key={`${item.slug}-step-${index}`}
+                    className="rounded-xl border border-q-border bg-q-bg p-4 text-sm leading-7 text-q-muted"
+                  >
+                    <span className="font-semibold text-q-text">
+                      Step {index + 1}:
+                    </span>{" "}
+                    {step}
+                  </li>
+                ))}
+              </ol>
+            </section>
+          ) : null}
+
+          {benefits.length > 0 ? (
+            <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
+              <h2 className="text-2xl font-semibold text-q-text">
+                Why use this {single}?
+              </h2>
+              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {benefits.map((benefit, index) => (
+                  <div
+                    key={`${item.slug}-benefit-${index}`}
+                    className="rounded-xl border border-q-border bg-q-bg p-4 text-sm leading-7 text-q-muted"
+                  >
+                    {benefit}
+                  </div>
+                ))}
               </div>
-            ) : (
-              <div className="mt-6 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            </section>
+          ) : null}
+
+          {faqs.length > 0 ? (
+            <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
+              <h2 className="text-2xl font-semibold text-q-text">
+                Frequently asked questions
+              </h2>
+              <div className="mt-5 space-y-4">
+                {faqs.map((faq, index) => (
+                  <div
+                    key={`${item.slug}-faq-${index}`}
+                    className="rounded-xl border border-q-border bg-q-bg p-5"
+                  >
+                    <h3 className="text-lg font-semibold text-q-text">
+                      {faq.question}
+                    </h3>
+                    <p className="mt-2 text-sm leading-7 text-q-muted">
+                      {faq.answer}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {relatedItems.length > 0 ? (
+            <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
+              <h2 className="text-2xl font-semibold text-q-text">
+                Related {label}
+              </h2>
+              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {relatedItems.map((related) => (
                   <Link
                     key={related.slug}
-                    href={getRelatedHref(table, related.slug)}
-                    className="group rounded-2xl border border-q-border bg-q-card p-6 transition-all duration-200 hover:-translate-y-1 hover:border-blue-400/50 hover:shadow-[0_12px_30px_rgba(59,130,246,0.12)]"
+                    href={detailHref(table, related.slug)}
+                    className="rounded-2xl border border-q-border bg-q-bg p-5 transition hover:-translate-y-0.5 hover:border-blue-400/50"
                   >
-                    <h3 className="text-lg font-semibold text-q-text transition-colors duration-200 group-hover:text-blue-500">
+                    <div className="text-lg font-semibold text-q-text">
                       {related.name}
-                    </h3>
+                    </div>
                     <p className="mt-3 text-sm leading-6 text-q-muted">
                       {getDisplayDescription(table, related, "card")}
                     </p>
-                    <div className="mt-4 text-sm font-medium text-blue-500 transition-transform duration-200 group-hover:translate-x-1">
-                      Open {entityLabel.toLowerCase()} →
+                    <div className="mt-4 text-sm font-medium text-blue-500">
+                      Open →
                     </div>
                   </Link>
                 ))}
               </div>
-            )}
-          </section>
-        </section>
-      </main>
+            </section>
+          ) : null}
+
+          {secondaryContent ? secondaryContent : null}
+        </div>
+      </section>
 
       <SiteFooter />
-    </>
+    </main>
   );
 }

@@ -89,65 +89,69 @@ function ToolUpgradeFallback({
   suggestions: PublicContentItem[];
 }) {
   return (
-    <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
-      <div className="inline-flex rounded-full border border-q-border bg-q-bg px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-q-muted">
-        Tool Upgrade In Progress
-      </div>
-
-      <h2 className="mt-4 text-2xl font-semibold text-q-text md:text-3xl">
-        {item.name} is being upgraded
-      </h2>
-
-      <p className="mt-4 max-w-3xl text-sm leading-7 text-q-muted md:text-base">
-        This tool page exists in QuickFnd, but the live engine is not publicly available yet.
-        Here are similar working tools you can use right now.
-      </p>
-
-      <div className="mt-6 flex flex-wrap gap-3">
-        <Link
-          href="/tools"
-          className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white transition hover:bg-q-primary-hover"
-        >
-          Browse All Tools
-        </Link>
-
-        <Link
-          href="/"
-          className="rounded-xl border border-q-border bg-q-bg px-4 py-2 font-medium text-q-text transition hover:bg-q-card-hover"
-        >
-          Back To Homepage
-        </Link>
-      </div>
-
-      {suggestions.length > 0 ? (
-        <div className="mt-8">
-          <h3 className="text-xl font-semibold text-q-text">Similar working tools</h3>
-
-          <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {suggestions.map((tool) => (
-              <Link
-                key={tool.slug}
-                href={`/tools/${tool.slug}`}
-                className="rounded-2xl border border-q-border bg-q-bg p-5 transition hover:-translate-y-0.5 hover:border-blue-400/50"
-              >
-                <div className="text-lg font-semibold text-q-text">{tool.name}</div>
-                <div className="mt-2 text-sm text-q-muted">/{tool.slug}</div>
-                <p className="mt-3 text-sm leading-6 text-q-muted">
-                  {tool.description || "Open this working tool now."}
-                </p>
-                <div className="mt-4 text-sm font-medium text-blue-500">
-                  Open tool →
-                </div>
-              </Link>
-            ))}
+    <main className="min-h-screen bg-q-bg px-4 py-8 text-q-text sm:px-6 lg:px-8 lg:py-12">
+      <section className="mx-auto max-w-7xl">
+        <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
+          <div className="inline-flex rounded-full border border-q-border bg-q-bg px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-q-muted">
+            Tool Upgrade In Progress
           </div>
-        </div>
-      ) : (
-        <div className="mt-8 rounded-2xl border border-q-border bg-q-bg p-5 text-sm text-q-muted">
-          No close matches were found yet. Explore the full tools directory to find related working tools.
-        </div>
-      )}
-    </section>
+
+          <h2 className="mt-4 text-2xl font-semibold text-q-text md:text-3xl">
+            {item.name} is being upgraded
+          </h2>
+
+          <p className="mt-4 max-w-3xl text-sm leading-7 text-q-muted md:text-base">
+            This tool page exists in QuickFnd, but the live engine is not publicly available yet.
+            Here are similar working tools you can use right now.
+          </p>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link
+              href="/tools"
+              className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white transition hover:bg-q-primary-hover"
+            >
+              Browse All Tools
+            </Link>
+
+            <Link
+              href="/"
+              className="rounded-xl border border-q-border bg-q-bg px-4 py-2 font-medium text-q-text transition hover:bg-q-card-hover"
+            >
+              Back To Homepage
+            </Link>
+          </div>
+
+          {suggestions.length > 0 ? (
+            <div className="mt-8">
+              <h3 className="text-xl font-semibold text-q-text">Similar working tools</h3>
+
+              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {suggestions.map((tool) => (
+                  <Link
+                    key={tool.slug}
+                    href={`/tools/${tool.slug}`}
+                    className="rounded-2xl border border-q-border bg-q-bg p-5 transition hover:-translate-y-0.5 hover:border-blue-400/50"
+                  >
+                    <div className="text-lg font-semibold text-q-text">{tool.name}</div>
+                    <div className="mt-2 text-sm text-q-muted">/{tool.slug}</div>
+                    <p className="mt-3 text-sm leading-6 text-q-muted">
+                      {tool.description || "Open this working tool now."}
+                    </p>
+                    <div className="mt-4 text-sm font-medium text-blue-500">
+                      Open tool →
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="mt-8 rounded-2xl border border-q-border bg-q-bg p-5 text-sm text-q-muted">
+              No close matches were found yet. Explore the full tools directory to find related working tools.
+            </div>
+          )}
+        </section>
+      </section>
+    </main>
   );
 }
 
@@ -221,14 +225,7 @@ export default async function ToolDetailPage({ params }: Props) {
   if (!isToolPubliclyVisible(item)) {
     const allTools = await getTools();
     const suggestions = getFallbackSuggestions(item, allTools);
-
-    return (
-      <main className="min-h-screen bg-q-bg px-4 py-8 text-q-text sm:px-6 lg:px-8 lg:py-12">
-        <section className="mx-auto max-w-7xl">
-          <ToolUpgradeFallback item={item} suggestions={suggestions} />
-        </section>
-      </main>
-    );
+    return <ToolUpgradeFallback item={item} suggestions={suggestions} />;
   }
 
   const [allTools, calculators, aiTools, relatedRaw] = await Promise.all([
@@ -239,13 +236,27 @@ export default async function ToolDetailPage({ params }: Props) {
   ]);
 
   const relatedItems = filterVisibleTools(relatedRaw);
-  const smartRelatedTools = getRelatedVisibleTools(item, allTools, 6);
+  const smartRelatedTools = getRelatedVisibleTools(
+    item,
+    allTools,
+    calculators,
+    aiTools,
+    6
+  );
   const topicLinks = getToolTopicLinks(item, allTools, calculators, aiTools);
 
   const primaryTopic = getTopicByToolSlug(item.slug, allTools, calculators, aiTools);
   const relatedTopics = primaryTopic
-    ? getRelatedTopics(primaryTopic.key, allTools, calculators, aiTools, 4)
+    ? getRelatedTopics(primaryTopic.key, allTools, calculators, aiTools, 3)
     : [];
+
+  const secondaryContent = (
+    <div className="space-y-8">
+      <TopicLinksSection title="Explore This Topic" items={topicLinks} />
+      <RelatedToolsSection title="Related Tools" items={smartRelatedTools} />
+      <TopicLinksSection title="Nearby Topics" items={relatedTopics} />
+    </div>
+  );
 
   return (
     <>
@@ -264,15 +275,8 @@ export default async function ToolDetailPage({ params }: Props) {
         item={item}
         relatedItems={relatedItems}
         primaryContent={<BuiltInToolClient item={item} />}
+        secondaryContent={secondaryContent}
       />
-
-      <main className="bg-q-bg px-4 pb-12 text-q-text sm:px-6 lg:px-8">
-        <section className="mx-auto max-w-7xl space-y-8">
-          <TopicLinksSection title="Explore This Topic" items={topicLinks} />
-          <RelatedToolsSection title="Related Tools" items={smartRelatedTools} />
-          <TopicLinksSection title="Related Topics" items={relatedTopics} />
-        </section>
-      </main>
     </>
   );
 }

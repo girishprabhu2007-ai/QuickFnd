@@ -2,6 +2,14 @@ import Link from "next/link";
 import SiteFooter from "@/components/site/SiteFooter";
 import type { TopicPageData } from "@/lib/programmatic-seo";
 
+function buildSectionTitle(topicLabel: string, type: "Tools" | "Calculators" | "AI Tools") {
+  if (topicLabel.endsWith(type)) {
+    return topicLabel;
+  }
+
+  return `${topicLabel} ${type}`;
+}
+
 function Section({
   title,
   items,
@@ -81,9 +89,15 @@ export default function TopicLandingPage({ topic }: { topic: TopicPageData }) {
         </div>
 
         <div className="mt-8 grid gap-8">
-          <Section title={`${topic.label} Tools`} items={topic.tools} />
-          <Section title={`${topic.label} Calculators`} items={topic.calculators} />
-          <Section title={`${topic.label} AI Tools`} items={topic.aiTools} />
+          <Section title={buildSectionTitle(topic.label, "Tools")} items={topic.tools} />
+          <Section
+            title={buildSectionTitle(topic.label, "Calculators")}
+            items={topic.calculators}
+          />
+          <Section
+            title={buildSectionTitle(topic.label, "AI Tools")}
+            items={topic.aiTools}
+          />
         </div>
 
         <section className="mt-8 rounded-2xl border border-q-border bg-q-card p-6">
