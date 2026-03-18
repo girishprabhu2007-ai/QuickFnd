@@ -1,3 +1,5 @@
+import { inferEngineType } from "@/lib/engine-catalog";
+
 type ToolLike = {
   name?: string | null;
   slug?: string | null;
@@ -15,34 +17,11 @@ function asText(item: ToolLike) {
 
 export function resolveToolEngineType(item: ToolLike): string | null {
   if (item.engine_type && String(item.engine_type).trim()) {
-    return String(item.engine_type).trim();
+    return String(item.engine_type).trim().toLowerCase();
   }
 
-  const text = asText(item);
-
-  if (text.includes("password strength")) return "password-strength-checker";
-  if (text.includes("password generator")) return "password-generator";
-  if (text.includes("json")) return "json-formatter";
-  if (text.includes("word counter") || text.includes("character counter")) return "word-counter";
-  if (text.includes("slug")) return "slug-generator";
-  if (text.includes("base64 decoder")) return "base64-decoder";
-  if (text.includes("base64 encoder")) return "base64-encoder";
-  if (text.includes("currency converter")) return "currency-converter";
-  if (text.includes("uuid")) return "uuid-generator";
-  if (text.includes("regex")) return "regex-tester";
-  if (text.includes("timestamp")) return "timestamp-converter";
-  if (text.includes("md5")) return "md5-generator";
-  if (text.includes("sha256") || text.includes("sha 256")) return "sha256-generator";
-  if (text.includes("binary to text")) return "binary-to-text";
-  if (text.includes("text to binary")) return "text-to-binary";
-  if (text.includes("hex to rgb")) return "hex-to-rgb";
-  if (text.includes("rgb to hex")) return "rgb-to-hex";
-  if (text.includes("random string")) return "random-string-generator";
-  if (text.includes("prompt") || text.includes("openai") || text.includes("ai ")) {
-    return "openai-text-tool";
-  }
-
-  return null;
+  const inferred = inferEngineType("tool", `${item.slug || ""} ${asText(item)}`);
+  return inferred && inferred !== "generic-directory" ? inferred : null;
 }
 
 export function isToolPlaceholder(item: ToolLike): boolean {
