@@ -28,6 +28,13 @@ export async function POST(req: Request) {
       );
     }
 
+    if (!engine_type || engine_type === "generic-directory") {
+      return NextResponse.json(
+        { error: "This tool does not match a supported live engine yet." },
+        { status: 400 }
+      );
+    }
+
     const { error } = await supabase.from("tools").insert([
       {
         name,

@@ -1,10 +1,10 @@
 import {
   normalizeEngineConfig,
-  normalizeEngineType,
   type EngineCategory,
   type EngineConfig,
   type EngineType,
 } from "@/lib/engine-metadata";
+import { suggestAdminEngine } from "@/lib/admin-engine-assistant";
 
 export type AdminCategory = "tool" | "calculator" | "ai-tool";
 
@@ -56,21 +56,45 @@ export function normalizeRelatedSlugs(input: unknown): string[] {
   return [];
 }
 
+function buildDefaultDescription(name: string, category?: AdminCategory) {
+  if (!name) return "";
+
+  if (category === "calculator") {
+    return `Use the ${name} on QuickFnd to calculate results instantly with a simple, browser-based interface. Fast, practical, and built for everyday decision-making.`;
+  }
+
+  if (category === "ai-tool") {
+    return `Use the ${name} on QuickFnd to generate helpful AI-powered output in seconds. Simple, practical, and built for real workflow use.`;
+  }
+
+  return `Use the ${name} on QuickFnd to get fast results with a simple, browser-based tool interface. Built for practical everyday use with no unnecessary complexity.`;
+}
+
 export function normalizeGeneratedContent(
   input: Partial<GeneratedAdminContent> & Record<string, unknown>,
   category?: AdminCategory
 ): GeneratedAdminContent {
   const name = String(input.name || "").trim();
   const slug = slugify(String(input.slug || input.name || ""));
-  const description = String(input.description || "").trim();
+  const description =
+    String(input.description || "").trim() || buildDefaultDescription(name, category);
   const related_slugs = normalizeRelatedSlugs(input.related_slugs);
 
   const engineCategory: EngineCategory | undefined = category;
-  const engine_type = engineCategory
-    ? normalizeEngineType(engineCategory, input.engine_type, slug)
+  const suggestion = engineCategory
+    ? suggestAdminEngine(engineCategory, {
+        name,
+        slug,
+        description,
+        engine_type: input.engine_type,
+        engine_config: input.engine_config,
+      })
     : null;
 
-  const engine_config = normalizeEngineConfig(input.engine_config);
+  const engine_type = suggestion?.engine_type || null;
+  const engine_config = suggestion
+    ? suggestion.engine_config
+    : normalizeEngineConfig(input.engine_config);
 
   return {
     name,

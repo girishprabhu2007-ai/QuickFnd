@@ -5,12 +5,12 @@ import {
   findExistingBySlug,
   getSupabaseAdmin,
   getTable,
-  inferLiveEngine,
   normalizeCategory,
-  safeSlug,
   type AdminCategory,
 } from "@/lib/admin-publishing";
 import { getOpenAIClient } from "@/lib/openai-server";
+import { normalizeGeneratedContent } from "@/lib/admin-content";
+import { suggestAdminEngine } from "@/lib/admin-engine-assistant";
 
 type GeneratedItem = {
   name: string;
@@ -25,28 +25,15 @@ function normalizeGeneratedItem(
   input: Record<string, unknown>,
   category: AdminCategory
 ): GeneratedItem {
-  const name = String(input.name || "").trim();
-  const slug = safeSlug(String(input.slug || name));
-  const description = String(input.description || "").trim();
-  const related = Array.isArray(input.related_slugs)
-    ? input.related_slugs.map((item) => safeSlug(String(item))).filter(Boolean)
-    : [];
-  const engine_type =
-    String(input.engine_type || "").trim() || inferLiveEngine(category, slug);
-  const engine_config =
-    input.engine_config &&
-    typeof input.engine_config === "object" &&
-    !Array.isArray(input.engine_config)
-      ? (input.engine_config as Record<string, unknown>)
-      : {};
+  const normalized = normalizeGeneratedContent(input, category);
 
   return {
-    name,
-    slug,
-    description,
-    related_slugs: related.slice(0, 6),
-    engine_type,
-    engine_config,
+    name: normalized.name,
+    slug: normalized.slug,
+    description: normalized.description,
+    related_slugs: normalized.related_slugs,
+    engine_type: String(normalized.engine_type || ""),
+    engine_config: normalized.engine_config,
   };
 }
 
@@ -70,18 +57,11 @@ function parseGeneratedItem(raw: string, category: AdminCategory): GeneratedItem
   }
 }
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const idea = String(body.idea || "").trim();
-    const category = normalizeCategory(body.category);
-    const requestId = body.requestId ? Number(body.requestId) : null;
-
-    if (!idea) {
-      return NextResponse.json({ error: "Idea required." }, { status: 400 });
-    }
-
-    const prompt = `
+async function generateItemFromIdea(
+  idea: string,
+  category: AdminCategory
+): Promise<GeneratedItem | null> {
+  const prompt = `
 Return valid JSON only.
 No markdown.
 No code fences.
@@ -102,35 +82,62 @@ Rules:
 - slug must be lowercase and hyphen-separated
 - description should be 2 concise SEO-friendly sentences
 - related_slugs should contain 3 to 6 realistic related slugs
-- for AI tools, prefer "openai-text-tool"
-- for tools/calculators, only use a real engine if the idea clearly matches a common live utility
-- if no clear live engine exists, still return the best slug and a reasonable description
-    `.trim();
+- for AI tools, prefer a real matching AI engine
+- for tools/calculators, choose the closest reusable engine
+- engine_config should stay small and practical
+  `.trim();
 
-    const openai = getOpenAIClient();
+  const openai = getOpenAIClient();
 
-    const response = await openai.responses.create({
-      model: "gpt-4.1-mini",
-      input: [{ role: "system", content: prompt }],
-    });
+  const response = await openai.responses.create({
+    model: "gpt-4.1-mini",
+    input: [{ role: "system", content: prompt }],
+  });
 
-    const raw = response.output_text || "";
-    const item = parseGeneratedItem(raw, category);
+  return parseGeneratedItem(response.output_text || "", category);
+}
+
+export async function POST(req: Request) {
+  try {
+    const body = (await req.json()) as Record<string, unknown>;
+
+    const idea = String(body.idea || "").trim();
+    const category = normalizeCategory(body.category);
+    const requestId = body.requestId ? Number(body.requestId) : null;
+
+    let item: GeneratedItem | null = null;
+
+    const hasStructuredInput =
+      String(body.name || "").trim() ||
+      String(body.slug || "").trim() ||
+      String(body.description || "").trim();
+
+    if (hasStructuredInput) {
+      item = normalizeGeneratedItem(body, category);
+    } else if (idea) {
+      item = await generateItemFromIdea(idea, category);
+    }
 
     if (!item || !item.name || !item.slug || !item.description) {
       return NextResponse.json(
-        { error: "AI returned an invalid tool payload." },
-        { status: 500 }
+        { error: "Name and description are required, or provide a valid idea." },
+        { status: 400 }
       );
     }
 
-    const inferredEngine = inferLiveEngine(category, item.slug);
+    const suggestion = suggestAdminEngine(category, {
+      name: item.name,
+      slug: item.slug,
+      description: item.description,
+      engine_type: body.engine_type ?? item.engine_type,
+      engine_config: body.engine_config ?? item.engine_config,
+    });
 
-    if (category !== "ai-tool" && inferredEngine === "generic-directory") {
+    if (category !== "ai-tool" && !suggestion.is_supported) {
       return NextResponse.json(
         {
           error:
-            "This idea does not match a live reusable engine yet. Submit it as a request/backlog item instead of publishing a placeholder page.",
+            "This item does not match a live reusable engine yet. Save it as a request/backlog item instead of publishing a placeholder page.",
         },
         { status: 400 }
       );
@@ -158,6 +165,9 @@ Rules:
         slug: item.slug,
         table: getTable(category),
         path,
+        engine_type: suggestion.engine_type,
+        engine_config: suggestion.engine_config,
+        engine_reason: suggestion.reason,
       });
     }
 
@@ -169,8 +179,8 @@ Rules:
       slug: uniqueSlug,
       description: item.description,
       related_slugs: item.related_slugs,
-      engine_type: category === "ai-tool" ? "openai-text-tool" : inferredEngine,
-      engine_config: item.engine_config || {},
+      engine_type: suggestion.engine_type,
+      engine_config: suggestion.engine_config,
     };
 
     const supabaseAdmin = getSupabaseAdmin();
@@ -198,12 +208,18 @@ Rules:
       slug: uniqueSlug,
       table,
       path: buildPublicPath(category, uniqueSlug),
+      engine_type: suggestion.engine_type,
+      engine_config: suggestion.engine_config,
+      engine_reason: suggestion.reason,
     });
   } catch (error) {
     console.error("create-tool route error:", error);
 
     return NextResponse.json(
-      { error: "Failed to create tool." },
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to create tool.",
+      },
       { status: 500 }
     );
   }

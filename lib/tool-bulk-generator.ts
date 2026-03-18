@@ -1,5 +1,7 @@
 import { getSupabaseAdmin } from "@/lib/admin-publishing";
 import { getOpenAIClient } from "@/lib/openai-server";
+import { getAdminEngineOptions, suggestAdminEngine } from "@/lib/admin-engine-assistant";
+import { slugify } from "@/lib/admin-content";
 
 export type BulkGeneratedTool = {
   name: string;
@@ -10,38 +12,6 @@ export type BulkGeneratedTool = {
   engine_config: Record<string, unknown>;
 };
 
-const SUPPORTED_ENGINE_TYPES = [
-  "password-strength-checker",
-  "password-generator",
-  "json-formatter",
-  "word-counter",
-  "uuid-generator",
-  "slug-generator",
-  "random-string-generator",
-  "base64-encoder",
-  "base64-decoder",
-  "currency-converter",
-  "regex-tester",
-  "timestamp-converter",
-  "md5-generator",
-  "sha256-generator",
-  "binary-to-text",
-  "text-to-binary",
-  "hex-to-rgb",
-  "rgb-to-hex",
-  "openai-text-tool",
-  "text-case-converter",
-  "text-transformer",
-] as const;
-
-function safeSlug(value: string) {
-  return String(value || "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -50,29 +20,42 @@ function asStringArray(value: unknown): string[] {
 }
 
 export function getSupportedToolEngineTypes(): string[] {
-  return [...SUPPORTED_ENGINE_TYPES];
+  return getAdminEngineOptions("tool")
+    .map((option) => option.value)
+    .filter((value) => value !== "generic-directory");
 }
 
-export function normalizeBulkGeneratedTool(input: any): BulkGeneratedTool | null {
+export function normalizeBulkGeneratedTool(input: unknown): BulkGeneratedTool | null {
   if (!input || typeof input !== "object") return null;
+  const record = input as Record<string, unknown>;
 
-  const name = String(input.name || "").trim();
-  const description = String(input.description || "").trim();
-  const slug = safeSlug(String(input.slug || name));
-  const engine_type = String(input.engine_type || "").trim();
+  const name = String(record.name || "").trim();
+  const slug = slugify(String(record.slug || name));
+  const description = String(record.description || "").trim();
 
-  if (!name || !slug || !engine_type) return null;
+  if (!name || !slug) return null;
+
+  const suggestion = suggestAdminEngine("tool", {
+    name,
+    slug,
+    description,
+    engine_type: record.engine_type,
+    engine_config: record.engine_config,
+  });
+
+  if (!suggestion.is_supported || !suggestion.engine_type) {
+    return null;
+  }
 
   return {
     name,
     slug,
-    description: description || `${name} on QuickFnd.`,
-    related_slugs: asStringArray(input.related_slugs).slice(0, 6),
-    engine_type,
-    engine_config:
-      input.engine_config && typeof input.engine_config === "object"
-        ? input.engine_config
-        : {},
+    description:
+      description ||
+      `Use the ${name} on QuickFnd to get fast results in a simple browser-based workflow.`,
+    related_slugs: asStringArray(record.related_slugs).map(slugify).filter(Boolean).slice(0, 6),
+    engine_type: suggestion.engine_type,
+    engine_config: suggestion.engine_config,
   };
 }
 
@@ -119,7 +102,7 @@ export async function insertBulkTools(items: BulkGeneratedTool[]) {
     if (!normalized) {
       skipped.push({
         slug: String(item?.slug || ""),
-        reason: "Invalid item shape.",
+        reason: "Invalid or unsupported item shape.",
       });
       continue;
     }
