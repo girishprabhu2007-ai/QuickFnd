@@ -17,38 +17,47 @@ const PUBLIC_ADMIN_APIS = new Set([
 ]);
 
 const ADMIN_REVIEW_COOKIE = "quickfnd_admin_review";
+const REVIEW_QUERY_KEY = "review_key";
 
-function getReviewKeyFromRequest(request: NextRequest) {
-  const fromQuery = request.nextUrl.searchParams.get("review_key");
-  const fromHeader = request.headers.get("x-admin-review-key");
-  return fromQuery || fromHeader || "";
+function getExpectedReviewKey() {
+  return process.env.ADMIN_REVIEW_KEY || "";
 }
 
-function isReviewBypassAllowed(request: NextRequest) {
-  const bypassEnabled = process.env.ADMIN_REVIEW_BYPASS === "true";
-  const expectedKey = process.env.ADMIN_REVIEW_KEY || "";
+function isReviewBypassEnabled() {
+  return process.env.ADMIN_REVIEW_BYPASS === "true";
+}
 
-  if (!bypassEnabled || !expectedKey) {
+function getRequestReviewKey(request: NextRequest) {
+  return request.nextUrl.searchParams.get(REVIEW_QUERY_KEY) || "";
+}
+
+function hasValidReviewBypass(request: NextRequest) {
+  if (!isReviewBypassEnabled()) {
     return false;
   }
 
-  const requestKey = getReviewKeyFromRequest(request);
+  const expectedKey = getExpectedReviewKey();
+  if (!expectedKey) {
+    return false;
+  }
+
+  const queryKey = getRequestReviewKey(request);
   const cookieKey = request.cookies.get(ADMIN_REVIEW_COOKIE)?.value || "";
 
-  return requestKey === expectedKey || cookieKey === expectedKey;
+  return queryKey === expectedKey || cookieKey === expectedKey;
 }
 
-function withReviewCookieIfNeeded(request: NextRequest, response: NextResponse) {
-  const expectedKey = process.env.ADMIN_REVIEW_KEY || "";
-  const requestKey = getReviewKeyFromRequest(request);
+function attachReviewCookieIfNeeded(request: NextRequest, response: NextResponse) {
+  const expectedKey = getExpectedReviewKey();
+  const queryKey = getRequestReviewKey(request);
 
-  if (expectedKey && requestKey === expectedKey) {
+  if (queryKey && expectedKey && queryKey === expectedKey) {
     response.cookies.set(ADMIN_REVIEW_COOKIE, expectedKey, {
       httpOnly: true,
       secure: true,
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 2,
+      maxAge: 60 * 60 * 4,
     });
   }
 
@@ -65,8 +74,8 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (isReviewBypassAllowed(request)) {
-    return withReviewCookieIfNeeded(request, NextResponse.next());
+  if (hasValidReviewBypass(request)) {
+    return attachReviewCookieIfNeeded(request, NextResponse.next());
   }
 
   const accessToken = request.cookies.get(ADMIN_ACCESS_COOKIE)?.value;
