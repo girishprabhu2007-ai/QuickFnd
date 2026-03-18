@@ -133,6 +133,13 @@ export async function POST(req: Request) {
       engine_config: body.engine_config ?? item.engine_config,
     });
 
+    if (!suggestion.engine_type) {
+      return NextResponse.json(
+        { error: "No valid engine assigned. Cannot create item." },
+        { status: 400 }
+      );
+    }
+
     if (category !== "ai-tool" && !suggestion.is_supported) {
       return NextResponse.json(
         {
