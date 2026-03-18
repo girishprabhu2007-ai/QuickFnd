@@ -4,6 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import type { PublicContentItem } from "@/lib/content-pages";
 import CurrencyConverterClient from "@/components/tools/CurrencyConverterClient";
 import { getToolEnginePreset } from "@/lib/tool-engine-presets";
+import {
+  getEngineUISchema,
+  type EngineUIField,
+  type EngineUISchema,
+} from "@/lib/engine-ui-schemas";
 
 type Props = {
   item: PublicContentItem;
@@ -14,6 +19,15 @@ type Snippet = {
   title: string;
   code: string;
 };
+
+type SchemaResult = {
+  output: string;
+  error?: string;
+  previewColor?: string;
+};
+
+type SchemaStateValue = string | number | boolean;
+type SchemaState = Record<string, SchemaStateValue>;
 
 function Card({
   title,
@@ -163,6 +177,390 @@ async function sha256Hash(value: string) {
     .join("");
 }
 
+function buildInitialSchemaState(
+  family: string,
+  config: Record<string, unknown>,
+  schema: EngineUISchema
+): SchemaState {
+  if (family === "string-generator") {
+    return {
+      length: Number(config.defaultLength ?? 24),
+      useUppercase: Boolean(config.includeUppercase ?? true),
+      useLowercase: Boolean(config.includeLowercase ?? true),
+      useNumbers: Boolean(config.includeNumbers ?? true),
+      useSymbols: Boolean(config.includeSymbols ?? false),
+    };
+  }
+
+  if (family === "number-generator") {
+    return {
+      min: String(config.min ?? 1),
+      max: String(config.max ?? 100),
+    };
+  }
+
+  return schema.fields.reduce((acc, field) => {
+    if (field.type === "checkbox") {
+      acc[field.key] = false;
+      return acc;
+    }
+
+    acc[field.key] = "";
+    return acc;
+  }, {} as SchemaState);
+}
+
+function renderSchemaField(
+  field: EngineUIField,
+  state: SchemaState,
+  setState: React.Dispatch<React.SetStateAction<SchemaState>>
+) {
+  const value = state[field.key];
+
+  if (field.type === "checkbox") {
+    return (
+      <label
+        key={field.key}
+        className="flex items-center gap-2 rounded-xl border border-q-border bg-q-bg px-4 py-3 text-sm text-q-text"
+      >
+        <input
+          type="checkbox"
+          checked={Boolean(value)}
+          onChange={(e) =>
+            setState((prev) => ({
+              ...prev,
+              [field.key]: e.target.checked,
+            }))
+          }
+        />
+        {field.label}
+      </label>
+    );
+  }
+
+  if (field.type === "textarea") {
+    return (
+      <div key={field.key}>
+        <label className="mb-2 block text-sm font-medium text-q-text">{field.label}</label>
+        <textarea
+          value={String(value ?? "")}
+          onChange={(e) =>
+            setState((prev) => ({
+              ...prev,
+              [field.key]: e.target.value,
+            }))
+          }
+          placeholder={field.placeholder}
+          rows={field.rows ?? 6}
+          className={textareaClass("min-h-[160px]")}
+        />
+      </div>
+    );
+  }
+
+  if (field.type === "range") {
+    return (
+      <div key={field.key}>
+        <label className="mb-2 block text-sm font-medium text-q-text">
+          {field.label}: {String(value ?? "")}
+        </label>
+        <input
+          type="range"
+          min={field.min}
+          max={field.max}
+          step={field.step ?? 1}
+          value={Number(value ?? field.min ?? 0)}
+          onChange={(e) =>
+            setState((prev) => ({
+              ...prev,
+              [field.key]: Number(e.target.value),
+            }))
+          }
+          className="w-full"
+        />
+      </div>
+    );
+  }
+
+  if (field.type === "select") {
+    return (
+      <div key={field.key}>
+        <label className="mb-2 block text-sm font-medium text-q-text">{field.label}</label>
+        <select
+          value={String(value ?? "")}
+          onChange={(e) =>
+            setState((prev) => ({
+              ...prev,
+              [field.key]: e.target.value,
+            }))
+          }
+          className={inputClass()}
+        >
+          {(field.options || []).map((option) => (
+            <option key={`${field.key}-${option.value}`} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  }
+
+  return (
+    <div key={field.key}>
+      <label className="mb-2 block text-sm font-medium text-q-text">{field.label}</label>
+      <input
+        type={field.type}
+        value={String(value ?? "")}
+        onChange={(e) =>
+          setState((prev) => ({
+            ...prev,
+            [field.key]:
+              field.type === "number" ? e.target.value : e.target.value,
+          }))
+        }
+        placeholder={field.placeholder}
+        min={field.min}
+        max={field.max}
+        step={field.step}
+        className={inputClass()}
+      />
+    </div>
+  );
+}
+
+function runSchemaEngine(
+  family: string,
+  config: Record<string, unknown>,
+  state: SchemaState
+): SchemaResult {
+  try {
+    if (family === "string-generator") {
+      const mode = String(config.mode || "random-string");
+
+      if (mode === "uuid") {
+        if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+          return { output: crypto.randomUUID() };
+        }
+
+        return {
+          output: "",
+          error: "UUID generation is not supported in this browser.",
+        };
+      }
+
+      const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      const lower = "abcdefghijklmnopqrstuvwxyz";
+      const numbers = "0123456789";
+      const symbols = "!@#$%^&*()_+-=[]{}|;:,.<>?";
+
+      let chars = "";
+      if (Boolean(state.useUppercase)) chars += upper;
+      if (Boolean(state.useLowercase)) chars += lower;
+      if (Boolean(state.useNumbers)) chars += numbers;
+      if (Boolean(state.useSymbols)) chars += symbols;
+
+      if (!chars) {
+        return {
+          output: "",
+          error: "Select at least one character set.",
+        };
+      }
+
+      const length = Number(state.length || 0);
+      let next = "";
+
+      for (let i = 0; i < length; i += 1) {
+        next += chars[Math.floor(Math.random() * chars.length)];
+      }
+
+      return { output: next };
+    }
+
+    if (family === "codec") {
+      const input = String(state.input || "");
+      const mode = String(config.mode || "base64-encode");
+
+      if (mode === "base64-encode") return { output: unicodeToBase64(input) };
+      if (mode === "base64-decode") return { output: base64ToUnicode(input.trim()) };
+      if (mode === "url-encode") return { output: encodeURIComponent(input) };
+      if (mode === "url-decode") return { output: decodeURIComponent(input.trim()) };
+
+      return { output: "" };
+    }
+
+    if (family === "number-generator") {
+      const minNum = Number(state.min);
+      const maxNum = Number(state.max);
+
+      if (!Number.isFinite(minNum) || !Number.isFinite(maxNum) || minNum > maxNum) {
+        return { output: "", error: "Invalid range." };
+      }
+
+      const allowDecimal = Boolean(config.allowDecimal ?? false);
+      const decimalPlaces = Number(config.decimalPlaces ?? 2);
+      const random = Math.random() * (maxNum - minNum) + minNum;
+
+      return {
+        output: allowDecimal
+          ? random.toFixed(decimalPlaces)
+          : String(Math.floor(random)),
+      };
+    }
+
+    if (family === "unit-converter") {
+      const value = Number(state.input);
+      if (!Number.isFinite(value)) {
+        return { output: "", error: "Enter a valid number." };
+      }
+
+      const multiplier = Number(config.multiplier ?? 1);
+      const precision = Number(config.precision ?? 4);
+      const toUnit = String(config.toUnit || "");
+
+      return {
+        output: `${(value * multiplier).toFixed(precision)} ${toUnit}`.trim(),
+      };
+    }
+
+    if (family === "color-tools") {
+      const input = String(state.input || "");
+      const mode = String(config.mode || "hex-to-rgb");
+
+      if (mode === "hex-to-rgb") {
+        const rgb = hexToRgbObject(input);
+        return {
+          output: `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`,
+          previewColor: `#${normalizeHex(input)}`,
+        };
+      }
+
+      const parts = input.split(",").map((part) => Number(part.trim()));
+      if (parts.length !== 3) {
+        return {
+          output: "",
+          error: "Invalid RGB input. Use format like 255, 99, 71",
+        };
+      }
+
+      const hex = rgbToHexString(parts[0], parts[1], parts[2]);
+      return {
+        output: hex,
+        previewColor: hex,
+      };
+    }
+
+    if (family === "developer-converters") {
+      const input = String(state.input || "");
+      const mode = String(config.mode || "text-to-binary");
+
+      if (mode === "text-to-binary") return { output: textToBinary(input) };
+
+      if (mode === "binary-to-text") {
+        if (!/^[01\s]+$/.test(input.trim())) {
+          return { output: "", error: "Invalid binary input." };
+        }
+        return { output: binaryToText(input) };
+      }
+
+      if (mode === "json-escape") return { output: escapeJsonString(input) };
+      if (mode === "json-unescape") return { output: unescapeJsonString(input) };
+
+      return { output: "" };
+    }
+
+    return { output: "" };
+  } catch {
+    return {
+      output: "",
+      error: "Invalid input for this tool.",
+    };
+  }
+}
+
+function SchemaDrivenToolCard({
+  title,
+  config,
+  family,
+  schema,
+}: {
+  title: string;
+  config: Record<string, unknown>;
+  family: string;
+  schema: EngineUISchema;
+}) {
+  const [state, setState] = useState<SchemaState>(() =>
+    buildInitialSchemaState(family, config, schema)
+  );
+  const [result, setResult] = useState<SchemaResult>({ output: "" });
+
+  function run() {
+    setResult(runSchemaEngine(family, config, state));
+  }
+
+  const checkboxFields = schema.fields.filter((field) => field.type === "checkbox");
+  const nonCheckboxFields = schema.fields.filter((field) => field.type !== "checkbox");
+
+  return (
+    <Card title={title}>
+      <div className="space-y-4">
+        {family === "unit-converter" ? (
+          <div className="text-sm text-q-muted">
+            Convert {String(config.fromUnit || "unit")} to {String(config.toUnit || "unit")}
+          </div>
+        ) : null}
+
+        {nonCheckboxFields.map((field) => renderSchemaField(field, state, setState))}
+
+        {checkboxFields.length > 0 ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {checkboxFields.map((field) => renderSchemaField(field, state, setState))}
+          </div>
+        ) : null}
+
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={run}
+            className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover"
+          >
+            {schema.action.label}
+          </button>
+          <button
+            onClick={() => copyText(result.output)}
+            disabled={!result.output}
+            className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover disabled:opacity-50"
+          >
+            {schema.action.copyLabel || "Copy"}
+          </button>
+        </div>
+
+        {result.error ? (
+          <div className="rounded-xl border border-q-danger bg-q-danger-soft p-3 text-sm text-q-danger">
+            {result.error}
+          </div>
+        ) : null}
+
+        {result.previewColor ? (
+          <div className={softPanelClass()}>
+            <div className="mb-3 text-sm text-q-muted">Preview</div>
+            <div
+              className="h-20 rounded-xl border border-q-border"
+              style={{ backgroundColor: result.previewColor }}
+            />
+          </div>
+        ) : null}
+
+        <textarea
+          readOnly
+          value={result.output}
+          placeholder={schema.outputPlaceholder || "Output"}
+          className={textareaClass("min-h-[120px]")}
+        />
+      </div>
+    </Card>
+  );
+}
+
 function StrengthChecker({
   title,
   config,
@@ -255,144 +653,6 @@ function StrengthChecker({
             );
           })}
         </div>
-      </div>
-    </Card>
-  );
-}
-
-function StringGenerator({
-  title,
-  config,
-}: {
-  title: string;
-  config: Record<string, unknown>;
-}) {
-  const mode = String(config.mode || "random-string");
-  const minLength = Number(config.minLength ?? 4);
-  const maxLength = Number(config.maxLength ?? 128);
-  const defaultLength = Number(config.defaultLength ?? 24);
-
-  const [length, setLength] = useState(defaultLength);
-  const [useUppercase, setUseUppercase] = useState(Boolean(config.includeUppercase ?? true));
-  const [useLowercase, setUseLowercase] = useState(Boolean(config.includeLowercase ?? true));
-  const [useNumbers, setUseNumbers] = useState(Boolean(config.includeNumbers ?? true));
-  const [useSymbols, setUseSymbols] = useState(Boolean(config.includeSymbols ?? false));
-  const [result, setResult] = useState("");
-
-  function generate() {
-    if (mode === "uuid") {
-      if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-        setResult(crypto.randomUUID());
-        return;
-      }
-      setResult("UUID generation is not supported in this browser.");
-      return;
-    }
-
-    const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const lower = "abcdefghijklmnopqrstuvwxyz";
-    const numbers = "0123456789";
-    const symbols = "!@#$%^&*()_+-=[]{}|;:,.<>?";
-
-    let chars = "";
-    if (useUppercase) chars += upper;
-    if (useLowercase) chars += lower;
-    if (useNumbers) chars += numbers;
-    if (useSymbols) chars += symbols;
-
-    if (!chars) {
-      setResult("");
-      return;
-    }
-
-    let next = "";
-    for (let i = 0; i < length; i += 1) {
-      next += chars[Math.floor(Math.random() * chars.length)];
-    }
-
-    setResult(next);
-  }
-
-  return (
-    <Card title={title}>
-      <div className="space-y-4">
-        {mode !== "uuid" ? (
-          <>
-            <div>
-              <label className="mb-2 block text-sm text-q-muted">Length: {length}</label>
-              <input
-                type="range"
-                min={minLength}
-                max={maxLength}
-                value={length}
-                onChange={(e) => setLength(Number(e.target.value))}
-                className="w-full"
-              />
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="flex items-center gap-2 text-sm text-q-muted">
-                <input
-                  type="checkbox"
-                  checked={useUppercase}
-                  onChange={(e) => setUseUppercase(e.target.checked)}
-                />
-                Uppercase
-              </label>
-              <label className="flex items-center gap-2 text-sm text-q-muted">
-                <input
-                  type="checkbox"
-                  checked={useLowercase}
-                  onChange={(e) => setUseLowercase(e.target.checked)}
-                />
-                Lowercase
-              </label>
-              <label className="flex items-center gap-2 text-sm text-q-muted">
-                <input
-                  type="checkbox"
-                  checked={useNumbers}
-                  onChange={(e) => setUseNumbers(e.target.checked)}
-                />
-                Numbers
-              </label>
-              <label className="flex items-center gap-2 text-sm text-q-muted">
-                <input
-                  type="checkbox"
-                  checked={useSymbols}
-                  onChange={(e) => setUseSymbols(e.target.checked)}
-                />
-                Symbols
-              </label>
-            </div>
-          </>
-        ) : null}
-
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={generate}
-            className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover"
-          >
-            {mode === "password"
-              ? "Generate Password"
-              : mode === "uuid"
-                ? "Generate UUID"
-                : "Generate String"}
-          </button>
-          <button
-            onClick={() => copyText(result)}
-            disabled={!result}
-            className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover disabled:opacity-50"
-          >
-            Copy
-          </button>
-        </div>
-
-        <textarea
-          readOnly
-          value={result}
-          placeholder="Generated output will appear here"
-          className={textareaClass("min-h-[110px]")}
-        />
       </div>
     </Card>
   );
@@ -606,83 +866,6 @@ function TextTransformer({
   );
 }
 
-function CodecTool({
-  title,
-  config,
-}: {
-  title: string;
-  config: Record<string, unknown>;
-}) {
-  const [input, setInput] = useState("");
-  const [output, setOutput] = useState("");
-  const [error, setError] = useState("");
-
-  const mode = String(config.mode || "base64-encode");
-
-  function runCodec() {
-    try {
-      if (mode === "base64-encode") {
-        setOutput(unicodeToBase64(input));
-      } else if (mode === "base64-decode") {
-        setOutput(base64ToUnicode(input.trim()));
-      } else if (mode === "url-encode") {
-        setOutput(encodeURIComponent(input));
-      } else if (mode === "url-decode") {
-        setOutput(decodeURIComponent(input.trim()));
-      } else {
-        setOutput("");
-      }
-
-      setError("");
-    } catch {
-      setOutput("");
-      setError("Invalid input for this conversion.");
-    }
-  }
-
-  return (
-    <Card title={title}>
-      <div className="space-y-4">
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Enter text here"
-          className={textareaClass("min-h-[140px]")}
-        />
-
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={runCodec}
-            className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover"
-          >
-            Run
-          </button>
-          <button
-            onClick={() => copyText(output)}
-            disabled={!output}
-            className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover disabled:opacity-50"
-          >
-            Copy
-          </button>
-        </div>
-
-        {error ? (
-          <div className="rounded-xl border border-q-danger bg-q-danger-soft p-3 text-sm text-q-danger">
-            {error}
-          </div>
-        ) : null}
-
-        <textarea
-          readOnly
-          value={output}
-          placeholder="Output"
-          className={textareaClass("min-h-[110px]")}
-        />
-      </div>
-    </Card>
-  );
-}
-
 function SnippetManager({ title }: { title: string }) {
   const [snippetTitle, setSnippetTitle] = useState("");
   const [code, setCode] = useState("");
@@ -780,128 +963,6 @@ function SnippetManager({ title }: { title: string }) {
             ))
           )}
         </div>
-      </div>
-    </Card>
-  );
-}
-
-function NumberGenerator({
-  title,
-  config,
-}: {
-  title: string;
-  config: Record<string, unknown>;
-}) {
-  const minDefault = Number(config.min ?? 1);
-  const maxDefault = Number(config.max ?? 100);
-  const allowDecimal = Boolean(config.allowDecimal ?? false);
-  const decimalPlaces = Number(config.decimalPlaces ?? 2);
-
-  const [min, setMin] = useState(String(minDefault));
-  const [max, setMax] = useState(String(maxDefault));
-  const [result, setResult] = useState("");
-
-  function generateNumber() {
-    const minNum = Number(min);
-    const maxNum = Number(max);
-
-    if (!Number.isFinite(minNum) || !Number.isFinite(maxNum) || minNum > maxNum) {
-      setResult("Invalid range");
-      return;
-    }
-
-    const random = Math.random() * (maxNum - minNum) + minNum;
-    setResult(allowDecimal ? random.toFixed(decimalPlaces) : String(Math.floor(random)));
-  }
-
-  return (
-    <Card title={title}>
-      <div className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <input
-            type="number"
-            value={min}
-            onChange={(e) => setMin(e.target.value)}
-            placeholder="Minimum"
-            className={inputClass()}
-          />
-          <input
-            type="number"
-            value={max}
-            onChange={(e) => setMax(e.target.value)}
-            placeholder="Maximum"
-            className={inputClass()}
-          />
-        </div>
-
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={generateNumber}
-            className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover"
-          >
-            Generate Number
-          </button>
-          <button
-            onClick={() => copyText(result)}
-            disabled={!result}
-            className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover disabled:opacity-50"
-          >
-            Copy
-          </button>
-        </div>
-
-        <textarea
-          readOnly
-          value={result}
-          placeholder="Generated number"
-          className={textareaClass("min-h-[110px]")}
-        />
-      </div>
-    </Card>
-  );
-}
-
-function UnitConverter({
-  title,
-  config,
-}: {
-  title: string;
-  config: Record<string, unknown>;
-}) {
-  const fromUnit = String(config.fromUnit || "meters");
-  const toUnit = String(config.toUnit || "feet");
-  const multiplier = Number(config.multiplier ?? 3.28084);
-  const precision = Number(config.precision ?? 4);
-
-  const [input, setInput] = useState("");
-
-  const output = useMemo(() => {
-    const value = Number(input);
-    if (!Number.isFinite(value)) return "";
-    return (value * multiplier).toFixed(precision);
-  }, [input, multiplier, precision]);
-
-  return (
-    <Card title={title}>
-      <div className="space-y-4">
-        <div className="text-sm text-q-muted">
-          Convert {fromUnit} to {toUnit}
-        </div>
-
-        <input
-          type="number"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={`Enter value in ${fromUnit}`}
-          className={inputClass()}
-        />
-
-        <textarea
-          readOnly
-          value={output ? `${output} ${toUnit}` : ""}
-          placeholder="Converted output"
-          className={textareaClass("min-h-[110px]")}
-        />
       </div>
     </Card>
   );
@@ -1239,179 +1300,6 @@ function TimestampTools({ title }: { title: string }) {
   );
 }
 
-function ColorTools({
-  title,
-  config,
-}: {
-  title: string;
-  config: Record<string, unknown>;
-}) {
-  const mode = String(config.mode || "hex-to-rgb");
-  const [input, setInput] = useState("");
-  const [output, setOutput] = useState("");
-  const [previewColor, setPreviewColor] = useState("");
-  const [error, setError] = useState("");
-
-  function convertColor() {
-    try {
-      if (mode === "hex-to-rgb") {
-        const rgb = hexToRgbObject(input);
-        const result = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
-        setOutput(result);
-        setPreviewColor(`#${normalizeHex(input)}`);
-      } else {
-        const parts = input.split(",").map((part) => Number(part.trim()));
-        if (parts.length !== 3) {
-          throw new Error();
-        }
-        const hex = rgbToHexString(parts[0], parts[1], parts[2]);
-        setOutput(hex);
-        setPreviewColor(hex);
-      }
-
-      setError("");
-    } catch {
-      setOutput("");
-      setPreviewColor("");
-      setError(
-        mode === "hex-to-rgb"
-          ? "Invalid hex color."
-          : "Invalid RGB input. Use format like 255, 99, 71"
-      );
-    }
-  }
-
-  return (
-    <Card title={title}>
-      <div className="space-y-4">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={mode === "hex-to-rgb" ? "#FF5733" : "255, 87, 51"}
-          className={inputClass()}
-        />
-
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={convertColor}
-            className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover"
-          >
-            Convert Color
-          </button>
-          <button
-            onClick={() => copyText(output)}
-            disabled={!output}
-            className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover disabled:opacity-50"
-          >
-            Copy Output
-          </button>
-        </div>
-
-        {error ? (
-          <div className="rounded-xl border border-q-danger bg-q-danger-soft p-3 text-sm text-q-danger">
-            {error}
-          </div>
-        ) : null}
-
-        {previewColor ? (
-          <div className={softPanelClass()}>
-            <div className="mb-3 text-sm text-q-muted">Preview</div>
-            <div
-              className="h-20 rounded-xl border border-q-border"
-              style={{ backgroundColor: previewColor }}
-            />
-          </div>
-        ) : null}
-
-        <textarea
-          readOnly
-          value={output}
-          placeholder="Converted color output"
-          className={textareaClass("min-h-[110px]")}
-        />
-      </div>
-    </Card>
-  );
-}
-
-function DeveloperConverters({
-  title,
-  config,
-}: {
-  title: string;
-  config: Record<string, unknown>;
-}) {
-  const mode = String(config.mode || "text-to-binary");
-  const [input, setInput] = useState("");
-  const [output, setOutput] = useState("");
-  const [error, setError] = useState("");
-
-  function convert() {
-    try {
-      if (mode === "text-to-binary") {
-        setOutput(textToBinary(input));
-      } else if (mode === "binary-to-text") {
-        if (!/^[01\s]+$/.test(input.trim())) {
-          throw new Error();
-        }
-        setOutput(binaryToText(input));
-      } else if (mode === "json-escape") {
-        setOutput(escapeJsonString(input));
-      } else if (mode === "json-unescape") {
-        setOutput(unescapeJsonString(input));
-      } else {
-        setOutput("");
-      }
-      setError("");
-    } catch {
-      setOutput("");
-      setError("Invalid input for this conversion.");
-    }
-  }
-
-  return (
-    <Card title={title}>
-      <div className="space-y-4">
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Enter value here"
-          className={textareaClass("min-h-[160px]")}
-        />
-
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={convert}
-            className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover"
-          >
-            Convert
-          </button>
-          <button
-            onClick={() => copyText(output)}
-            disabled={!output}
-            className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover disabled:opacity-50"
-          >
-            Copy Output
-          </button>
-        </div>
-
-        {error ? (
-          <div className="rounded-xl border border-q-danger bg-q-danger-soft p-3 text-sm text-q-danger">
-            {error}
-          </div>
-        ) : null}
-
-        <textarea
-          readOnly
-          value={output}
-          placeholder="Converted output"
-          className={textareaClass("min-h-[160px]")}
-        />
-      </div>
-    </Card>
-  );
-}
-
 function GenericTool({
   title,
   description,
@@ -1442,16 +1330,25 @@ function renderByFamily({
 }: FamilyRendererProps & {
   family: string;
 }) {
+  const schema = getEngineUISchema(family, config);
+
   if (family === "currency-converter") {
     return <CurrencyConverterClient />;
   }
 
-  if (family === "strength-checker") {
-    return <StrengthChecker title={title} config={config} />;
+  if (schema) {
+    return (
+      <SchemaDrivenToolCard
+        title={title}
+        config={config}
+        family={family}
+        schema={schema}
+      />
+    );
   }
 
-  if (family === "string-generator") {
-    return <StringGenerator title={title} config={config} />;
+  if (family === "strength-checker") {
+    return <StrengthChecker title={title} config={config} />;
   }
 
   if (family === "text-formatter") {
@@ -1466,20 +1363,8 @@ function renderByFamily({
     return <TextTransformer title={title} config={config} />;
   }
 
-  if (family === "codec") {
-    return <CodecTool title={title} config={config} />;
-  }
-
   if (family === "snippet-manager") {
     return <SnippetManager title={title} />;
-  }
-
-  if (family === "number-generator") {
-    return <NumberGenerator title={title} config={config} />;
-  }
-
-  if (family === "unit-converter") {
-    return <UnitConverter title={title} config={config} />;
   }
 
   if (family === "regex-tools") {
@@ -1492,14 +1377,6 @@ function renderByFamily({
 
   if (family === "timestamp-tools") {
     return <TimestampTools title={title} />;
-  }
-
-  if (family === "color-tools") {
-    return <ColorTools title={title} config={config} />;
-  }
-
-  if (family === "developer-converters") {
-    return <DeveloperConverters title={title} config={config} />;
   }
 
   return <GenericTool title={title} description={description} />;
