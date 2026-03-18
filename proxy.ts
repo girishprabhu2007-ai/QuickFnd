@@ -17,42 +17,42 @@ const PUBLIC_ADMIN_APIS = new Set([
 ]);
 
 const ADMIN_REVIEW_COOKIE = "quickfnd_admin_review";
-const REVIEW_QUERY_KEY = "review_key";
 
-function getExpectedReviewKey() {
-  return process.env.ADMIN_REVIEW_KEY || "";
+function normalize(value: string) {
+  try {
+    return decodeURIComponent(value || "").trim();
+  } catch {
+    return (value || "").trim();
+  }
 }
 
-function isReviewBypassEnabled() {
-  return process.env.ADMIN_REVIEW_BYPASS === "true";
-}
-
-function getRequestReviewKey(request: NextRequest) {
-  return request.nextUrl.searchParams.get(REVIEW_QUERY_KEY) || "";
-}
-
-function hasValidReviewBypass(request: NextRequest) {
-  if (!isReviewBypassEnabled()) {
+function isReviewBypass(request: NextRequest) {
+  if (process.env.ADMIN_REVIEW_BYPASS !== "true") {
     return false;
   }
 
-  const expectedKey = getExpectedReviewKey();
-  if (!expectedKey) {
-    return false;
-  }
+  const expected = normalize(process.env.ADMIN_REVIEW_KEY || "");
+  if (!expected) return false;
 
-  const queryKey = getRequestReviewKey(request);
-  const cookieKey = request.cookies.get(ADMIN_REVIEW_COOKIE)?.value || "";
+  const query = normalize(
+    request.nextUrl.searchParams.get("review_key") || ""
+  );
 
-  return queryKey === expectedKey || cookieKey === expectedKey;
+  const cookie = normalize(
+    request.cookies.get(ADMIN_REVIEW_COOKIE)?.value || ""
+  );
+
+  return query === expected || cookie === expected;
 }
 
-function attachReviewCookieIfNeeded(request: NextRequest, response: NextResponse) {
-  const expectedKey = getExpectedReviewKey();
-  const queryKey = getRequestReviewKey(request);
+function attachReviewCookie(request: NextRequest, res: NextResponse) {
+  const expected = normalize(process.env.ADMIN_REVIEW_KEY || "");
+  const query = normalize(
+    request.nextUrl.searchParams.get("review_key") || ""
+  );
 
-  if (queryKey && expectedKey && queryKey === expectedKey) {
-    response.cookies.set(ADMIN_REVIEW_COOKIE, expectedKey, {
+  if (query && query === expected) {
+    res.cookies.set(ADMIN_REVIEW_COOKIE, expected, {
       httpOnly: true,
       secure: true,
       sameSite: "lax",
@@ -61,7 +61,7 @@ function attachReviewCookieIfNeeded(request: NextRequest, response: NextResponse
     });
   }
 
-  return response;
+  return res;
 }
 
 export function proxy(request: NextRequest) {
@@ -74,8 +74,9 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (hasValidReviewBypass(request)) {
-    return attachReviewCookieIfNeeded(request, NextResponse.next());
+  // ✅ REVIEW BYPASS (fixed)
+  if (isReviewBypass(request)) {
+    return attachReviewCookie(request, NextResponse.next());
   }
 
   const accessToken = request.cookies.get(ADMIN_ACCESS_COOKIE)?.value;
