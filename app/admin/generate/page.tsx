@@ -6,6 +6,7 @@ import {
   suggestAdminEngine,
 } from "@/lib/admin-engine-assistant";
 import { slugify } from "@/lib/admin-content";
+import EngineConfigForm from "@/components/admin/EngineConfigForm";
 
 type Category = "tool" | "calculator" | "ai-tool";
 
@@ -14,13 +15,24 @@ function prettyCategory(value: Category) {
   return value;
 }
 
+function cleanConfigObject(input: Record<string, unknown>) {
+  return Object.fromEntries(
+    Object.entries(input).filter(([, value]) => {
+      if (value === undefined || value === null) return false;
+      if (value === "") return false;
+      if (Array.isArray(value) && value.length === 0) return false;
+      return true;
+    })
+  );
+}
+
 export default function AdminGeneratePage() {
   const [category, setCategory] = useState<Category>("tool");
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [engineType, setEngineType] = useState("auto");
-  const [engineConfigText, setEngineConfigText] = useState("{}");
+  const [engineConfig, setEngineConfig] = useState<Record<string, unknown>>({});
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -44,15 +56,24 @@ export default function AdminGeneratePage() {
     });
   }, [category, name, slug, description, engineType]);
 
-  useEffect(() => {
-    if (!configTouched) {
-      setEngineConfigText(JSON.stringify(suggestion.engine_config, null, 2));
-    }
-  }, [suggestion.engine_config, configTouched]);
-
   const engineOptions = useMemo(() => {
     return getAdminEngineOptions(category);
   }, [category]);
+
+  const effectiveEngineType =
+    engineType === "auto" ? suggestion.engine_type || "" : engineType;
+
+  const autoEngineConfig = useMemo(() => {
+    return cleanConfigObject(suggestion.engine_config || {});
+  }, [suggestion]);
+
+  const effectiveEngineConfig = useMemo(() => {
+    return configTouched ? cleanConfigObject(engineConfig) : autoEngineConfig;
+  }, [configTouched, engineConfig, autoEngineConfig]);
+
+  const engineConfigJson = useMemo(() => {
+    return JSON.stringify(effectiveEngineConfig, null, 2);
+  }, [effectiveEngineConfig]);
 
   async function handleCreate() {
     setLoading(true);
@@ -60,16 +81,6 @@ export default function AdminGeneratePage() {
     setError("");
 
     try {
-      let parsedConfig: Record<string, unknown> = {};
-
-      try {
-        parsedConfig = engineConfigText.trim()
-          ? (JSON.parse(engineConfigText) as Record<string, unknown>)
-          : {};
-      } catch {
-        throw new Error("Engine config must be valid JSON.");
-      }
-
       const res = await fetch("/api/admin/create-tool", {
         method: "POST",
         headers: {
@@ -81,7 +92,7 @@ export default function AdminGeneratePage() {
           slug,
           description,
           engine_type: engineType,
-          engine_config: parsedConfig,
+          engine_config: effectiveEngineConfig,
         }),
       });
 
@@ -102,7 +113,7 @@ export default function AdminGeneratePage() {
       setSlug("");
       setDescription("");
       setEngineType("auto");
-      setEngineConfigText("{}");
+      setEngineConfig({});
       setSlugTouched(false);
       setConfigTouched(false);
     } catch (submitError) {
@@ -121,6 +132,7 @@ export default function AdminGeneratePage() {
     setName(nextName);
     setDescription(nextDescription);
     setEngineType("auto");
+    setEngineConfig({});
     setSlugTouched(false);
     setConfigTouched(false);
   }
@@ -130,7 +142,7 @@ export default function AdminGeneratePage() {
       <h2 className="text-2xl font-semibold text-q-text">Generate one item</h2>
       <p className="mt-3 max-w-4xl text-sm leading-7 text-q-muted md:text-base">
         Create a single live tool, calculator, or AI tool with automatic engine
-        assignment and editable config before publishing.
+        assignment and structured engine config fields.
       </p>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -144,6 +156,7 @@ export default function AdminGeneratePage() {
               onChange={(e) => {
                 setCategory(e.target.value as Category);
                 setEngineType("auto");
+                setEngineConfig({});
                 setConfigTouched(false);
               }}
               className="w-full rounded-xl border border-q-border bg-q-bg p-3 text-q-text outline-none transition focus:border-blue-400"
@@ -202,6 +215,7 @@ export default function AdminGeneratePage() {
               value={engineType}
               onChange={(e) => {
                 setEngineType(e.target.value);
+                setEngineConfig({});
                 setConfigTouched(false);
               }}
               className="w-full rounded-xl border border-q-border bg-q-bg p-3 text-q-text outline-none transition focus:border-blue-400"
@@ -215,20 +229,21 @@ export default function AdminGeneratePage() {
             </select>
           </div>
 
-          <div>
-            <label className="mb-2 block text-sm font-medium text-q-text">
-              Engine config JSON
-            </label>
-            <textarea
-              value={engineConfigText}
-              onChange={(e) => {
-                setConfigTouched(true);
-                setEngineConfigText(e.target.value);
-              }}
-              rows={10}
-              spellCheck={false}
-              className="w-full rounded-xl border border-q-border bg-q-bg p-3 font-mono text-sm text-q-text outline-none transition focus:border-blue-400"
-            />
+          <EngineConfigForm
+            category={category}
+            engineType={effectiveEngineType}
+            value={effectiveEngineConfig}
+            onChange={(nextValue) => {
+              setConfigTouched(true);
+              setEngineConfig(nextValue);
+            }}
+          />
+
+          <div className="rounded-2xl border border-q-border bg-q-bg p-4">
+            <div className="mb-2 text-sm font-medium text-q-text">Engine config JSON preview</div>
+            <pre className="overflow-x-auto whitespace-pre-wrap text-xs leading-6 text-q-muted">
+              {engineConfigJson}
+            </pre>
           </div>
 
           <button
@@ -255,9 +270,7 @@ export default function AdminGeneratePage() {
         <aside className="space-y-4">
           <div className="rounded-2xl border border-q-border bg-q-bg p-5">
             <h3 className="text-lg font-semibold text-q-text">Engine recommendation</h3>
-            <p className="mt-3 text-sm leading-6 text-q-muted">
-              {suggestion.reason}
-            </p>
+            <p className="mt-3 text-sm leading-6 text-q-muted">{suggestion.reason}</p>
 
             <div className="mt-4 space-y-3">
               <div className="rounded-xl border border-q-border bg-q-card p-4">
@@ -266,6 +279,15 @@ export default function AdminGeneratePage() {
                 </div>
                 <div className="mt-2 text-sm font-medium text-q-text">
                   {suggestion.engine_type || "None"}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-q-border bg-q-card p-4">
+                <div className="text-xs uppercase tracking-wide text-q-muted">
+                  Current engine
+                </div>
+                <div className="mt-2 text-sm font-medium text-q-text">
+                  {effectiveEngineType || "None"}
                 </div>
               </div>
 
