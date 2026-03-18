@@ -1,59 +1,50 @@
-import { getOpenAIClient } from "@/lib/openai-server";
+import OpenAI from "openai"
 
-export type TopicContent = {
-  intro: string;
-  use_cases: string[];
-  faqs: { question: string; answer: string }[];
-};
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY!,
+})
 
-export async function generateTopicContent(label: string): Promise<TopicContent> {
-  const openai = getOpenAIClient();
+export async function generateTopicContent(topicKey: string, label: string) {
+  const prompt = `
+You are generating SEO content for a SOFTWARE TOOLS PLATFORM.
 
-  const response = await openai.responses.create({
-    model: "gpt-4.1-mini",
-    input: [
-      {
-        role: "system",
-        content: `
-Return ONLY valid JSON.
+IMPORTANT RULES:
+- This is NOT about real-world physical objects
+- This is about ONLINE TOOLS, CALCULATORS, and AI utilities
+- Never talk about machines, fuel, electricity, hardware
 
-Format:
+Topic: ${label}
+
+Generate:
+
+1. Short description (2-3 lines)
+2. 5 FAQs (software/tool context only)
+3. 5 benefits of using online tools
+4. 5 how-to steps using tools
+
+Output JSON:
 {
-  "intro": "string",
-  "use_cases": ["string"],
-  "faqs": [
-    { "question": "string", "answer": "string" }
-  ]
+  description: "",
+  faqs: [{ question: "", answer: "" }],
+  benefits: [""],
+  steps: [""]
 }
+`
 
-Rules:
-- Write SEO-friendly but natural content
-- Keep intro under 80 words
-- Use clear, simple English
-- FAQs must be useful and real
-- No fluff
-        `.trim(),
-      },
-      {
-        role: "user",
-        content: `Generate content for topic: ${label}`,
-      },
-    ],
-  });
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0.7,
+  })
 
   try {
-    const parsed = JSON.parse(response.output_text || "{}");
-
-    return {
-      intro: parsed.intro || "",
-      use_cases: Array.isArray(parsed.use_cases) ? parsed.use_cases : [],
-      faqs: Array.isArray(parsed.faqs) ? parsed.faqs : [],
-    };
+    return JSON.parse(response.choices[0].message.content || "{}")
   } catch {
     return {
-      intro: "",
-      use_cases: [],
+      description: `${label} tools help you complete tasks faster and more efficiently.`,
       faqs: [],
-    };
+      benefits: [],
+      steps: [],
+    }
   }
 }

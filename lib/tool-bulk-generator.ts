@@ -1,5 +1,5 @@
-import { ENGINE_OPTIONS, inferEngineType, normalizeEngineConfig } from "@/lib/engine-metadata";
-import { ensureUniqueSlug, findExistingBySlug, getSupabaseAdmin, safeSlug } from "@/lib/admin-publishing";
+import { getSupabaseAdmin } from "@/lib/admin-publishing";
+import { getOpenAIClient } from "@/lib/openai-server";
 
 export type BulkGeneratedTool = {
   name: string;
@@ -10,130 +10,210 @@ export type BulkGeneratedTool = {
   engine_config: Record<string, unknown>;
 };
 
-export function getSupportedToolEngineTypes() {
-  return ENGINE_OPTIONS.tool
-    .map((option) => option.value)
-    .filter((value) => value !== "generic-directory");
+const SUPPORTED_ENGINE_TYPES = [
+  "password-strength-checker",
+  "password-generator",
+  "json-formatter",
+  "word-counter",
+  "uuid-generator",
+  "slug-generator",
+  "random-string-generator",
+  "base64-encoder",
+  "base64-decoder",
+  "currency-converter",
+  "regex-tester",
+  "timestamp-converter",
+  "md5-generator",
+  "sha256-generator",
+  "binary-to-text",
+  "text-to-binary",
+  "hex-to-rgb",
+  "rgb-to-hex",
+  "openai-text-tool",
+  "text-case-converter",
+  "text-transformer",
+] as const;
+
+function safeSlug(value: string) {
+  return String(value || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
-export function normalizeBulkGeneratedTool(input: Record<string, unknown>): BulkGeneratedTool | null {
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => String(item || "").trim())
+    .filter(Boolean);
+}
+
+export function getSupportedToolEngineTypes(): string[] {
+  return [...SUPPORTED_ENGINE_TYPES];
+}
+
+export function normalizeBulkGeneratedTool(input: any): BulkGeneratedTool | null {
+  if (!input || typeof input !== "object") return null;
+
   const name = String(input.name || "").trim();
-  const slug = safeSlug(String(input.slug || name));
   const description = String(input.description || "").trim();
+  const slug = safeSlug(String(input.slug || name));
+  const engine_type = String(input.engine_type || "").trim();
 
-  const relatedSlugs = Array.isArray(input.related_slugs)
-    ? input.related_slugs.map((item) => safeSlug(String(item))).filter(Boolean)
-    : [];
-
-  const suggestedEngineType = String(input.engine_type || "").trim().toLowerCase();
-  const inferredEngineType = inferEngineType("tool", slug) || "generic-directory";
-  const engineType = suggestedEngineType || inferredEngineType;
-
-  const engineConfig = normalizeEngineConfig(input.engine_config);
-
-  if (!name || !slug || !description) {
-    return null;
-  }
+  if (!name || !slug || !engine_type) return null;
 
   return {
     name,
     slug,
-    description,
-    related_slugs: relatedSlugs.slice(0, 6),
-    engine_type: engineType,
-    engine_config: engineConfig,
+    description: description || `${name} on QuickFnd.`,
+    related_slugs: asStringArray(input.related_slugs).slice(0, 6),
+    engine_type,
+    engine_config:
+      input.engine_config && typeof input.engine_config === "object"
+        ? input.engine_config
+        : {},
   };
 }
 
-export function filterSupportedBulkTools(items: BulkGeneratedTool[]) {
+export function parseBulkGeneratedTools(raw: string): BulkGeneratedTool[] {
+  try {
+    const parsed = JSON.parse(raw);
+
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((item) => normalizeBulkGeneratedTool(item))
+        .filter((item): item is BulkGeneratedTool => Boolean(item));
+    }
+
+    if (parsed && Array.isArray(parsed.items)) {
+      return parsed.items
+        .map((item: unknown) => normalizeBulkGeneratedTool(item))
+        .filter((item: BulkGeneratedTool | null): item is BulkGeneratedTool => Boolean(item));
+    }
+
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+export function filterSupportedBulkTools(items: BulkGeneratedTool[]): BulkGeneratedTool[] {
   const supported = new Set(getSupportedToolEngineTypes());
 
   return items.filter((item) => {
-    return supported.has(item.engine_type as never);
+    if (!item?.name || !item?.slug || !item?.engine_type) return false;
+    return supported.has(item.engine_type);
   });
 }
 
-export function parseBulkGeneratedTools(raw: string): BulkGeneratedTool[] {
-  const trimmed = raw.trim();
-  if (!trimmed) return [];
-
-  try {
-    const parsed = JSON.parse(trimmed) as unknown;
-    return normalizeBulkPayload(parsed);
-  } catch {
-    const match = trimmed.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
-    if (!match) return [];
-
-    try {
-      const parsed = JSON.parse(match[0]) as unknown;
-      return normalizeBulkPayload(parsed);
-    } catch {
-      return [];
-    }
-  }
-}
-
-function normalizeBulkPayload(parsed: unknown): BulkGeneratedTool[] {
-  let items: unknown[] = [];
-
-  if (Array.isArray(parsed)) {
-    items = parsed;
-  } else if (
-    parsed &&
-    typeof parsed === "object" &&
-    "items" in parsed &&
-    Array.isArray((parsed as { items?: unknown[] }).items)
-  ) {
-    items = (parsed as { items: unknown[] }).items;
-  }
-
-  return items
-    .map((item) => normalizeBulkGeneratedTool((item ?? {}) as Record<string, unknown>))
-    .filter((item): item is BulkGeneratedTool => Boolean(item));
-}
-
 export async function insertBulkTools(items: BulkGeneratedTool[]) {
-  const supabaseAdmin = getSupabaseAdmin();
+  const supabase = getSupabaseAdmin();
+
   const created: BulkGeneratedTool[] = [];
-  const skipped: { slug: string; reason: string }[] = [];
+  const skipped: Array<{ slug: string; reason: string }> = [];
 
   for (const item of items) {
-    const existing = await findExistingBySlug("tool", item.slug);
+    const normalized = normalizeBulkGeneratedTool(item);
+
+    if (!normalized) {
+      skipped.push({
+        slug: String(item?.slug || ""),
+        reason: "Invalid item shape.",
+      });
+      continue;
+    }
+
+    const { data: existing, error: existingError } = await supabase
+      .from("tools")
+      .select("slug")
+      .eq("slug", normalized.slug)
+      .maybeSingle();
+
+    if (existingError) {
+      skipped.push({
+        slug: normalized.slug,
+        reason: existingError.message,
+      });
+      continue;
+    }
 
     if (existing) {
       skipped.push({
-        slug: item.slug,
-        reason: "already-exists",
+        slug: normalized.slug,
+        reason: "Slug already exists.",
       });
       continue;
     }
 
-    const uniqueSlug = await ensureUniqueSlug("tool", item.slug);
-
-    const payload = {
-      name: item.name,
-      slug: uniqueSlug,
-      description: item.description,
-      related_slugs: item.related_slugs,
-      engine_type: item.engine_type,
-      engine_config: item.engine_config,
-    };
-
-    const { error } = await supabaseAdmin.from("tools").insert([payload]);
-
-    if (error) {
-      skipped.push({
-        slug: item.slug,
-        reason: error.message,
-      });
-      continue;
-    }
-
-    created.push({
-      ...item,
-      slug: uniqueSlug,
+    const { error: insertError } = await supabase.from("tools").insert({
+      name: normalized.name,
+      slug: normalized.slug,
+      description: normalized.description,
+      related_slugs: normalized.related_slugs,
+      engine_type: normalized.engine_type,
+      engine_config: normalized.engine_config,
     });
+
+    if (insertError) {
+      skipped.push({
+        slug: normalized.slug,
+        reason: insertError.message,
+      });
+      continue;
+    }
+
+    created.push(normalized);
   }
 
-  return { created, skipped };
+  return {
+    created,
+    skipped,
+    createdCount: created.length,
+    skippedCount: skipped.length,
+  };
+}
+
+export async function generateIdeas(
+  topic: string,
+  type: "tools" | "calculators" | "ai_tools" = "tools"
+): Promise<BulkGeneratedTool[]> {
+  const openai = getOpenAIClient();
+  const supportedEngines = getSupportedToolEngineTypes().join(", ");
+
+  const response = await openai.responses.create({
+    model: "gpt-4.1-mini",
+    input: [
+      {
+        role: "system",
+        content: `
+Return only valid JSON.
+No markdown.
+No code fences.
+
+Return exactly this shape:
+{
+  "items": [
+    {
+      "name": "string",
+      "slug": "string",
+      "description": "string",
+      "related_slugs": ["string"],
+      "engine_type": "string",
+      "engine_config": {}
+    }
+  ]
+}
+
+Generate 8 QuickFnd ${type} ideas for the topic: ${topic}
+
+Only use these supported engine types:
+${supportedEngines}
+        `.trim(),
+      },
+    ],
+  });
+
+  const parsed = parseBulkGeneratedTools(response.output_text || "");
+  return filterSupportedBulkTools(parsed);
 }

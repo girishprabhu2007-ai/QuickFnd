@@ -93,7 +93,10 @@ export default async function HomePage() {
             <section className="rounded-3xl border border-q-border bg-q-card p-6 md:p-8">
               <div className="flex items-center justify-between gap-4">
                 <h2 className="text-2xl font-semibold text-q-text">Featured Tools</h2>
-                <Link href="/tools" className="text-sm font-medium text-blue-500 hover:text-blue-400">
+                <Link
+                  href="/tools"
+                  className="text-sm font-medium text-blue-500 hover:text-blue-400"
+                >
                   View all tools
                 </Link>
               </div>
@@ -116,8 +119,13 @@ export default async function HomePage() {
 
             <section className="rounded-3xl border border-q-border bg-q-card p-6 md:p-8">
               <div className="flex items-center justify-between gap-4">
-                <h2 className="text-2xl font-semibold text-q-text">Featured Calculators</h2>
-                <Link href="/calculators" className="text-sm font-medium text-blue-500 hover:text-blue-400">
+                <h2 className="text-2xl font-semibold text-q-text">
+                  Featured Calculators
+                </h2>
+                <Link
+                  href="/calculators"
+                  className="text-sm font-medium text-blue-500 hover:text-blue-400"
+                >
                   View all calculators
                 </Link>
               </div>
@@ -141,7 +149,10 @@ export default async function HomePage() {
             <section className="rounded-3xl border border-q-border bg-q-card p-6 md:p-8">
               <div className="flex items-center justify-between gap-4">
                 <h2 className="text-2xl font-semibold text-q-text">Featured AI Tools</h2>
-                <Link href="/ai-tools" className="text-sm font-medium text-blue-500 hover:text-blue-400">
+                <Link
+                  href="/ai-tools"
+                  className="text-sm font-medium text-blue-500 hover:text-blue-400"
+                >
                   View all AI tools
                 </Link>
               </div>

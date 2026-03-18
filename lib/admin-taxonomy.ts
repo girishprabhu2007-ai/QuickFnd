@@ -6,14 +6,20 @@ type TaxonomyEntry = {
   minScore?: number;
 };
 
-type TaxonomyGroup<T extends { slug: string; name: string; description?: string | null }> = {
+export type TaxonomyGroup<
+  T extends { slug: string; name: string; description?: string | null }
+> = {
   key: string;
   label: string;
   count: number;
   items: T[];
 };
 
-function textBlob(item: { slug: string; name: string; description?: string | null }) {
+function textBlob(item: {
+  slug: string;
+  name: string;
+  description?: string | null;
+}) {
   return `${item.slug} ${item.name} ${item.description || ""}`.toLowerCase();
 }
 
@@ -78,7 +84,9 @@ function pickGroup(
   };
 }
 
-function bucketItems<T extends { slug: string; name: string; description?: string | null }>(
+function bucketItems<
+  T extends { slug: string; name: string; description?: string | null }
+>(
   items: T[],
   groups: TaxonomyEntry[],
   fallbackKey: string,
@@ -125,13 +133,7 @@ const TOOL_GROUPS: TaxonomyEntry[] = [
       /\bshorts\b/i,
       /\bcaption\b/i,
     ],
-    exclude: [
-      /\btwitter\b/i,
-      /\bmeta description\b/i,
-      /\bseo\b/i,
-      /\binstagram\b/i,
-      /\btiktok\b/i,
-    ],
+    exclude: [/\btwitter\b/i, /\binstagram\b/i, /\btiktok\b/i],
     minScore: 1,
   },
   {
@@ -149,11 +151,7 @@ const TOOL_GROUPS: TaxonomyEntry[] = [
       /\brank\b/i,
       /\bmarketing\b/i,
     ],
-    exclude: [
-      /\byoutube\b/i,
-      /\bvideo\b/i,
-      /\bthumbnail\b/i,
-    ],
+    exclude: [/\byoutube\b/i, /\bvideo\b/i, /\bthumbnail\b/i],
     minScore: 1,
   },
   {
@@ -209,20 +207,13 @@ const TOOL_GROUPS: TaxonomyEntry[] = [
       /\brewrite\b/i,
       /\btransform\b/i,
     ],
-    exclude: [
-      /\byoutube\b/i,
-      /\bvideo\b/i,
-    ],
+    exclude: [/\byoutube\b/i, /\bvideo\b/i],
     minScore: 1,
   },
   {
     key: "generators",
     label: "Generators",
-    include: [
-      /\bgenerator\b/i,
-      /\brandom\b/i,
-      /\bpassword\b/i,
-    ],
+    include: [/\bgenerator\b/i, /\brandom\b/i, /\bpassword\b/i],
     minScore: 1,
   },
 ];
@@ -246,25 +237,13 @@ const CALCULATOR_GROUPS: TaxonomyEntry[] = [
   {
     key: "math-calculators",
     label: "Math Calculators",
-    include: [
-      /\bpercentage\b/i,
-      /\bmath\b/i,
-      /\brate\b/i,
-      /\bnumber\b/i,
-      /\baverage\b/i,
-    ],
+    include: [/\bpercentage\b/i, /\bmath\b/i, /\brate\b/i, /\bnumber\b/i, /\baverage\b/i],
     minScore: 1,
   },
   {
     key: "health-calculators",
     label: "Health Calculators",
-    include: [
-      /\bbmi\b/i,
-      /\bhealth\b/i,
-      /\bweight\b/i,
-      /\bcalorie\b/i,
-      /\bage\b/i,
-    ],
+    include: [/\bbmi\b/i, /\bhealth\b/i, /\bweight\b/i, /\bcalorie\b/i, /\bage\b/i],
     minScore: 1,
   },
 ];
@@ -287,36 +266,19 @@ const AI_GROUPS: TaxonomyEntry[] = [
   {
     key: "writing-ai",
     label: "Writing AI",
-    include: [
-      /\bwriter\b/i,
-      /\bemail\b/i,
-      /\brewrite\b/i,
-      /\bsummary\b/i,
-      /\boutline\b/i,
-      /\bwriting\b/i,
-    ],
+    include: [/\bwriter\b/i, /\bemail\b/i, /\brewrite\b/i, /\bsummary\b/i, /\boutline\b/i, /\bwriting\b/i],
     minScore: 1,
   },
   {
     key: "prompt-ai",
     label: "Prompt AI",
-    include: [
-      /\bprompt\b/i,
-      /\bmidjourney\b/i,
-      /\bchatgpt\b/i,
-    ],
+    include: [/\bprompt\b/i, /\bmidjourney\b/i, /\bchatgpt\b/i],
     minScore: 1,
   },
   {
     key: "video-social-ai",
     label: "Video & Social AI",
-    include: [
-      /\byoutube\b/i,
-      /\bvideo\b/i,
-      /\bthumbnail\b/i,
-      /\binstagram\b/i,
-      /\btiktok\b/i,
-    ],
+    include: [/\byoutube\b/i, /\bvideo\b/i, /\bthumbnail\b/i, /\binstagram\b/i, /\btiktok\b/i],
     minScore: 1,
   },
 ];
@@ -338,11 +300,18 @@ export function buildHomepageTaxonomy<
       "other-calculators",
       "Other Calculators"
     ),
-    aiTools: bucketItems(input.aiTools, AI_GROUPS, "other-ai-tools", "Other AI Tools"),
+    aiTools: bucketItems(
+      input.aiTools,
+      AI_GROUPS,
+      "other-ai-tools",
+      "Other AI Tools"
+    ),
   };
 }
 
-export function filterItemsByGroup<T extends { slug: string; name: string; description?: string | null }>(
+export function filterItemsByGroup<
+  T extends { slug: string; name: string; description?: string | null }
+>(
   type: "tools" | "calculators" | "aiTools",
   items: T[],
   groupKey?: string

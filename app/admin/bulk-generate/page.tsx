@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 type DemandSuggestion = {
+  content_type: "tools" | "calculators" | "ai_tools";
   name: string;
   slug: string;
   description: string;
@@ -13,13 +14,14 @@ type DemandSuggestion = {
   demand_reason: string;
 };
 
-type CreatedTool = {
+type CreatedItem = {
   name: string;
   slug: string;
   engine_type: string;
+  content_type: string;
 };
 
-type SkippedTool = {
+type SkippedItem = {
   slug: string;
   reason: string;
 };
@@ -27,6 +29,7 @@ type SkippedTool = {
 export default function AdminBulkGeneratePage() {
   const [theme, setTheme] = useState("");
   const [count, setCount] = useState("15");
+  const [contentType, setContentType] = useState<"tools" | "calculators" | "ai_tools">("tools");
 
   const [busy, setBusy] = useState(false);
   const [createBusy, setCreateBusy] = useState(false);
@@ -37,8 +40,8 @@ export default function AdminBulkGeneratePage() {
   const [suggestions, setSuggestions] = useState<DemandSuggestion[]>([]);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
 
-  const [createdItems, setCreatedItems] = useState<CreatedTool[]>([]);
-  const [skippedItems, setSkippedItems] = useState<SkippedTool[]>([]);
+  const [createdItems, setCreatedItems] = useState<CreatedItem[]>([]);
+  const [skippedItems, setSkippedItems] = useState<SkippedItem[]>([]);
 
   const selectedCount = useMemo(() => {
     return Object.values(selected).filter(Boolean).length;
@@ -62,6 +65,7 @@ export default function AdminBulkGeneratePage() {
         body: JSON.stringify({
           theme,
           count: Number(count),
+          contentType,
         }),
       });
 
@@ -81,7 +85,7 @@ export default function AdminBulkGeneratePage() {
       setSelected(nextSelected);
 
       setSummary(
-        `Generated ${data.generatedCount} suggestion(s), ${data.supportedCount} supported, ${data.newCount} new and publishable.`
+        `Generated ${data.generatedCount} suggestion(s), ${data.supportedCount} valid, ${data.newCount} new and publishable for ${labelForType(contentType)}.`
       );
     } catch (err) {
       setError(
@@ -117,17 +121,17 @@ export default function AdminBulkGeneratePage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data?.error || "Failed to create selected tools.");
+        throw new Error(data?.error || "Failed to create selected items.");
       }
 
       setCreatedItems(Array.isArray(data.created) ? data.created : []);
       setSkippedItems(Array.isArray(data.skipped) ? data.skipped : []);
       setSummary(
-        `Created ${data.createdCount} tool(s), skipped ${data.skippedCount}.`
+        `Created ${data.createdCount} item(s), skipped ${data.skippedCount}.`
       );
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to create selected tools."
+        err instanceof Error ? err.message : "Failed to create selected items."
       );
     } finally {
       setCreateBusy(false);
@@ -153,17 +157,34 @@ export default function AdminBulkGeneratePage() {
     setTheme(value);
   }
 
+  function labelForType(value: "tools" | "calculators" | "ai_tools") {
+    if (value === "calculators") return "Calculators";
+    if (value === "ai_tools") return "AI Tools";
+    return "Tools";
+  }
+
   return (
     <div className="grid gap-8">
       <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
         <h2 className="text-3xl font-semibold text-q-text">Bulk Generate</h2>
         <p className="mt-3 max-w-4xl text-sm leading-7 text-q-muted md:text-base">
-          Enter a niche or theme. QuickFnd will generate demand-ranked tool ideas
-          using your existing tools, request history, usage signals, and supported
-          engine families.
+          Enter a niche or theme. QuickFnd will generate demand-ranked ideas using
+          your existing content, request history, usage signals, and the selected content type.
         </p>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-[1fr_120px_auto]">
+        <div className="mt-6 grid gap-4 md:grid-cols-[220px_1fr_120px_auto]">
+          <select
+            value={contentType}
+            onChange={(e) =>
+              setContentType(e.target.value as "tools" | "calculators" | "ai_tools")
+            }
+            className="w-full rounded-2xl border border-q-border bg-q-bg px-4 py-4 text-q-text outline-none"
+          >
+            <option value="tools">Tools</option>
+            <option value="calculators">Calculators</option>
+            <option value="ai_tools">AI Tools</option>
+          </select>
+
           <input
             value={theme}
             onChange={(e) => setTheme(e.target.value)}
@@ -185,7 +206,7 @@ export default function AdminBulkGeneratePage() {
             disabled={busy || !theme.trim()}
             className="rounded-2xl bg-q-primary px-5 py-4 font-medium text-white transition hover:bg-q-primary-hover disabled:opacity-60"
           >
-            {busy ? "Generating..." : "Generate Demand Suggestions"}
+            {busy ? "Generating..." : `Generate ${labelForType(contentType)}`}
           </button>
         </div>
 
@@ -214,6 +235,18 @@ export default function AdminBulkGeneratePage() {
           >
             text tools
           </button>
+          <button
+            onClick={() => fillExample("finance")}
+            className="rounded-xl border border-q-border bg-q-bg px-4 py-2 text-sm font-medium text-q-text transition hover:bg-q-card-hover"
+          >
+            finance
+          </button>
+          <button
+            onClick={() => fillExample("writing assistant")}
+            className="rounded-xl border border-q-border bg-q-bg px-4 py-2 text-sm font-medium text-q-text transition hover:bg-q-card-hover"
+          >
+            writing assistant
+          </button>
         </div>
 
         {summary ? (
@@ -234,7 +267,7 @@ export default function AdminBulkGeneratePage() {
           <div>
             <h3 className="text-2xl font-semibold text-q-text">Demand Suggestions</h3>
             <p className="mt-2 text-sm text-q-muted">
-              Review AI-ranked tool ideas and publish only the ones you want.
+              Review AI-ranked ideas and publish only the ones you want.
             </p>
           </div>
 
@@ -260,68 +293,58 @@ export default function AdminBulkGeneratePage() {
               disabled={createBusy || selectedCount === 0}
               className="rounded-xl bg-q-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-q-primary-hover disabled:opacity-60"
             >
-              {createBusy
-                ? "Creating..."
-                : `Create Selected (${selectedCount})`}
+              {createBusy ? "Creating..." : `Create Selected (${selectedCount})`}
             </button>
           </div>
         </div>
 
         {suggestions.length === 0 ? (
           <div className="mt-5 rounded-2xl border border-q-border bg-q-bg p-5 text-sm text-q-muted">
-            No suggestions yet. Enter a niche and generate demand suggestions first.
+            No suggestions yet. Enter a theme and generate demand suggestions first.
           </div>
         ) : (
           <div className="mt-6 grid gap-4 lg:grid-cols-2">
             {suggestions.map((item) => (
               <div
-                key={item.slug}
+                key={`${item.content_type}-${item.slug}`}
                 className="rounded-2xl border border-q-border bg-q-bg p-5"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <label className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={Boolean(selected[item.slug])}
-                      onChange={() => toggleSelected(item.slug)}
-                      className="mt-1"
-                    />
-                    <div>
-                      <div className="text-lg font-semibold text-q-text">
-                        {item.name}
-                      </div>
-                      <div className="mt-1 text-sm text-q-muted">/{item.slug}</div>
-                    </div>
-                  </label>
+                <label className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(selected[item.slug])}
+                    onChange={() => toggleSelected(item.slug)}
+                    className="mt-1"
+                  />
 
-                  <div className="rounded-full border border-q-border bg-q-card px-3 py-1 text-xs font-medium text-q-text">
-                    Score {item.demand_score}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="text-lg font-semibold text-q-text">{item.name}</div>
+                      <span className="rounded-full border border-q-border bg-q-card px-2.5 py-1 text-xs text-q-muted">
+                        {labelForType(item.content_type)}
+                      </span>
+                      {item.engine_type ? (
+                        <span className="rounded-full border border-q-border bg-q-card px-2.5 py-1 text-xs text-q-muted">
+                          {item.engine_type}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <div className="mt-1 text-sm text-q-muted">/{item.slug}</div>
+
+                    <div className="mt-3 text-sm leading-6 text-q-muted">
+                      {item.description}
+                    </div>
+
+                    <div className="mt-3 text-sm text-q-text">
+                      Demand Score: <span className="font-medium">{item.demand_score}</span>
+                    </div>
+
+                    {item.demand_reason ? (
+                      <div className="mt-2 text-sm text-q-muted">{item.demand_reason}</div>
+                    ) : null}
                   </div>
-                </div>
-
-                <div className="mt-4 text-sm leading-6 text-q-muted">
-                  {item.description}
-                </div>
-
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-xl border border-q-border bg-q-card p-3">
-                    <div className="text-xs uppercase tracking-wide text-q-muted">
-                      Engine
-                    </div>
-                    <div className="mt-1 text-sm font-medium text-q-text">
-                      {item.engine_type}
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-q-border bg-q-card p-3">
-                    <div className="text-xs uppercase tracking-wide text-q-muted">
-                      Demand Reason
-                    </div>
-                    <div className="mt-1 text-sm text-q-text">
-                      {item.demand_reason}
-                    </div>
-                  </div>
-                </div>
+                </label>
               </div>
             ))}
           </div>
@@ -329,24 +352,27 @@ export default function AdminBulkGeneratePage() {
       </section>
 
       <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
-        <h3 className="text-2xl font-semibold text-q-text">Created Tools</h3>
+        <h3 className="text-2xl font-semibold text-q-text">Created Items</h3>
 
         {createdItems.length === 0 ? (
-          <div className="mt-4 rounded-2xl border border-q-border bg-q-bg p-5 text-sm text-q-muted">
-            No tools created in this session yet.
+          <div className="mt-5 rounded-2xl border border-q-border bg-q-bg p-5 text-sm text-q-muted">
+            No items created in this session yet.
           </div>
         ) : (
           <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {createdItems.map((item) => (
               <div
-                key={item.slug}
+                key={`${item.content_type}-${item.slug}`}
                 className="rounded-2xl border border-q-border bg-q-bg p-5"
               >
                 <div className="text-lg font-semibold text-q-text">{item.name}</div>
                 <div className="mt-2 text-sm text-q-muted">/{item.slug}</div>
                 <div className="mt-2 text-sm text-q-muted">
-                  Engine: {item.engine_type}
+                  Type: {labelForType(item.content_type as "tools" | "calculators" | "ai_tools")}
                 </div>
+                {item.engine_type ? (
+                  <div className="mt-1 text-sm text-q-muted">Engine: {item.engine_type}</div>
+                ) : null}
               </div>
             ))}
           </div>
@@ -357,7 +383,7 @@ export default function AdminBulkGeneratePage() {
         <h3 className="text-2xl font-semibold text-q-text">Skipped Items</h3>
 
         {skippedItems.length === 0 ? (
-          <div className="mt-4 rounded-2xl border border-q-border bg-q-bg p-5 text-sm text-q-muted">
+          <div className="mt-5 rounded-2xl border border-q-border bg-q-bg p-5 text-sm text-q-muted">
             No skipped items in this session.
           </div>
         ) : (

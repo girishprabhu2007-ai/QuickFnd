@@ -1,7 +1,19 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import AdminTabs from "@/components/admin/AdminTabs";
 
+const AUTH_PAGES = new Set(["/admin/login", "/admin/reset-password"]);
+
 export default function AdminLayout({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const isAuthPage = AUTH_PAGES.has(pathname);
+
+  if (isAuthPage) {
+    return <>{children}</>;
+  }
+
   return (
     <main className="min-h-screen bg-q-bg px-4 py-8 text-q-text sm:px-6 lg:px-8 lg:py-12">
       <section className="mx-auto max-w-7xl">
@@ -19,8 +31,19 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               </p>
             </div>
 
-            <div className="rounded-2xl border border-q-border bg-q-bg px-4 py-3 text-sm text-q-muted">
-              Live control panel for tools, calculators, AI tools, and request handling.
+            <div className="flex flex-col items-start gap-3 lg:items-end">
+              <div className="rounded-2xl border border-q-border bg-q-bg px-4 py-3 text-sm text-q-muted">
+                Live control panel for tools, calculators, AI tools, and request handling.
+              </div>
+
+              <form action="/api/admin/logout" method="POST">
+                <button
+                  type="submit"
+                  className="rounded-2xl border border-q-border bg-q-bg px-4 py-3 text-sm font-medium text-q-text transition hover:bg-q-card-hover"
+                >
+                  Logout
+                </button>
+              </form>
             </div>
           </div>
         </div>

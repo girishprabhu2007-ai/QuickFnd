@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAdminUser } from "@/lib/admin-auth";
 import { getOpenAIClient } from "@/lib/openai-server";
 import {
+  type DemandContentType,
   filterNewDemandSuggestions,
   filterSupportedDemandSuggestions,
   getDemandSignals,
@@ -11,6 +12,7 @@ import {
 type RequestBody = {
   theme?: string;
   count?: number;
+  contentType?: DemandContentType;
 };
 
 export async function POST(req: Request) {
@@ -24,12 +26,16 @@ export async function POST(req: Request) {
     const body = (await req.json()) as RequestBody;
     const theme = String(body.theme || "").trim();
     const count = Math.max(5, Math.min(40, Number(body.count) || 15));
+    const contentType =
+      body.contentType === "calculators" || body.contentType === "ai_tools"
+        ? body.contentType
+        : "tools";
 
     if (!theme) {
       return NextResponse.json({ error: "Theme is required." }, { status: 400 });
     }
 
-    const signals = await getDemandSignals();
+    const signals = await getDemandSignals(contentType);
     const openai = getOpenAIClient();
 
     const topUsed = Object.entries(signals.topUsage)
@@ -45,17 +51,14 @@ export async function POST(req: Request) {
       })
       .join("\n");
 
-    const existingTools = signals.existingTools
+    const existingItems = signals.existingItems
       .slice(0, 300)
       .map((row) => `${row.slug} | ${row.name} | ${row.engine_type || ""}`)
       .join("\n");
 
-    const response = await openai.responses.create({
-      model: "gpt-4.1-mini",
-      input: [
-        {
-          role: "system",
-          content: `
+    const systemPrompt =
+      contentType === "tools"
+        ? `
 Return valid JSON only.
 No markdown.
 No code fences.
@@ -64,6 +67,7 @@ Return exactly this shape:
 {
   "items": [
     {
+      "content_type": "tools",
       "name": "string",
       "slug": "string",
       "description": "string",
@@ -86,6 +90,7 @@ Use these decision inputs:
 4. Only supported engine-backed tools
 
 Rules:
+- content_type must always be "tools"
 - Only use these exact supported engine_type values:
 ${signals.supportedEngineTypes.join("\n")}
 - Suggest tools with strong search/demand potential inside the requested niche.
@@ -98,7 +103,54 @@ ${signals.supportedEngineTypes.join("\n")}
 - related_slugs should contain 3 to 6 realistic related slugs.
 - engine_config should usually be {} unless needed.
 - Avoid duplicates and avoid already existing slugs when possible.
-          `.trim(),
+          `.trim()
+        : `
+Return valid JSON only.
+No markdown.
+No code fences.
+
+Return exactly this shape:
+{
+  "items": [
+    {
+      "content_type": "${contentType}",
+      "name": "string",
+      "slug": "string",
+      "description": "string",
+      "demand_score": 1,
+      "demand_reason": "string"
+    }
+  ]
+}
+
+Task:
+Generate ${count} high-potential QuickFnd ${
+            contentType === "calculators" ? "calculator" : "AI tool"
+          } ideas for this niche/theme: ${theme}
+
+Use these decision inputs:
+1. Existing published ${contentType}
+2. Recent user requests
+3. Current top usage patterns
+
+Rules:
+- content_type must always be "${contentType}"
+- Do not include engine_type
+- Do not include related_slugs
+- Name should be product-ready.
+- slug must be lowercase and hyphen-separated.
+- description should be 2 concise SEO-friendly sentences.
+- demand_score must be 1 to 100.
+- demand_reason must be one concise sentence.
+- Avoid duplicates and avoid already existing slugs when possible.
+          `.trim();
+
+    const response = await openai.responses.create({
+      model: "gpt-4.1-mini",
+      input: [
+        {
+          role: "system",
+          content: systemPrompt,
         },
         {
           role: "user",
@@ -106,10 +158,10 @@ ${signals.supportedEngineTypes.join("\n")}
 NICHE / THEME:
 ${theme}
 
-CURRENT EXISTING TOOLS:
-${existingTools || "none"}
+CURRENT EXISTING ITEMS:
+${existingItems || "none"}
 
-RECENT TOOL REQUESTS:
+RECENT REQUESTS:
 ${recentRequests || "none"}
 
 TOP USAGE SIGNALS:
@@ -120,13 +172,14 @@ ${topUsed || "none"}
     });
 
     const raw = response.output_text || "";
-    const parsed = parseDemandSuggestions(raw);
-    const supported = filterSupportedDemandSuggestions(parsed);
-    const fresh = filterNewDemandSuggestions(supported, signals.existingTools);
+    const parsed = parseDemandSuggestions(raw, contentType);
+    const supported = filterSupportedDemandSuggestions(parsed, contentType);
+    const fresh = filterNewDemandSuggestions(supported, signals.existingItems);
 
     return NextResponse.json({
       success: true,
       theme,
+      contentType,
       suggestions: fresh,
       generatedCount: parsed.length,
       supportedCount: supported.length,
@@ -138,7 +191,9 @@ ${topUsed || "none"}
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : "Failed to generate demand suggestions.",
+          error instanceof Error
+            ? error.message
+            : "Failed to generate demand suggestions.",
       },
       { status: 500 }
     );
