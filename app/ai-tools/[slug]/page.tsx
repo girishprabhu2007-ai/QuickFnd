@@ -1,108 +1,71 @@
-import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import BuiltInAIToolClient from "@/components/ai-tools/BuiltInAIToolClient";
-import OpenAITextToolClient from "@/components/ai-tools/OpenAITextToolClient";
-import JsonLd from "@/components/seo/JsonLd";
 import PublicDetailPage from "@/components/seo/PublicDetailPage";
-import { getContentItem, getRelatedContent } from "@/lib/db";
-import { buildMetaDescription, buildPageTitle } from "@/lib/content-pages";
-import {
-  buildBreadcrumbSchema,
-  buildFaqSchema,
-  buildSoftwareSchema,
-} from "@/lib/seo-content";
-import { getSiteUrl } from "@/lib/site-url";
-import { inferEngineType } from "@/lib/engine-metadata";
+import AIToolRenderer from "@/components/ai/AIToolRenderer";
+import { getSupabaseAdmin } from "@/lib/admin-publishing";
+import type { PublicContentItem } from "@/lib/content-pages";
+import type { EngineType } from "@/lib/engine-metadata";
 
 type Props = {
   params: Promise<{ slug: string }>;
 };
 
-export const revalidate = 300;
+type AIRow = {
+  id?: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  engine_type: string | null;
+  engine_config: Record<string, unknown> | null;
+  related_slugs?: string[] | null;
+  faqs?: unknown;
+  benefits?: unknown;
+  how_to_steps?: unknown;
+};
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
-  const item = await getContentItem("ai_tools", slug);
-
-  if (!item) {
-    return {
-      title: "AI Tool Not Found | QuickFnd",
-      description: "The requested AI tool could not be found.",
-    };
-  }
-
-  const siteUrl = getSiteUrl();
-  const url = `${siteUrl}/ai-tools/${item.slug}`;
-  const title = buildPageTitle(item, "ai_tools");
-  const description = buildMetaDescription(item, "ai_tools");
-  const ogImage = `${siteUrl}/api/og?title=${encodeURIComponent(
-    item.name
-  )}&subtitle=${encodeURIComponent(description)}`;
-
+function toPublicContentItem(row: AIRow): PublicContentItem {
   return {
-    title,
-    description,
-    alternates: {
-      canonical: url,
-    },
-    openGraph: {
-      title,
-      description,
-      url,
-      siteName: "QuickFnd",
-      type: "website",
-      images: [ogImage],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [ogImage],
-    },
+    ...(row as unknown as PublicContentItem),
+    name: row.name,
+    slug: row.slug,
+    description: row.description || "",
+    engine_type: (row.engine_type || null) as EngineType | null,
+    engine_config: row.engine_config || {},
+    related_slugs: Array.isArray(row.related_slugs) ? row.related_slugs : [],
   };
 }
 
-export default async function AIToolDetailPage({ params }: Props) {
+export default async function AIToolPage({ params }: Props) {
   const { slug } = await params;
-  const item = await getContentItem("ai_tools", slug);
+  const supabase = getSupabaseAdmin();
 
-  if (!item) {
+  const { data: row, error } = await supabase
+    .from("ai_tools")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error || !row) {
     notFound();
   }
 
-  const relatedItems = await getRelatedContent(
-    "ai_tools",
-    item.related_slugs,
-    item.slug
-  );
+  const item = toPublicContentItem(row as AIRow);
 
-  const engine = item.engine_type || inferEngineType("ai-tool", item.slug);
+  const { data: relatedRows } = await supabase
+    .from("ai_tools")
+    .select("*")
+    .neq("slug", slug)
+    .limit(6);
 
-  const primaryContent =
-    engine === "openai-text-tool" ? (
-      <OpenAITextToolClient item={item} />
-    ) : (
-      <BuiltInAIToolClient item={item} />
-    );
+  const relatedItems = Array.isArray(relatedRows)
+    ? relatedRows.map((relatedRow) => toPublicContentItem(relatedRow as AIRow))
+    : [];
 
   return (
-    <>
-      <JsonLd
-        id="ai-tool-breadcrumb-schema"
-        data={buildBreadcrumbSchema("ai_tools", item)}
-      />
-      <JsonLd id="ai-tool-faq-schema" data={buildFaqSchema("ai_tools", item)} />
-      <JsonLd
-        id="ai-tool-software-schema"
-        data={buildSoftwareSchema("ai_tools", item)}
-      />
-
-      <PublicDetailPage
-        table="ai_tools"
-        item={item}
-        relatedItems={relatedItems}
-        primaryContent={primaryContent}
-      />
-    </>
+    <PublicDetailPage
+      table="ai_tools"
+      item={item}
+      relatedItems={relatedItems}
+      primaryContent={<AIToolRenderer item={item} />}
+    />
   );
 }
