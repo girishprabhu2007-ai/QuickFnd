@@ -16,6 +16,45 @@ const PUBLIC_ADMIN_APIS = new Set([
   "/api/admin/update-password",
 ]);
 
+const ADMIN_REVIEW_COOKIE = "quickfnd_admin_review";
+
+function getReviewKeyFromRequest(request: NextRequest) {
+  const fromQuery = request.nextUrl.searchParams.get("review_key");
+  const fromHeader = request.headers.get("x-admin-review-key");
+  return fromQuery || fromHeader || "";
+}
+
+function isReviewBypassAllowed(request: NextRequest) {
+  const bypassEnabled = process.env.ADMIN_REVIEW_BYPASS === "true";
+  const expectedKey = process.env.ADMIN_REVIEW_KEY || "";
+
+  if (!bypassEnabled || !expectedKey) {
+    return false;
+  }
+
+  const requestKey = getReviewKeyFromRequest(request);
+  const cookieKey = request.cookies.get(ADMIN_REVIEW_COOKIE)?.value || "";
+
+  return requestKey === expectedKey || cookieKey === expectedKey;
+}
+
+function withReviewCookieIfNeeded(request: NextRequest, response: NextResponse) {
+  const expectedKey = process.env.ADMIN_REVIEW_KEY || "";
+  const requestKey = getReviewKeyFromRequest(request);
+
+  if (expectedKey && requestKey === expectedKey) {
+    response.cookies.set(ADMIN_REVIEW_COOKIE, expectedKey, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 2,
+    });
+  }
+
+  return response;
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -24,6 +63,10 @@ export function proxy(request: NextRequest) {
 
   if (!isAdminPage && !isAdminApi) {
     return NextResponse.next();
+  }
+
+  if (isReviewBypassAllowed(request)) {
+    return withReviewCookieIfNeeded(request, NextResponse.next());
   }
 
   const accessToken = request.cookies.get(ADMIN_ACCESS_COOKIE)?.value;
