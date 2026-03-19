@@ -1,6 +1,7 @@
 import Link from "next/link";
 import SiteFooter from "@/components/site/SiteFooter";
 import DetailSidebar from "@/components/layout/DetailSidebar";
+import PageSEOSections from "@/components/seo/PageSEOSections";
 import type { ReactNode } from "react";
 import type { PublicContentItem } from "@/lib/content-pages";
 import { getDisplayDescription } from "@/lib/display-content";
@@ -103,6 +104,8 @@ export default function PublicDetailPage({
   const faqs = getItemFaqs(item);
   const steps = getItemHowToSteps(item);
   const benefits = getItemBenefits(item);
+  const hasCustomContentSections =
+    steps.length > 0 || benefits.length > 0 || faqs.length > 0;
   const label = tableLabel(table);
   const single = singularLabel(table);
   const section = tableSection(table);
@@ -226,6 +229,10 @@ export default function PublicDetailPage({
                       ))}
                     </div>
                   </section>
+                ) : null}
+
+                {!hasCustomContentSections ? (
+                  <PageSEOSections table={table} item={item} />
                 ) : null}
 
                 {relatedItems.length > 0 ? (

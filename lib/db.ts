@@ -12,6 +12,7 @@ import {
 
 function normalizeItem(item: Record<string, unknown>): PublicContentItem {
   return {
+    ...(item as PublicContentItem),
     id: typeof item.id === "number" ? item.id : undefined,
     name: String(item.name || ""),
     slug: String(item.slug || ""),
