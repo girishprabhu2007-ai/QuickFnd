@@ -276,6 +276,7 @@ export default async function ToolDetailPage({ params }: Props) {
         relatedItems={relatedItems}
         primaryContent={<BuiltInToolClient item={item} />}
         secondaryContent={secondaryContent}
+        showRelatedItemsSection={false}
       />
     </>
   );

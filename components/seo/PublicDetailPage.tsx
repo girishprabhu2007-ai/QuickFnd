@@ -14,6 +14,7 @@ type Props = {
   relatedItems: PublicContentItem[];
   primaryContent?: ReactNode;
   secondaryContent?: ReactNode;
+  showRelatedItemsSection?: boolean;
 };
 
 type FaqItem = {
@@ -99,6 +100,7 @@ export default function PublicDetailPage({
   relatedItems,
   primaryContent,
   secondaryContent,
+  showRelatedItemsSection = true,
 }: Props) {
   const pageDescription = getDisplayDescription(table, item);
   const faqs = getItemFaqs(item);
@@ -235,7 +237,7 @@ export default function PublicDetailPage({
                   <PageSEOSections table={table} item={item} />
                 ) : null}
 
-                {relatedItems.length > 0 ? (
+                {showRelatedItemsSection && relatedItems.length > 0 ? (
                   <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
                     <h2 className="text-2xl font-semibold text-q-text">
                       Related {label}
