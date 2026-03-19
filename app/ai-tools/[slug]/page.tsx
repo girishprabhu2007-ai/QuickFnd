@@ -4,7 +4,17 @@ import Link from "next/link";
 import JsonLd from "@/components/seo/JsonLd";
 import PublicDetailPage from "@/components/seo/PublicDetailPage";
 import AIToolRenderer from "@/components/ai/AIToolRenderer";
-import { getContentItem, getRelatedContent, getAITools } from "@/lib/db";
+import {
+  RelatedToolsSection,
+  TopicLinksSection,
+} from "@/components/seo/InternalLinkSections";
+import {
+  getContentItem,
+  getRelatedContent,
+  getAITools,
+  getTools,
+  getCalculators,
+} from "@/lib/db";
 import { buildMetaDescription, buildPageTitle } from "@/lib/content-pages";
 import {
   buildBreadcrumbSchema,
@@ -16,6 +26,12 @@ import {
   isContentPubliclyVisible,
   filterVisibleContent,
 } from "@/lib/public-content-visibility";
+import {
+  getRelatedVisibleTools,
+  getToolTopicLinks,
+  getRelatedTopics,
+  getTopicByToolSlug,
+} from "@/lib/internal-linking";
 import type { PublicContentItem } from "@/lib/content-pages";
 
 type Props = {
@@ -125,10 +141,34 @@ export default async function AIToolPage({ params }: Props) {
     return <AIToolFallback item={item} suggestions={suggestions} />;
   }
 
-  const related = await getRelatedContent(
-    "ai_tools",
-    item.related_slugs,
-    item.slug
+  const [allTools, calculators, aiTools, related] = await Promise.all([
+    getTools(),
+    getCalculators(),
+    getAITools(),
+    getRelatedContent("ai_tools", item.related_slugs, item.slug),
+  ]);
+
+  const smartRelatedTools = getRelatedVisibleTools(
+    item,
+    allTools,
+    calculators,
+    aiTools,
+    6
+  );
+
+  const topicLinks = getToolTopicLinks(item, allTools, calculators, aiTools);
+
+  const primaryTopic = getTopicByToolSlug(item.slug, allTools, calculators, aiTools);
+  const relatedTopics = primaryTopic
+    ? getRelatedTopics(primaryTopic.key, allTools, calculators, aiTools, 3)
+    : [];
+
+  const secondaryContent = (
+    <div className="space-y-8">
+      <TopicLinksSection title="Explore This Topic" items={topicLinks} />
+      <RelatedToolsSection title="Related AI Tools" items={smartRelatedTools} />
+      <TopicLinksSection title="Nearby Topics" items={relatedTopics} />
+    </div>
   );
 
   return (
@@ -151,6 +191,8 @@ export default async function AIToolPage({ params }: Props) {
         item={item}
         relatedItems={filterVisibleContent(related)}
         primaryContent={<AIToolRenderer item={item} />}
+        secondaryContent={secondaryContent}
+        showRelatedItemsSection={false}
       />
     </>
   );
