@@ -95,6 +95,13 @@ type BulkPreviewPayload = {
   }>;
 };
 
+type ExecuteRepairPayload = {
+  success: boolean;
+  fixed: number;
+  skippedCount: number;
+  skipped: Array<{ table: string; slug: string; reason: string }>;
+};
+
 function Card({
   title,
   children,
@@ -165,9 +172,12 @@ export default function ReviewConsolePage() {
   const [bulkType, setBulkType] = useState<"tools" | "calculators" | "ai_tools">("tools");
   const [bulkPreview, setBulkPreview] = useState<BulkPreviewPayload | null>(null);
 
+  const [executeRepairResult, setExecuteRepairResult] = useState<ExecuteRepairPayload | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [engineLoading, setEngineLoading] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [repairExecuting, setRepairExecuting] = useState(false);
   const [error, setError] = useState("");
 
   async function loadAll() {
@@ -209,6 +219,7 @@ export default function ReviewConsolePage() {
 
   async function runEnginePreview() {
     setEngineLoading(true);
+    setError("");
 
     try {
       const response = await fetch(`/api/review/engine-preview?key=${encodeURIComponent(key)}`, {
@@ -241,6 +252,7 @@ export default function ReviewConsolePage() {
 
   async function runBulkPreview() {
     setBulkLoading(true);
+    setError("");
 
     try {
       const response = await fetch(`/api/review/bulk-preview?key=${encodeURIComponent(key)}`, {
@@ -269,6 +281,39 @@ export default function ReviewConsolePage() {
     }
   }
 
+  async function executeRepair() {
+    const confirmed = window.confirm(
+      "This will update missing engine assignments in the database. Continue?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setRepairExecuting(true);
+    setError("");
+    setExecuteRepairResult(null);
+
+    try {
+      const response = await fetch(`/api/review/execute-repair?key=${encodeURIComponent(key)}`, {
+        method: "POST",
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.error || "Failed to execute repair.");
+      }
+
+      setExecuteRepairResult(payload as ExecuteRepairPayload);
+      await loadAll();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to execute repair.");
+    } finally {
+      setRepairExecuting(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-q-bg px-4 py-8 text-q-text sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-8">
@@ -285,12 +330,26 @@ export default function ReviewConsolePage() {
           </div>
         ) : null}
 
+        {executeRepairResult ? (
+          <div className="rounded-2xl border border-green-300 bg-green-50 p-4 text-sm text-green-800">
+            Repair completed. Fixed {executeRepairResult.fixed} item(s). Skipped {executeRepairResult.skippedCount}.
+          </div>
+        ) : null}
+
         <div className="flex flex-wrap gap-3">
           <button
             onClick={loadAll}
             className="rounded-xl border border-q-border bg-q-card px-4 py-2 text-sm font-medium text-q-text transition hover:bg-q-card-hover"
           >
             Refresh Review Data
+          </button>
+
+          <button
+            onClick={executeRepair}
+            disabled={repairExecuting}
+            className="rounded-xl bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {repairExecuting ? "Executing Repair..." : "Execute Repair"}
           </button>
         </div>
 
