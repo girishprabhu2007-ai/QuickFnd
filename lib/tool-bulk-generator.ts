@@ -7,6 +7,8 @@ import {
 import { slugify } from "@/lib/admin-content";
 import { resolveCalculatorEngine } from "@/lib/calculator-engine-map";
 
+/* ================= TYPES ================= */
+
 export type BulkGeneratedItem = {
   name: string;
   slug: string;
@@ -15,6 +17,8 @@ export type BulkGeneratedItem = {
   engine_type: string;
   engine_config: Record<string, unknown>;
 };
+
+/* ================= HELPERS ================= */
 
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
@@ -25,23 +29,35 @@ function buildDefaultDescription(name: string, category: string) {
   if (category === "calculator") {
     return `Use the ${name} on QuickFnd to calculate results instantly.`;
   }
-
   if (category === "ai_tool") {
     return `Use the ${name} on QuickFnd to generate AI-powered results instantly.`;
   }
-
   return `Use the ${name} on QuickFnd to get fast results instantly.`;
 }
 
-function getSupportedEngineTypes(category: "tool" | "calculator" | "ai-tool") {
-  return getAdminEngineOptions(category)
+/* ================= ENGINE SUPPORT ================= */
+
+export function getSupportedToolEngineTypes(): string[] {
+  return getAdminEngineOptions("tool")
     .map((o) => o.value)
     .filter((v) => v !== "generic-directory");
 }
 
-/* -------------------- NORMALIZERS -------------------- */
+export function getSupportedCalculatorEngineTypes(): string[] {
+  return getAdminEngineOptions("calculator")
+    .map((o) => o.value)
+    .filter((v) => v !== "generic-directory");
+}
 
-function normalizeTool(input: any): BulkGeneratedItem | null {
+export function getSupportedAIToolEngineTypes(): string[] {
+  return getAdminEngineOptions("ai-tool")
+    .map((o) => o.value)
+    .filter((v) => v !== "generic-directory");
+}
+
+/* ================= NORMALIZERS ================= */
+
+export function normalizeBulkGeneratedTool(input: any): BulkGeneratedItem | null {
   const name = String(input.name || "").trim();
   const slug = slugify(input.slug || name);
   if (!name || !slug) return null;
@@ -59,27 +75,22 @@ function normalizeTool(input: any): BulkGeneratedItem | null {
   return {
     name,
     slug,
-    description:
-      input.description || buildDefaultDescription(name, "tool"),
+    description: input.description || buildDefaultDescription(name, "tool"),
     related_slugs: asStringArray(input.related_slugs).slice(0, 6),
     engine_type: suggestion.engine_type,
     engine_config: suggestion.engine_config || {},
   };
 }
 
-function normalizeCalculator(input: any): BulkGeneratedItem | null {
+export function normalizeBulkGeneratedCalculator(input: any): BulkGeneratedItem | null {
   const name = String(input.name || "").trim();
   const slug = slugify(input.slug || name);
   if (!name || !slug) return null;
 
-  const engine =
-    input.engine_type || resolveCalculatorEngine(slug);
+  const engine = input.engine_type || resolveCalculatorEngine(slug);
 
   if (!engine) return null;
-
-  if (!getSupportedEngineTypes("calculator").includes(engine)) {
-    return null;
-  }
+  if (!getSupportedCalculatorEngineTypes().includes(engine)) return null;
 
   return {
     name,
@@ -92,7 +103,7 @@ function normalizeCalculator(input: any): BulkGeneratedItem | null {
   };
 }
 
-function normalizeAITool(input: any): BulkGeneratedItem | null {
+export function normalizeBulkGeneratedAITool(input: any): BulkGeneratedItem | null {
   const name = String(input.name || "").trim();
   const slug = slugify(input.slug || name);
   if (!name || !slug) return null;
@@ -118,20 +129,59 @@ function normalizeAITool(input: any): BulkGeneratedItem | null {
   };
 }
 
-/* -------------------- PARSERS -------------------- */
+/* ================= PARSERS ================= */
 
-function parse(raw: string): any[] {
+export function parseBulkGeneratedTools(raw: string): BulkGeneratedItem[] {
   try {
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed;
-    if (Array.isArray(parsed.items)) return parsed.items;
-    return [];
+    const items = Array.isArray(parsed) ? parsed : parsed.items || [];
+    return items.map(normalizeBulkGeneratedTool).filter(Boolean);
   } catch {
     return [];
   }
 }
 
-/* -------------------- MAIN GENERATOR -------------------- */
+/* ================= FILTERS ================= */
+
+export function filterSupportedBulkTools(items: BulkGeneratedItem[]) {
+  const supported = new Set(getSupportedToolEngineTypes());
+  return items.filter((i) => supported.has(i.engine_type));
+}
+
+/* ================= INSERT ================= */
+
+export async function insertBulkTools(items: BulkGeneratedItem[]) {
+  const supabase = getSupabaseAdmin();
+
+  const created: BulkGeneratedItem[] = [];
+  const skipped: any[] = [];
+
+  for (const item of items) {
+    const { data: existing } = await supabase
+      .from("tools")
+      .select("slug")
+      .eq("slug", item.slug)
+      .maybeSingle();
+
+    if (existing) {
+      skipped.push({ slug: item.slug, reason: "exists" });
+      continue;
+    }
+
+    const { error } = await supabase.from("tools").insert(item);
+
+    if (error) {
+      skipped.push({ slug: item.slug, reason: error.message });
+      continue;
+    }
+
+    created.push(item);
+  }
+
+  return { created, skipped };
+}
+
+/* ================= GENERATOR ================= */
 
 export async function generateIdeas(
   topic: string,
@@ -139,12 +189,15 @@ export async function generateIdeas(
 ): Promise<BulkGeneratedItem[]> {
   const openai = getOpenAIClient();
 
-  let category: "tool" | "calculator" | "ai-tool" = "tool";
+  let supported = "";
 
-  if (type === "calculators") category = "calculator";
-  if (type === "ai_tools") category = "ai-tool";
-
-  const supported = getSupportedEngineTypes(category).join(", ");
+  if (type === "calculators") {
+    supported = getSupportedCalculatorEngineTypes().join(", ");
+  } else if (type === "ai_tools") {
+    supported = getSupportedAIToolEngineTypes().join(", ");
+  } else {
+    supported = getSupportedToolEngineTypes().join(", ");
+  }
 
   const response = await openai.responses.create({
     model: "gpt-4.1-mini",
@@ -152,41 +205,42 @@ export async function generateIdeas(
       {
         role: "system",
         content: `
-Return only valid JSON.
+Return JSON only.
 
 {
   "items": [
     {
-      "name": "string",
-      "slug": "string",
-      "description": "string",
-      "related_slugs": ["string"],
-      "engine_type": "string",
+      "name": "",
+      "slug": "",
+      "description": "",
+      "related_slugs": [],
+      "engine_type": "",
       "engine_config": {}
     }
   ]
 }
 
-Generate 8 QuickFnd ${type} ideas for topic: ${topic}
+Generate 8 ${type} for topic: ${topic}
 
-Use ONLY these engine types:
+Use only:
 ${supported}
 
-Do NOT return generic-directory.
-        `.trim(),
+No generic-directory.
+        `,
       },
     ],
   });
 
-  const items = parse(response.output_text || "");
+  const parsed = JSON.parse(response.output_text || "{}");
+  const items = parsed.items || [];
 
   if (type === "calculators") {
-    return items.map(normalizeCalculator).filter(Boolean);
+    return items.map(normalizeBulkGeneratedCalculator).filter(Boolean);
   }
 
   if (type === "ai_tools") {
-    return items.map(normalizeAITool).filter(Boolean);
+    return items.map(normalizeBulkGeneratedAITool).filter(Boolean);
   }
 
-  return items.map(normalizeTool).filter(Boolean);
+  return items.map(normalizeBulkGeneratedTool).filter(Boolean);
 }
