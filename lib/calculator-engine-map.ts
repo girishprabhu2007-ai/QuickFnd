@@ -1,12 +1,29 @@
-export function resolveCalculatorEngine(slug: string): string | null {
-  const s = slug.toLowerCase();
+import { resolveCalculatorRuntime } from "@/lib/calculator-runtime";
 
-  if (s.includes("loan") || s.includes("emi")) return "loan-calculator";
-  if (s.includes("percentage")) return "percentage-calculator";
-  if (s.includes("interest")) return "simple-interest-calculator";
-  if (s.includes("bmi")) return "bmi-calculator";
-  if (s.includes("age")) return "age-calculator";
-  if (s.includes("gst") || s.includes("tax")) return "gst-calculator";
+export function resolveCalculatorEngine(
+  slug: string,
+  name = "",
+  description = ""
+): string | null {
+  const runtime = resolveCalculatorRuntime({
+    slug,
+    name,
+    description,
+  });
 
-  return null;
+  return runtime.engine_type;
+}
+
+export function resolveCalculatorEngineConfig(
+  slug: string,
+  name = "",
+  description = ""
+): Record<string, unknown> {
+  const runtime = resolveCalculatorRuntime({
+    slug,
+    name,
+    description,
+  });
+
+  return runtime.engine_config || {};
 }

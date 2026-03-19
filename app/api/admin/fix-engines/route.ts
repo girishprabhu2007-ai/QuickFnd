@@ -1,60 +1,93 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/admin-publishing";
-import { resolveCalculatorEngine } from "@/lib/calculator-engine-map";
 import { suggestAdminEngine } from "@/lib/admin-engine-assistant";
 
 export async function POST() {
-  const supabase = getSupabaseAdmin();
+  try {
+    const supabase = getSupabaseAdmin();
 
-  let fixed = 0;
+    let fixed = 0;
+    const skipped: Array<{ table: string; slug: string; reason: string }> = [];
 
-  async function fix(table: "tools" | "calculators" | "ai_tools") {
-    const { data } = await supabase
-      .from(table)
-      .select("id, name, slug, description, engine_type");
+    async function fixTable(table: "tools" | "calculators" | "ai_tools") {
+      const { data, error } = await supabase
+        .from(table)
+        .select("id, name, slug, description, engine_type, engine_config")
+        .order("id", { ascending: false });
 
-    for (const item of data || []) {
-      if (item.engine_type) continue;
-
-      let engineType: string | null = null;
-      let engineConfig: Record<string, unknown> = {};
-
-      if (table === "calculators") {
-        engineType = resolveCalculatorEngine(item.slug);
-      } else {
-        const suggestion = suggestAdminEngine(
-          table === "ai_tools" ? "ai-tool" : "tool",
-          {
-            name: item.name,
-            slug: item.slug,
-            description: item.description,
-          }
-        );
-
-        engineType = suggestion.engine_type;
-        engineConfig = suggestion.engine_config || {};
+      if (error) {
+        throw new Error(error.message);
       }
 
-      if (!engineType) continue;
+      for (const item of data || []) {
+        if (item.engine_type) continue;
 
-      await supabase
-        .from(table)
-        .update({
-          engine_type: engineType,
-          engine_config: engineConfig,
-        })
-        .eq("id", item.id);
+        const category =
+          table === "tools"
+            ? "tool"
+            : table === "calculators"
+              ? "calculator"
+              : "ai-tool";
 
-      fixed++;
+        const suggestion = suggestAdminEngine(category, {
+          name: item.name,
+          slug: item.slug,
+          description: item.description || "",
+          engine_type: item.engine_type,
+          engine_config: item.engine_config || {},
+        });
+
+        const canFix =
+          suggestion.engine_type &&
+          suggestion.engine_type !== "generic-directory" &&
+          (category === "ai-tool" || suggestion.is_supported);
+
+        if (!canFix) {
+          skipped.push({
+            table,
+            slug: item.slug,
+            reason: suggestion.reason,
+          });
+          continue;
+        }
+
+        const { error: updateError } = await supabase
+          .from(table)
+          .update({
+            engine_type: suggestion.engine_type,
+            engine_config: suggestion.engine_config,
+          })
+          .eq("id", item.id);
+
+        if (updateError) {
+          skipped.push({
+            table,
+            slug: item.slug,
+            reason: updateError.message,
+          });
+          continue;
+        }
+
+        fixed++;
+      }
     }
+
+    await fixTable("tools");
+    await fixTable("calculators");
+    await fixTable("ai_tools");
+
+    return NextResponse.json({
+      success: true,
+      fixed,
+      skippedCount: skipped.length,
+      skipped: skipped.slice(0, 50),
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Failed to fix engines.",
+      },
+      { status: 500 }
+    );
   }
-
-  await fix("tools");
-  await fix("calculators");
-  await fix("ai_tools");
-
-  return NextResponse.json({
-    success: true,
-    fixed,
-  });
 }

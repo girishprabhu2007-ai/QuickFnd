@@ -7,6 +7,7 @@ import {
   type EngineConfig,
   type EngineType,
 } from "@/lib/engine-metadata";
+import { resolveCalculatorRuntime } from "@/lib/calculator-runtime";
 
 export type AdminEngineSuggestionInput = {
   name?: string;
@@ -17,7 +18,7 @@ export type AdminEngineSuggestionInput = {
 };
 
 export type AdminEngineSuggestion = {
-  engine_type: EngineType | null;
+  engine_type: string | null;
   engine_config: EngineConfig;
   reason: string;
   is_supported: boolean;
@@ -37,11 +38,17 @@ function includesAll(value: string, parts: string[]) {
   return parts.every((part) => value.includes(part));
 }
 
-function getSupportedValues(category: EngineCategory) {
-  return ENGINE_OPTIONS[category].map((option) => option.value);
+function getSupportedValues(category: EngineCategory): string[] {
+  const values = ENGINE_OPTIONS[category].map((option) => String(option.value));
+
+  if (category === "calculator" && !values.includes("formula-calculator")) {
+    values.push("formula-calculator");
+  }
+
+  return values;
 }
 
-function getPreferredAIToolEngine(slug: string) {
+function getPreferredAIToolEngine(slug: string): string {
   const value = safeSlug(slug);
 
   if (value.includes("email")) return "ai-email-writer";
@@ -101,13 +108,6 @@ function getCommonUnitMultiplier(
       multiplier: 0.453592,
       precision: 4,
     },
-    {
-      match: ["celsius-to-fahrenheit"],
-      fromUnit: "celsius",
-      toUnit: "fahrenheit",
-      multiplier: 1,
-      precision: 2,
-    },
   ];
 
   for (const pair of pairs) {
@@ -133,7 +133,7 @@ function getCommonUnitMultiplier(
   return null;
 }
 
-function getSuggestedToolEngineType(slug: string): EngineType {
+function getSuggestedToolEngineType(slug: string): string {
   const value = safeSlug(slug);
 
   if (value === "currency-converter") return "currency-converter";
@@ -179,31 +179,40 @@ function getSuggestedToolEngineType(slug: string): EngineType {
   return "generic-directory";
 }
 
-function getSuggestedCalculatorEngineType(slug: string): EngineType {
-  const value = safeSlug(slug);
-
-  if (value.includes("age")) return "age-calculator";
-  if (value.includes("bmi") || value.includes("body-mass-index")) return "bmi-calculator";
-  if (value.includes("loan")) return "loan-calculator";
-  if (value.includes("emi")) return "emi-calculator";
-  if (value.includes("percentage")) return "percentage-calculator";
-  if (value.includes("simple-interest") || value.includes("interest")) {
-    return "simple-interest-calculator";
-  }
-  if (value.includes("gst")) return "gst-calculator";
-
-  return "generic-directory";
-}
-
 function buildSuggestedEngineConfig(
   category: EngineCategory,
-  engineType: EngineType | null,
+  engineType: string | null,
   slug: string,
   input: AdminEngineSuggestionInput
 ): EngineConfig {
   if (!engineType) return {};
-  const defaults = getDefaultEngineConfig(engineType);
+
+  const defaults =
+    engineType === "formula-calculator"
+      ? {}
+      : getDefaultEngineConfig(engineType as EngineType);
+
   const value = safeSlug(slug);
+
+  if (category === "calculator") {
+    const runtime = resolveCalculatorRuntime({
+      name: input.name,
+      slug,
+      description: String(input.description || ""),
+    });
+
+    if (runtime.engine_type === "formula-calculator") {
+      return {
+        ...runtime.engine_config,
+        ...normalizeEngineConfig(input.engine_config),
+      };
+    }
+
+    return {
+      ...defaults,
+      ...normalizeEngineConfig(input.engine_config),
+    };
+  }
 
   if (category === "tool") {
     if (engineType === "password-generator") {
@@ -349,17 +358,6 @@ function buildSuggestedEngineConfig(
     if (engineType === "unit-converter") {
       const commonPair = getCommonUnitMultiplier(value);
       if (commonPair) {
-        if (commonPair.fromUnit === "celsius" && commonPair.toUnit === "fahrenheit") {
-          return {
-            ...defaults,
-            fromUnit: "celsius",
-            toUnit: "fahrenheit",
-            multiplier: 1.8,
-            precision: 2,
-            formula: "value * 1.8 + 32",
-          };
-        }
-
         return {
           ...defaults,
           ...commonPair,
@@ -398,6 +396,7 @@ function buildSuggestedEngineConfig(
       if (description.includes("summary") || value.includes("summary")) task = "summarization";
       if (description.includes("rewrite") || value.includes("rewrite")) task = "rewrite";
       if (description.includes("email") || value.includes("email")) task = "email";
+      if (description.includes("outline") || value.includes("outline")) task = "outline";
 
       return {
         ...defaults,
@@ -406,12 +405,15 @@ function buildSuggestedEngineConfig(
     }
   }
 
-  return defaults;
+  return {
+    ...defaults,
+    ...normalizeEngineConfig(input.engine_config),
+  };
 }
 
 function getSuggestionReason(
   category: EngineCategory,
-  engineType: EngineType | null,
+  engineType: string | null,
   slug: string,
   explicitEngineType: unknown
 ) {
@@ -435,46 +437,76 @@ export function suggestAdminEngine(
   const name = String(input.name || "").trim();
   const slug = safeSlug(String(input.slug || name));
   const explicitEngineType = input.engine_type;
-
-  let engineType: EngineType | null = null;
-
   const explicitText = String(explicitEngineType || "").trim().toLowerCase();
-  if (explicitText && explicitText !== "auto") {
+
+  let engineType: string | null = null;
+  let isSupported = false;
+
+  if (category === "calculator") {
+    const runtime = resolveCalculatorRuntime({
+      name,
+      slug,
+      description: String(input.description || ""),
+    });
+
+    if (explicitText && explicitText !== "auto") {
+      engineType =
+        explicitText === "formula-calculator"
+          ? "formula-calculator"
+          : normalizeEngineType(category, explicitText, slug);
+    } else {
+      engineType = runtime.engine_type;
+    }
+
+    isSupported =
+      Boolean(engineType) &&
+      engineType !== "generic-directory" &&
+      (runtime.is_supported || engineType === "formula-calculator");
+  } else if (explicitText && explicitText !== "auto") {
     engineType = normalizeEngineType(category, explicitText, slug);
+    isSupported = Boolean(engineType) && engineType !== "generic-directory";
   } else if (category === "tool") {
     engineType = getSuggestedToolEngineType(slug);
-  } else if (category === "calculator") {
-    engineType = getSuggestedCalculatorEngineType(slug);
+    isSupported = engineType !== "generic-directory";
   } else {
     engineType = getPreferredAIToolEngine(slug);
+    isSupported = true;
   }
 
   const supportedValues = new Set(getSupportedValues(category));
-  const normalizedEngineType = engineType
-    ? normalizeEngineType(category, engineType, slug)
-    : null;
 
   const finalEngineType =
-    normalizedEngineType && supportedValues.has(normalizedEngineType)
-      ? normalizedEngineType
+    engineType && supportedValues.has(engineType)
+      ? engineType
       : category === "ai-tool"
         ? "openai-text-tool"
         : "generic-directory";
 
-  const suggestedConfig = buildSuggestedEngineConfig(category, finalEngineType, slug, input);
-  const providedConfig = normalizeEngineConfig(input.engine_config);
+  const finalConfig = buildSuggestedEngineConfig(category, finalEngineType, slug, input);
 
   return {
     engine_type: finalEngineType,
-    engine_config: {
-      ...suggestedConfig,
-      ...providedConfig,
-    },
+    engine_config: finalConfig,
     reason: getSuggestionReason(category, finalEngineType, slug, explicitEngineType),
-    is_supported: finalEngineType !== "generic-directory",
+    is_supported: isSupported && finalEngineType !== "generic-directory",
   };
 }
 
 export function getAdminEngineOptions(category: EngineCategory) {
-  return ENGINE_OPTIONS[category];
+  const base = ENGINE_OPTIONS[category];
+
+  if (category === "calculator") {
+    const hasFormula = base.some((option) => String(option.value) === "formula-calculator");
+    if (!hasFormula) {
+      return [
+        ...base,
+        {
+          value: "formula-calculator",
+          label: "Formula Calculator",
+        },
+      ];
+    }
+  }
+
+  return base;
 }

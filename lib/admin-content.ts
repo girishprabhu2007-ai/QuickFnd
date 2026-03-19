@@ -2,7 +2,6 @@ import {
   normalizeEngineConfig,
   type EngineCategory,
   type EngineConfig,
-  type EngineType,
 } from "@/lib/engine-metadata";
 import { suggestAdminEngine } from "@/lib/admin-engine-assistant";
 
@@ -13,7 +12,7 @@ export type GeneratedAdminContent = {
   slug: string;
   description: string;
   related_slugs: string[];
-  engine_type: EngineType | null;
+  engine_type: string | null;
   engine_config: EngineConfig;
 };
 
