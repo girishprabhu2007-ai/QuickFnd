@@ -5,11 +5,131 @@ import {
   findExistingBySlug,
   getSupabaseAdmin,
 } from "@/lib/admin-publishing";
-import { normalizeSelectedDemandTools } from "@/lib/tool-demand-engine";
+import { getAdminEngineOptions } from "@/lib/admin-engine-assistant";
+import type { AdminCategory } from "@/lib/admin-content";
 
 type RequestBody = {
   items?: unknown;
 };
+
+type SelectedItem = {
+  name: string;
+  slug: string;
+  description: string;
+  related_slugs: string[];
+  engine_type: string;
+  engine_config: Record<string, unknown>;
+  content_type: "tools" | "calculators" | "ai_tools";
+};
+
+function slugify(value: string) {
+  return String(value || "")
+    .toLowerCase()
+    .trim()
+    .replace(/['"]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-");
+}
+
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return Array.from(
+    new Set(
+      value
+        .map((item) => slugify(String(item || "")))
+        .filter(Boolean)
+        .slice(0, 8)
+    )
+  );
+}
+
+const TOOL_ENGINE_SET = new Set(
+  getAdminEngineOptions("tool").map((option) => String(option.value))
+);
+
+const CALCULATOR_ENGINE_SET = new Set(
+  getAdminEngineOptions("calculator").map((option) => String(option.value))
+);
+
+const AI_TOOL_ENGINE_SET = new Set(
+  getAdminEngineOptions("ai-tool").map((option) => String(option.value))
+);
+
+function inferContentType(
+  engineType: string,
+  explicit?: unknown
+): "tools" | "calculators" | "ai_tools" | null {
+  const explicitText = String(explicit || "").trim().toLowerCase();
+
+  if (explicitText === "tools") return "tools";
+  if (explicitText === "calculators") return "calculators";
+  if (explicitText === "ai_tools") return "ai_tools";
+
+  const engine = String(engineType || "").trim();
+
+  if (!engine) return null;
+  if (AI_TOOL_ENGINE_SET.has(engine)) return "ai_tools";
+  if (CALCULATOR_ENGINE_SET.has(engine)) return "calculators";
+  if (TOOL_ENGINE_SET.has(engine)) return "tools";
+
+  if (engine === "formula-calculator") return "calculators";
+  if (engine.startsWith("ai-") || engine === "openai-text-tool") return "ai_tools";
+  if (engine.includes("calculator")) return "calculators";
+
+  return "tools";
+}
+
+function normalizeSelectedItems(input: unknown): SelectedItem[] {
+  if (!Array.isArray(input)) return [];
+
+  const normalized: SelectedItem[] = [];
+
+  for (const raw of input) {
+    if (!raw || typeof raw !== "object") continue;
+    const record = raw as Record<string, unknown>;
+
+    const name = String(record.name || "").trim();
+    const slug = slugify(String(record.slug || name));
+    const description = String(record.description || "").trim();
+    const engine_type = String(record.engine_type || "").trim();
+
+    if (!name || !slug || !engine_type || engine_type === "generic-directory") {
+      continue;
+    }
+
+    const content_type = inferContentType(engine_type, record.content_type);
+
+    if (!content_type) {
+      continue;
+    }
+
+    normalized.push({
+      name,
+      slug,
+      description,
+      related_slugs: asStringArray(record.related_slugs),
+      engine_type,
+      engine_config:
+        record.engine_config &&
+        typeof record.engine_config === "object" &&
+        !Array.isArray(record.engine_config)
+          ? (record.engine_config as Record<string, unknown>)
+          : {},
+      content_type,
+    });
+  }
+
+  return normalized;
+}
+
+function mapContentTypeToAdminCategory(
+  contentType: "tools" | "calculators" | "ai_tools"
+): AdminCategory {
+  if (contentType === "tools") return "tool";
+  if (contentType === "calculators") return "calculator";
+  return "ai-tool";
+}
 
 export async function POST(req: Request) {
   try {
@@ -20,7 +140,7 @@ export async function POST(req: Request) {
     }
 
     const body = (await req.json()) as RequestBody;
-    const items = normalizeSelectedDemandTools(body.items);
+    const items = normalizeSelectedItems(body.items);
 
     if (items.length === 0) {
       return NextResponse.json(
@@ -30,18 +150,18 @@ export async function POST(req: Request) {
     }
 
     const supabaseAdmin = getSupabaseAdmin();
-    const created: { name: string; slug: string; engine_type: string; content_type: string }[] = [];
-    const skipped: { slug: string; reason: string }[] = [];
+    const created: Array<{
+      name: string;
+      slug: string;
+      engine_type: string;
+      content_type: string;
+    }> = [];
+    const skipped: Array<{ slug: string; reason: string }> = [];
 
     for (const item of items) {
-      const lookupType =
-        item.content_type === "tools"
-          ? "tool"
-          : item.content_type === "calculators"
-          ? "calculator"
-          : "ai_tool";
+      const lookupType = mapContentTypeToAdminCategory(item.content_type);
 
-      const existing = await findExistingBySlug(lookupType as any, item.slug);
+      const existing = await findExistingBySlug(lookupType, item.slug);
 
       if (existing) {
         skipped.push({
@@ -51,7 +171,7 @@ export async function POST(req: Request) {
         continue;
       }
 
-      const uniqueSlug = await ensureUniqueSlug(lookupType as any, item.slug);
+      const uniqueSlug = await ensureUniqueSlug(lookupType, item.slug);
 
       if (item.content_type === "tools") {
         const { error } = await supabaseAdmin.from("tools").insert([
@@ -89,6 +209,9 @@ export async function POST(req: Request) {
             name: item.name,
             slug: uniqueSlug,
             description: item.description,
+            related_slugs: item.related_slugs,
+            engine_type: item.engine_type,
+            engine_config: item.engine_config,
           },
         ]);
 
@@ -103,7 +226,7 @@ export async function POST(req: Request) {
         created.push({
           name: item.name,
           slug: uniqueSlug,
-          engine_type: "",
+          engine_type: item.engine_type,
           content_type: item.content_type,
         });
 
@@ -115,6 +238,9 @@ export async function POST(req: Request) {
           name: item.name,
           slug: uniqueSlug,
           description: item.description,
+          related_slugs: item.related_slugs,
+          engine_type: item.engine_type,
+          engine_config: item.engine_config,
         },
       ]);
 
@@ -129,7 +255,7 @@ export async function POST(req: Request) {
       created.push({
         name: item.name,
         slug: uniqueSlug,
-        engine_type: "",
+        engine_type: item.engine_type,
         content_type: item.content_type,
       });
     }
