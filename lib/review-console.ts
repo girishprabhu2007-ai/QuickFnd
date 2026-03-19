@@ -13,7 +13,6 @@ export type ReviewRow = {
   engine_type: string | null;
   engine_config: Record<string, unknown> | null;
   created_at?: string | null;
-  updated_at?: string | null;
 };
 
 export type ReviewSection = {
@@ -50,7 +49,6 @@ function normalizeRows(rows: ReviewRow[] | null | undefined): ReviewRow[] {
         ? row.engine_config
         : {},
     created_at: row.created_at || null,
-    updated_at: row.updated_at || null,
   }));
 }
 
@@ -83,15 +81,15 @@ export async function getReviewDiagnostics() {
   const [toolsRes, calculatorsRes, aiToolsRes] = await Promise.all([
     supabase
       .from("tools")
-      .select("id, name, slug, description, engine_type, engine_config, created_at, updated_at")
+      .select("id, name, slug, description, engine_type, engine_config, created_at")
       .order("id", { ascending: false }),
     supabase
       .from("calculators")
-      .select("id, name, slug, description, engine_type, engine_config, created_at, updated_at")
+      .select("id, name, slug, description, engine_type, engine_config, created_at")
       .order("id", { ascending: false }),
     supabase
       .from("ai_tools")
-      .select("id, name, slug, description, engine_type, engine_config, created_at, updated_at")
+      .select("id, name, slug, description, engine_type, engine_config, created_at")
       .order("id", { ascending: false }),
   ]);
 
@@ -117,17 +115,17 @@ export async function getRecentItems() {
   const [toolsRes, calculatorsRes, aiToolsRes] = await Promise.all([
     supabase
       .from("tools")
-      .select("id, name, slug, description, engine_type, engine_config, created_at, updated_at")
+      .select("id, name, slug, description, engine_type, engine_config, created_at")
       .order("id", { ascending: false })
       .limit(15),
     supabase
       .from("calculators")
-      .select("id, name, slug, description, engine_type, engine_config, created_at, updated_at")
+      .select("id, name, slug, description, engine_type, engine_config, created_at")
       .order("id", { ascending: false })
       .limit(15),
     supabase
       .from("ai_tools")
-      .select("id, name, slug, description, engine_type, engine_config, created_at, updated_at")
+      .select("id, name, slug, description, engine_type, engine_config, created_at")
       .order("id", { ascending: false })
       .limit(15),
   ]);
