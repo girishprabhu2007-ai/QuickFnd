@@ -199,9 +199,15 @@ function LoanCalculator() {
         <div className={panelClass()}>
           {result ? (
             <div className="grid gap-2">
-              <div>Monthly Payment: <strong>{result.monthly}</strong></div>
-              <div>Total Payment: <strong>{result.total}</strong></div>
-              <div>Total Interest: <strong>{result.interest}</strong></div>
+              <div>
+                Monthly Payment: <strong>{result.monthly}</strong>
+              </div>
+              <div>
+                Total Payment: <strong>{result.total}</strong>
+              </div>
+              <div>
+                Total Interest: <strong>{result.interest}</strong>
+              </div>
             </div>
           ) : (
             <span className="text-q-muted">Enter loan values to calculate monthly payment.</span>
@@ -274,9 +280,15 @@ function EMICalculator() {
         <div className={panelClass()}>
           {result ? (
             <div className="grid gap-2">
-              <div>Monthly EMI: <strong>{result.emi}</strong></div>
-              <div>Total Payment: <strong>{result.total}</strong></div>
-              <div>Total Interest: <strong>{result.interest}</strong></div>
+              <div>
+                Monthly EMI: <strong>{result.emi}</strong>
+              </div>
+              <div>
+                Total Payment: <strong>{result.total}</strong>
+              </div>
+              <div>
+                Total Interest: <strong>{result.interest}</strong>
+              </div>
             </div>
           ) : (
             <span className="text-q-muted">Enter EMI values to calculate payment.</span>
@@ -394,8 +406,12 @@ function SimpleInterestCalculator(config: Record<string, unknown>) {
         <div className={panelClass()}>
           {result ? (
             <div className="grid gap-2">
-              <div>Interest: <strong>{result.interest}</strong></div>
-              <div>Total Amount: <strong>{result.total}</strong></div>
+              <div>
+                Interest: <strong>{result.interest}</strong>
+              </div>
+              <div>
+                Total Amount: <strong>{result.total}</strong>
+              </div>
             </div>
           ) : (
             <span className="text-q-muted">Enter values to calculate simple interest.</span>
@@ -466,11 +482,339 @@ function GSTCalculator(config: Record<string, unknown>) {
         <div className={panelClass()}>
           {result ? (
             <div className="grid gap-2">
-              <div>GST Amount: <strong>{result.gst}</strong></div>
-              <div>{mode === "add" ? "Total with GST" : "Base Amount"}: <strong>{result.total}</strong></div>
+              <div>
+                GST Amount: <strong>{result.gst}</strong>
+              </div>
+              <div>
+                {mode === "add" ? "Total with GST" : "Base Amount"}: <strong>{result.total}</strong>
+              </div>
             </div>
           ) : (
             <span className="text-q-muted">Enter values to calculate GST.</span>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function FormulaCalculator({
+  config,
+  name,
+}: {
+  config: Record<string, unknown>;
+  name: string;
+}) {
+  const preset = String(config.preset || "").trim().toLowerCase();
+
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [mode, setMode] = useState<"timestamp-to-date" | "date-to-timestamp">(
+    "timestamp-to-date"
+  );
+  const [dateTimeValue, setDateTimeValue] = useState("");
+
+  const fieldDefinitions = useMemo(() => {
+    if (Array.isArray(config.fields) && config.fields.length > 0) {
+      return config.fields.map((field, index) => {
+        const record =
+          field && typeof field === "object"
+            ? (field as Record<string, unknown>)
+            : {};
+
+        return {
+          key: String(record.key || `field_${index + 1}`),
+          label: String(record.label || record.key || `Field ${index + 1}`),
+          placeholder: String(record.placeholder || record.label || record.key || ""),
+        };
+      });
+    }
+
+    switch (preset) {
+      case "daily-time-budget":
+        return [
+          { key: "total_hours", label: "Total hours in day", placeholder: "24" },
+          { key: "sleep_hours", label: "Sleep hours", placeholder: "8" },
+          { key: "work_hours", label: "Work hours", placeholder: "8" },
+          { key: "commute_hours", label: "Commute hours", placeholder: "1" },
+          { key: "exercise_hours", label: "Exercise hours", placeholder: "1" },
+          { key: "other_hours", label: "Other planned hours", placeholder: "2" },
+        ];
+
+      case "api-rate-limit":
+        return [
+          { key: "requests", label: "Allowed requests", placeholder: "1000" },
+          { key: "window_seconds", label: "Window seconds", placeholder: "60" },
+        ];
+
+      case "cost-estimator":
+        return [
+          {
+            key: "quantity",
+            label: String(config.quantityLabel || "Quantity"),
+            placeholder: "100",
+          },
+          {
+            key: "unit_cost",
+            label: String(config.unitCostLabel || "Unit cost"),
+            placeholder: "2.5",
+          },
+          {
+            key: "overhead_percent",
+            label: String(config.overheadLabel || "Overhead %"),
+            placeholder: "10",
+          },
+        ];
+
+      case "rate-estimator":
+        return [
+          {
+            key: "numerator",
+            label: String(config.numeratorLabel || "Units"),
+            placeholder: "20",
+          },
+          {
+            key: "period",
+            label: String(config.periodLabel || "Period"),
+            placeholder: "5",
+          },
+        ];
+
+      case "revenue-estimator":
+        return [
+          {
+            key: "views",
+            label: String(config.viewsLabel || "Views"),
+            placeholder: "100000",
+          },
+          {
+            key: "rpm",
+            label: String(config.rpmLabel || "RPM"),
+            placeholder: "3.5",
+          },
+        ];
+
+      case "probability":
+      case "metric-ratio":
+      default:
+        return [
+          {
+            key: "a",
+            label: String(config.numeratorLabel || "Value A"),
+            placeholder: "10",
+          },
+          {
+            key: "b",
+            label: String(config.denominatorLabel || "Value B"),
+            placeholder: "20",
+          },
+        ];
+    }
+  }, [config, preset]);
+
+  const result = useMemo(() => {
+    if (preset === "unix-timestamp") {
+      if (mode === "timestamp-to-date") {
+        const timestamp = Number(values.timestamp || "");
+        if (!Number.isFinite(timestamp)) return null;
+
+        const date = new Date(timestamp * 1000);
+        if (Number.isNaN(date.getTime())) return null;
+
+        return {
+          primary: date.toISOString(),
+          secondary: "UTC date/time",
+        };
+      }
+
+      if (!dateTimeValue) return null;
+      const date = new Date(dateTimeValue);
+      if (Number.isNaN(date.getTime())) return null;
+
+      return {
+        primary: String(Math.floor(date.getTime() / 1000)),
+        secondary: "Unix timestamp",
+      };
+    }
+
+    if (preset === "daily-time-budget") {
+      const total = Number(values.total_hours || "");
+      const sleep = Number(values.sleep_hours || "");
+      const work = Number(values.work_hours || "");
+      const commute = Number(values.commute_hours || "");
+      const exercise = Number(values.exercise_hours || "");
+      const other = Number(values.other_hours || "");
+
+      if ([total, sleep, work, commute, exercise, other].some((v) => !Number.isFinite(v))) {
+        return null;
+      }
+
+      const used = sleep + work + commute + exercise + other;
+      const free = total - used;
+
+      return {
+        primary: free.toFixed(2),
+        secondary: "Free hours remaining",
+        extra: `Allocated hours: ${used.toFixed(2)}`,
+      };
+    }
+
+    if (preset === "api-rate-limit") {
+      const requests = Number(values.requests || "");
+      const windowSeconds = Number(values.window_seconds || "");
+
+      if (!Number.isFinite(requests) || !Number.isFinite(windowSeconds) || windowSeconds === 0) {
+        return null;
+      }
+
+      const perSecond = requests / windowSeconds;
+      const perMinute = perSecond * 60;
+
+      return {
+        primary: perSecond.toFixed(2),
+        secondary: "Requests per second",
+        extra: `Requests per minute: ${perMinute.toFixed(2)}`,
+      };
+    }
+
+    if (preset === "cost-estimator") {
+      const quantity = Number(values.quantity || "");
+      const unitCost = Number(values.unit_cost || "");
+      const overheadPercent = Number(values.overhead_percent || "0");
+
+      if (
+        !Number.isFinite(quantity) ||
+        !Number.isFinite(unitCost) ||
+        !Number.isFinite(overheadPercent)
+      ) {
+        return null;
+      }
+
+      const base = quantity * unitCost;
+      const total = base * (1 + overheadPercent / 100);
+
+      return {
+        primary: total.toFixed(Number(config.decimals ?? 2)),
+        secondary: String(config.resultLabel || "Estimated result"),
+        extra: `Base value: ${base.toFixed(Number(config.decimals ?? 2))}`,
+      };
+    }
+
+    if (preset === "rate-estimator") {
+      const numerator = Number(values.numerator || "");
+      const period = Number(values.period || "");
+
+      if (!Number.isFinite(numerator) || !Number.isFinite(period) || period === 0) {
+        return null;
+      }
+
+      const rate = numerator / period;
+
+      return {
+        primary: rate.toFixed(Number(config.decimals ?? 2)),
+        secondary: String(config.resultLabel || "Rate"),
+      };
+    }
+
+    if (preset === "revenue-estimator") {
+      const views = Number(values.views || "");
+      const rpm = Number(values.rpm || "");
+
+      if (!Number.isFinite(views) || !Number.isFinite(rpm)) {
+        return null;
+      }
+
+      const revenue = (views / 1000) * rpm;
+
+      return {
+        primary: revenue.toFixed(Number(config.decimals ?? 2)),
+        secondary: String(config.resultLabel || "Estimated revenue"),
+      };
+    }
+
+    const a = Number(values.a || "");
+    const b = Number(values.b || "");
+
+    if (!Number.isFinite(a) || !Number.isFinite(b) || b === 0) {
+      return null;
+    }
+
+    const multiplier = Number(config.multiplier ?? 100);
+    const decimals = Number(config.decimals ?? 2);
+    const resultValue = (a / b) * multiplier;
+    const suffix = String(config.resultSuffix || "");
+
+    return {
+      primary: `${resultValue.toFixed(decimals)}${suffix}`,
+      secondary: String(config.resultLabel || "Result"),
+    };
+  }, [config, dateTimeValue, mode, preset, values]);
+
+  return (
+    <Card title={name || "Formula Calculator"}>
+      <div className="grid gap-4">
+        {preset === "unix-timestamp" ? (
+          <>
+            <select
+              value={mode}
+              onChange={(e) =>
+                setMode(e.target.value as "timestamp-to-date" | "date-to-timestamp")
+              }
+              className={inputClass()}
+            >
+              <option value="timestamp-to-date">Timestamp → Date</option>
+              <option value="date-to-timestamp">Date → Timestamp</option>
+            </select>
+
+            {mode === "timestamp-to-date" ? (
+              <input
+                type="number"
+                value={values.timestamp || ""}
+                onChange={(e) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    timestamp: e.target.value,
+                  }))
+                }
+                placeholder="Unix timestamp"
+                className={inputClass()}
+              />
+            ) : (
+              <input
+                type="datetime-local"
+                value={dateTimeValue}
+                onChange={(e) => setDateTimeValue(e.target.value)}
+                className={inputClass()}
+              />
+            )}
+          </>
+        ) : (
+          fieldDefinitions.map((field) => (
+            <input
+              key={field.key}
+              type="number"
+              value={values[field.key] || ""}
+              onChange={(e) =>
+                setValues((prev) => ({
+                  ...prev,
+                  [field.key]: e.target.value,
+                }))
+              }
+              placeholder={field.placeholder || field.label}
+              className={inputClass()}
+            />
+          ))
+        )}
+
+        <div className={panelClass()}>
+          {result ? (
+            <div className="grid gap-2">
+              <div>
+                {result.secondary}: <strong>{result.primary}</strong>
+              </div>
+              {"extra" in result && result.extra ? <div>{result.extra}</div> : null}
+            </div>
+          ) : (
+            <span className="text-q-muted">Enter values to calculate.</span>
           )}
         </div>
       </div>
@@ -490,7 +834,7 @@ function GenericCalculator() {
 }
 
 export default function BuiltInCalculatorClient({ item }: Props) {
-  const engine = item.engine_type || inferEngineType("calculator", item.slug);
+  const engine = String(item.engine_type || inferEngineType("calculator", item.slug) || "");
   const config = item.engine_config || {};
 
   if (engine === "age-calculator") return <AgeCalculator />;
@@ -500,6 +844,9 @@ export default function BuiltInCalculatorClient({ item }: Props) {
   if (engine === "percentage-calculator") return <PercentageCalculator />;
   if (engine === "simple-interest-calculator") return <SimpleInterestCalculator {...{ config }} />;
   if (engine === "gst-calculator") return <GSTCalculator {...{ config }} />;
+  if (engine === "formula-calculator") {
+    return <FormulaCalculator config={config} name={item.name} />;
+  }
 
   return <GenericCalculator />;
 }
