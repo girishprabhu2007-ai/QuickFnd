@@ -121,7 +121,16 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
     family: "text-analyzer",
     title: "Word Counter",
     description: "Analyze text metrics like words, characters, and reading time.",
-    keywords: ["word-counter", "word counter", "character-counter", "reading-time"],
+    keywords: [
+      "word-counter",
+      "word counter",
+      "character-counter",
+      "character counter",
+      "reading-time",
+      "reading time",
+      "text-counter",
+      "text counter",
+    ],
     defaultConfig: {
       readingWordsPerMinute: 200,
     },
@@ -216,7 +225,17 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
     family: "text-transformer",
     title: "Text Case Converter",
     description: "Convert text to lowercase, uppercase, title case, and slug.",
-    keywords: ["text-case-converter", "case-converter", "case converter"],
+    keywords: [
+      "text-case-converter",
+      "case-converter",
+      "case converter",
+      "uppercase",
+      "lowercase",
+      "title-case",
+      "title case",
+      "sentence-case",
+      "sentence case",
+    ],
     defaultConfig: {
       modes: ["lowercase", "uppercase", "titlecase", "slug"],
     },
@@ -287,7 +306,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
     family: "currency-converter",
     title: "Currency Converter",
     description: "Convert currencies using the live currency tool engine.",
-    keywords: ["currency-converter", "currency converter"],
+    keywords: ["currency-converter", "currency converter", "exchange-rate", "exchange rate"],
     defaultConfig: {},
   }),
   "regex-tester": createDefinition({
@@ -342,7 +361,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
     family: "timestamp-tools",
     title: "Timestamp Converter",
     description: "Convert Unix timestamps and readable dates in one reusable tool.",
-    keywords: ["timestamp-converter", "timestamp", "unix-time"],
+    keywords: ["timestamp-converter", "timestamp", "unix-time", "unix timestamp", "date converter"],
     defaultConfig: {},
   }),
   "hex-to-rgb": createDefinition({
@@ -480,7 +499,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
     family: "ai-text-tool",
     title: "OpenAI Text Tool",
     description: "Generate text output using a prompt-driven AI workflow.",
-    keywords: ["openai-text-tool", "openai", "ai tool"],
+    keywords: ["openai-text-tool", "openai", "ai tool", "ai text"],
     defaultConfig: {},
   }),
   "ai-prompt-generator": createDefinition({
@@ -489,8 +508,11 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
     family: "ai-text-tool",
     title: "AI Prompt Generator",
     description: "Generate prompts for different AI workflows.",
-    keywords: ["ai-prompt-generator", "prompt generator"],
-    defaultConfig: {},
+    keywords: ["ai-prompt-generator", "prompt generator", "ai prompt"],
+    defaultConfig: {
+      task: "rewrite",
+      outputType: "text",
+    },
   }),
   "ai-email-writer": createDefinition({
     type: "ai-email-writer",
@@ -498,8 +520,12 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
     family: "ai-text-tool",
     title: "AI Email Writer",
     description: "Generate draft emails from short instructions.",
-    keywords: ["ai-email-writer", "email writer"],
-    defaultConfig: {},
+    keywords: ["ai-email-writer", "email writer", "email generator"],
+    defaultConfig: {
+      task: "email",
+      outputType: "text",
+      tone: "professional",
+    },
   }),
   "ai-blog-outline-generator": createDefinition({
     type: "ai-blog-outline-generator",
@@ -507,8 +533,12 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
     family: "ai-text-tool",
     title: "AI Blog Outline Generator",
     description: "Generate blog post outline ideas from a topic.",
-    keywords: ["ai-blog-outline-generator", "blog outline generator"],
-    defaultConfig: {},
+    keywords: ["ai-blog-outline-generator", "blog outline generator", "outline generator"],
+    defaultConfig: {
+      task: "outline",
+      outputType: "text",
+      tone: "clear",
+    },
   }),
   "generic-directory": createDefinition({
     type: "generic-directory",
@@ -612,6 +642,10 @@ function includesAll(value: string, parts: string[]) {
   return parts.every((part) => value.includes(part));
 }
 
+function includesAny(value: string, parts: string[]) {
+  return parts.some((part) => value.includes(part));
+}
+
 export function inferEngineType(category: EngineCategory, slug: string): EngineType | null {
   const value = safeSlug(slug);
 
@@ -624,6 +658,7 @@ export function inferEngineType(category: EngineCategory, slug: string): EngineT
     if (value === "password-generator" || includesAll(value, ["password", "generator"])) {
       return "password-generator";
     }
+
     if (
       value.includes("json-formatter") ||
       value.includes("json-pretty") ||
@@ -631,13 +666,19 @@ export function inferEngineType(category: EngineCategory, slug: string): EngineT
     ) {
       return "json-formatter";
     }
+
     if (
-      value.includes("word-counter") ||
-      value.includes("character-counter") ||
-      value.includes("reading-time")
+      includesAny(value, [
+        "word-counter",
+        "character-counter",
+        "reading-time",
+        "content-length",
+        "text-counter",
+      ])
     ) {
       return "word-counter";
     }
+
     if (value.includes("uuid")) return "uuid-generator";
     if (value === "slug-generator" || includesAll(value, ["slug", "generator"])) {
       return "slug-generator";
@@ -645,24 +686,48 @@ export function inferEngineType(category: EngineCategory, slug: string): EngineT
     if (value.includes("random-string") || value.includes("string-generator")) {
       return "random-string-generator";
     }
+
     if (value === "base64-encoder" || includesAll(value, ["base64", "encode"])) {
       return "base64-encoder";
     }
     if (value === "base64-decoder" || includesAll(value, ["base64", "decode"])) {
       return "base64-decoder";
     }
+
     if (value === "url-encoder" || includesAll(value, ["url", "encode"])) return "url-encoder";
     if (value === "url-decoder" || includesAll(value, ["url", "decode"])) return "url-decoder";
-    if (value === "text-case-converter" || value.includes("case-converter")) {
+
+    if (
+      value === "text-case-converter" ||
+      value.includes("case-converter") ||
+      includesAny(value, [
+        "uppercase",
+        "lowercase",
+        "sentence-case",
+        "title-case",
+        "case-style",
+      ])
+    ) {
       return "text-case-converter";
     }
+
     if (value === "code-formatter" || value.includes("code-formatter")) return "code-formatter";
     if (value === "code-snippet-manager" || value.includes("snippet-manager")) {
       return "code-snippet-manager";
     }
+
     if (value.includes("text") && value.includes("transform")) return "text-transformer";
     if (value.includes("number") && value.includes("generator")) return "number-generator";
+
     if (value === "currency-converter") return "currency-converter";
+    if (
+      value === "unit-converter" ||
+      (value.includes("convert") &&
+        !includesAny(value, ["currency", "base64", "url", "timestamp", "hex", "rgb", "binary"]))
+    ) {
+      return "unit-converter";
+    }
+
     if (value === "regex-tester" || value.includes("regex-test")) return "regex-tester";
     if (
       value === "regex-extractor" ||
@@ -671,16 +736,20 @@ export function inferEngineType(category: EngineCategory, slug: string): EngineT
     ) {
       return "regex-extractor";
     }
+
     if (value.includes("sha256")) return "sha256-generator";
     if (value.includes("md5")) return "md5-generator";
-    if (value.includes("timestamp") || value.includes("unix-time")) return "timestamp-converter";
+
+    if (includesAny(value, ["timestamp", "unix-time", "unix-timestamp", "date-converter"])) {
+      return "timestamp-converter";
+    }
+
     if (value.includes("hex-to-rgb")) return "hex-to-rgb";
     if (value.includes("rgb-to-hex")) return "rgb-to-hex";
     if (value.includes("text-to-binary")) return "text-to-binary";
     if (value.includes("binary-to-text")) return "binary-to-text";
     if (value.includes("json-escape")) return "json-escape";
     if (value.includes("json-unescape")) return "json-unescape";
-    if (value.includes("converter")) return "unit-converter";
 
     for (const engineType of TOOL_ENGINE_ORDER) {
       if (engineType === "generic-directory") continue;
@@ -696,8 +765,8 @@ export function inferEngineType(category: EngineCategory, slug: string): EngineT
   if (category === "calculator") {
     if (value.includes("age")) return "age-calculator";
     if (value.includes("bmi")) return "bmi-calculator";
-    if (value.includes("loan")) return "loan-calculator";
     if (value.includes("emi")) return "emi-calculator";
+    if (value.includes("loan")) return "loan-calculator";
     if (value.includes("percentage")) return "percentage-calculator";
     if (value.includes("simple-interest") || value.includes("interest")) {
       return "simple-interest-calculator";
@@ -707,11 +776,27 @@ export function inferEngineType(category: EngineCategory, slug: string): EngineT
   }
 
   if (
-    value === "ai-prompt-generator" ||
     value === "ai-email-writer" ||
-    value === "ai-blog-outline-generator" ||
-    value.includes("ai-")
+    includesAny(value, ["email-writer", "email-generator", "email-assistant"])
   ) {
+    return "ai-email-writer";
+  }
+
+  if (
+    value === "ai-blog-outline-generator" ||
+    includesAny(value, ["blog-outline", "outline-generator", "content-outline"])
+  ) {
+    return "ai-blog-outline-generator";
+  }
+
+  if (
+    value === "ai-prompt-generator" ||
+    includesAny(value, ["prompt-generator", "prompt-builder", "prompt-tool"])
+  ) {
+    return "ai-prompt-generator";
+  }
+
+  if (includesAny(value, ["ai-", "chatgpt", "openai", "summarizer", "rewrite", "assistant"])) {
     return "openai-text-tool";
   }
 
