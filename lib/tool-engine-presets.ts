@@ -80,45 +80,77 @@ const PRESETS: Record<string, ToolEnginePreset> = TOOL_PRESET_TYPES.reduce(
   {} as Record<string, ToolEnginePreset>
 );
 
-/* 🔥 NEW: SMART FALLBACK (SAFE) */
 function inferFallbackEngineType(slug: string): ToolEngineType | null {
   const s = slug.toLowerCase();
 
+  if (s.includes("password-strength")) return "password-strength-checker";
   if (s.includes("password")) return "password-generator";
   if (s.includes("uuid")) return "uuid-generator";
-  if (s.includes("json")) return "json-formatter";
-  if (s.includes("word")) return "word-counter";
   if (s.includes("slug")) return "slug-generator";
-  if (s.includes("base64")) return "base64-encoder";
-  if (s.includes("url")) return "url-encoder";
+  if (s.includes("random-string")) return "random-string-generator";
+
+  if (s.includes("json-formatter")) return "json-formatter";
+  if (s.includes("json-escape")) return "json-escape";
+  if (s.includes("json-unescape")) return "json-unescape";
+
+  if (s.includes("word-counter")) return "word-counter";
+
+  if (s.includes("base64-decoder")) return "base64-decoder";
+  if (s.includes("base64-encoder")) return "base64-encoder";
+
+  if (s.includes("url-decoder")) return "url-decoder";
+  if (s.includes("url-encoder")) return "url-encoder";
+
+  if (s.includes("text-case")) return "text-case-converter";
+  if (s.includes("text-transform")) return "text-transformer";
+
+  if (s.includes("code-formatter")) return "code-formatter";
+  if (s.includes("code-snippet")) return "code-snippet-manager";
+
+  if (s.includes("number-generator")) return "number-generator";
+  if (s.includes("unit-converter")) return "unit-converter";
+  if (s.includes("currency-converter")) return "currency-converter";
+
+  if (s.includes("regex-extractor")) return "regex-extractor";
   if (s.includes("regex")) return "regex-tester";
-  if (s.includes("hash") || s.includes("sha") || s.includes("md5")) return "sha256-generator";
+
+  if (s.includes("sha256")) return "sha256-generator";
+  if (s.includes("md5")) return "md5-generator";
+
   if (s.includes("timestamp")) return "timestamp-converter";
+
+  if (s.includes("hex-to-rgb")) return "hex-to-rgb";
+  if (s.includes("rgb-to-hex")) return "rgb-to-hex";
+
+  if (s.includes("text-to-binary")) return "text-to-binary";
+  if (s.includes("binary-to-text")) return "binary-to-text";
+
+  if (s.includes("hex") || s.includes("rgb") || s.includes("color")) return "hex-to-rgb";
   if (s.includes("binary")) return "text-to-binary";
-  if (s.includes("color") || s.includes("hex") || s.includes("rgb")) return "hex-to-rgb";
+  if (s.includes("hash")) return "sha256-generator";
 
   return null;
 }
 
-export function getToolEnginePreset(item: PublicContentItem): ToolEnginePreset {
+function resolveToolEnginePreset(item: PublicContentItem): ToolEnginePreset {
   const inferred = inferEngineType("tool", item.slug);
 
-  let engineType = String(item.engine_type || inferred || "").trim().toLowerCase();
+  let engineType = String(item.engine_type || inferred || "")
+    .trim()
+    .toLowerCase();
 
-  /* 🔥 NEW: fallback before generic */
   if (!engineType || !PRESETS[engineType]) {
-    const fallback = inferFallbackEngineType(item.slug);
+    const fallback = inferFallbackEngineType(item.slug || "");
     if (fallback) {
       engineType = fallback;
     }
   }
 
-  /* FINAL fallback (existing) */
   if (!engineType || !PRESETS[engineType]) {
     engineType = "generic-directory";
   }
 
-  const preset = PRESETS[engineType];
+  const preset = PRESETS[engineType] || PRESETS["generic-directory"];
   const itemConfig = normalizeEngineConfig(item.engine_config);
 
   return {
@@ -130,4 +162,27 @@ export function getToolEnginePreset(item: PublicContentItem): ToolEnginePreset {
       ...itemConfig,
     },
   };
+}
+
+export function getToolEnginePreset(item: PublicContentItem): ToolEnginePreset;
+export function getToolEnginePreset(name: string, slug: string): ToolEnginePreset;
+export function getToolEnginePreset(
+  itemOrName: PublicContentItem | string,
+  slug?: string
+): ToolEnginePreset {
+  if (typeof itemOrName === "string") {
+    const syntheticItem: PublicContentItem = {
+      name: itemOrName,
+      slug: slug || itemOrName,
+      description: "",
+      related_slugs: [],
+      engine_type: null,
+      engine_config: {},
+      created_at: null,
+    };
+
+    return resolveToolEnginePreset(syntheticItem);
+  }
+
+  return resolveToolEnginePreset(itemOrName);
 }
