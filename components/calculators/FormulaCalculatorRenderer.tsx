@@ -24,6 +24,18 @@ type FormulaConfig = {
   periodLabel?: string;
 };
 
+type ResultBlock = {
+  label: string;
+  value: string;
+};
+
+type ResultPayload = {
+  blocks: ResultBlock[];
+  insight?: string;
+  recommendation?: string;
+  notes?: string[];
+};
+
 function inputClass() {
   return "w-full rounded-xl border border-q-border bg-q-bg p-3 text-q-text outline-none";
 }
@@ -69,6 +81,193 @@ function minutesToClock(totalMinutes: number) {
   return `${hours}:${minutes}`;
 }
 
+function infoBoxClass() {
+  return "rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-slate-700";
+}
+
+function recommendationBoxClass() {
+  return "rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900";
+}
+
+function notesBoxClass() {
+  return "rounded-xl border border-q-border bg-white p-4 text-sm text-q-muted";
+}
+
+function buildSleepCycleInsight(cycles: number) {
+  if (cycles < 4) {
+    return {
+      insight:
+        "This sleep duration is short for most adults and may leave you under-rested.",
+      recommendation:
+        "Aim for 5 or 6 full sleep cycles when possible for more complete rest and recovery.",
+    };
+  }
+
+  if (cycles <= 6) {
+    return {
+      insight:
+        "This is within a common sleep-cycle range used for planning wake-up times.",
+      recommendation:
+        "Try to keep wake time consistent and leave a little wind-down time before sleep.",
+    };
+  }
+
+  return {
+    insight:
+      "This is a long sleep duration and may be useful for recovery, but could be more than needed for routine scheduling.",
+    recommendation:
+      "Use a duration that fits your real routine, energy levels, and recovery needs rather than always maximizing cycles.",
+  };
+}
+
+function buildTimeBudgetInsight(free: number, total: number) {
+  if (free < 0) {
+    return {
+      insight:
+        "Your entered commitments exceed the total hours available, so this schedule is over-allocated.",
+      recommendation:
+        "Reduce one or more commitments or redistribute them across multiple days.",
+    };
+  }
+
+  if (free < 1) {
+    return {
+      insight:
+        "Your day leaves almost no margin for breaks, delays, or recovery.",
+      recommendation:
+        "Create at least a small time buffer for transitions, meals, and unexpected tasks.",
+    };
+  }
+
+  if (free <= total * 0.25) {
+    return {
+      insight:
+        "Your day is tightly planned but still leaves some limited free time.",
+      recommendation:
+        "Protect that remaining time instead of filling it with more obligations.",
+    };
+  }
+
+  return {
+    insight:
+      "Your daily schedule leaves a reasonable amount of unallocated time.",
+    recommendation:
+      "This likely gives you room for flexibility, recovery, and unplanned tasks.",
+  };
+}
+
+function buildProbabilityInsight(percentage: number) {
+  if (percentage < 20) {
+    return {
+      insight: "This indicates a relatively low probability.",
+      recommendation:
+        "Treat it as directional guidance, not certainty, and validate assumptions before acting.",
+    };
+  }
+
+  if (percentage < 60) {
+    return {
+      insight: "This indicates a moderate probability with meaningful uncertainty.",
+      recommendation:
+        "Use this for planning scenarios, not as a guaranteed prediction.",
+    };
+  }
+
+  return {
+    insight: "This indicates a high probability based on the values entered.",
+    recommendation:
+      "Even high probabilities can fail in reality, so review your input assumptions carefully.",
+  };
+}
+
+function buildRateInsight(rate: number, label: string) {
+  if (rate <= 0) {
+    return {
+      insight: `${label} is zero or negative, which usually means there is no measurable output in the selected period.`,
+      recommendation: "Check both your numerator and your period value.",
+    };
+  }
+
+  if (rate < 1) {
+    return {
+      insight: `${label} is low relative to the selected period.`,
+      recommendation: "Try a longer period if you want a more stable and interpretable average.",
+    };
+  }
+
+  if (rate < 10) {
+    return {
+      insight: `${label} is moderate and likely realistic for ongoing work or performance measurement.`,
+      recommendation: "Compare this value against a prior period or benchmark for better meaning.",
+    };
+  }
+
+  return {
+    insight: `${label} is high relative to the selected period.`,
+    recommendation: "Double-check the period unit and your numerator to confirm the result is realistic.",
+  };
+}
+
+function buildRevenueInsight(revenue: number) {
+  if (revenue <= 0) {
+    return {
+      insight:
+        "This estimate is zero or negative based on your current assumptions.",
+      recommendation:
+        "Check the traffic volume and RPM inputs before using the forecast.",
+    };
+  }
+
+  if (revenue < 100) {
+    return {
+      insight:
+        "This is a modest revenue estimate that may fit smaller traffic volumes or lower monetization quality.",
+      recommendation:
+        "Improve either traffic or RPM assumptions if this is below your target outcome.",
+    };
+  }
+
+  if (revenue < 1000) {
+    return {
+      insight:
+        "This is a meaningful mid-range estimate suitable for directional planning.",
+      recommendation:
+        "Compare this with historical performance rather than treating it as a guaranteed result.",
+    };
+  }
+
+  return {
+    insight:
+      "This is a large revenue estimate and may reflect ambitious assumptions.",
+    recommendation:
+      "Stress-test the RPM and volume assumptions because optimistic values can overstate earnings.",
+  };
+}
+
+function buildMetricRatioInsight(value: number) {
+  if (value < 25) {
+    return {
+      insight: "The ratio is low relative to the baseline.",
+      recommendation:
+        "Review whether the numerator is underperforming or the denominator is too large for the intended target.",
+    };
+  }
+
+  if (value > 75) {
+    return {
+      insight: "The ratio is high relative to the baseline.",
+      recommendation:
+        "This may indicate strong performance, but confirm the units and baseline are appropriate.",
+    };
+  }
+
+  return {
+    insight: "The ratio sits in a moderate middle range.",
+    recommendation:
+      "Compare this against a benchmark or previous period to make it more actionable.",
+  };
+}
+
 export default function FormulaCalculatorRenderer({ item }: Props) {
   const config = getConfig(item);
   const preset = String(config.preset || "metric-ratio").trim().toLowerCase();
@@ -87,7 +286,7 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
   const [timeA, setTimeA] = useState("");
   const [timeB, setTimeB] = useState("");
 
-  const result = useMemo(() => {
+  const result = useMemo<ResultPayload | null>(() => {
     if (preset === "daily-time-budget") {
       const total = safeNumber(a);
       const sleep = safeNumber(b);
@@ -108,6 +307,7 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
         (other as number);
 
       const free = (total as number) - allocated;
+      const interpretation = buildTimeBudgetInsight(free, total as number);
 
       return {
         blocks: [
@@ -117,6 +317,12 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
             label: "Status",
             value: free >= 0 ? "Within daily budget" : "Over allocated",
           },
+        ],
+        insight: interpretation.insight,
+        recommendation: interpretation.recommendation,
+        notes: [
+          "This assumes the entered activities do not overlap.",
+          "Use it as a planning aid, not as a measure of overall wellbeing by itself.",
         ],
       };
     }
@@ -139,6 +345,14 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
           { label: "Difference in hours", value: formatNumber(hours, 2) },
           { label: "Difference in days", value: formatNumber(days, 2) },
         ],
+        insight:
+          "This measures the absolute time gap between the two date/time values you entered.",
+        recommendation:
+          "Useful for schedules, deadlines, event duration checks, and time tracking comparisons.",
+        notes: [
+          "The calculation uses your entered timestamps directly.",
+          "Timezone handling depends on the values provided by your browser input fields.",
+        ],
       };
     }
 
@@ -149,6 +363,7 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
       if (bedtimeMinutes === null || cycles === null) return null;
 
       const wakeMinutes = bedtimeMinutes + (cycles as number) * 90 + 15;
+      const interpretation = buildSleepCycleInsight(cycles as number);
 
       return {
         blocks: [
@@ -157,6 +372,16 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
             label: "Estimated sleep duration",
             value: `${formatNumber((cycles as number) * 1.5, 1)} hours`,
           },
+          {
+            label: "Sleep cycles",
+            value: formatNumber(cycles as number, 0),
+          },
+        ],
+        insight: interpretation.insight,
+        recommendation: interpretation.recommendation,
+        notes: [
+          "This uses a simplified 90-minute sleep cycle model plus 15 minutes to fall asleep.",
+          "It is useful for planning, but not a medical sleep assessment.",
         ],
       };
     }
@@ -184,6 +409,15 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
             value: weeklyHours !== null ? formatNumber(weeklyHours, 2) : "Enter work days",
           },
         ],
+        insight:
+          "This estimates actual working time after subtracting your break duration.",
+        recommendation:
+          dailyHours > 10
+            ? "This is a long working day. Double-check break time, overtime assumptions, and sustainability."
+            : "Use the weekly total to compare workloads across schedules or staffing plans.",
+        notes: [
+          "Overnight shifts are supported when end time is earlier than start time.",
+        ],
       };
     }
 
@@ -201,6 +435,14 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
         blocks: [
           { label: "Estimated minutes", value: formatNumber(totalMinutes, 2) },
           { label: "Estimated hours", value: formatNumber(totalMinutes / 60, 2) },
+          { label: "Buffer applied", value: `${formatNumber(bufferPercent as number, 2)}%` },
+        ],
+        insight:
+          "This estimate multiplies task count by average task duration and adds a planning buffer.",
+        recommendation:
+          "Use a buffer whenever tasks have uncertainty; estimates without buffer are usually too optimistic.",
+        notes: [
+          "This is best used for rough planning, not guaranteed delivery forecasting.",
         ],
       };
     }
@@ -223,7 +465,15 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
       const converted = seconds / units[toUnit];
 
       return {
-        blocks: [{ label: "Converted value", value: formatNumber(converted, 4) }],
+        blocks: [
+          { label: "Converted value", value: formatNumber(converted, 4) },
+          { label: "From unit", value: fromUnit },
+          { label: "To unit", value: toUnit },
+        ],
+        insight:
+          "This converts time units through a common seconds-based representation.",
+        recommendation:
+          "Useful for duration normalization, reporting, and comparing time values across different unit systems.",
       };
     }
 
@@ -234,7 +484,18 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
         const date = new Date((timestamp as number) * 1000);
         if (!Number.isNaN(date.getTime())) {
           return {
-            blocks: [{ label: "UTC date", value: date.toISOString() }],
+            blocks: [
+              { label: "UTC date", value: date.toISOString() },
+              { label: "Timestamp", value: String(timestamp) },
+            ],
+            insight:
+              "This converts a Unix timestamp in seconds into a human-readable UTC date.",
+            recommendation:
+              "Use it for API logs, database values, event debugging, and backend integrations.",
+            notes: [
+              "Unix timestamps are commonly stored in UTC seconds.",
+              "If you need local time, compare the result with your timezone separately.",
+            ],
           };
         }
       }
@@ -243,7 +504,17 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
         const ms = new Date(datetimeA).getTime();
         if (!Number.isNaN(ms)) {
           return {
-            blocks: [{ label: "Unix timestamp", value: String(Math.floor(ms / 1000)) }],
+            blocks: [
+              { label: "Unix timestamp", value: String(Math.floor(ms / 1000)) },
+              { label: "Input date/time", value: datetimeA },
+            ],
+            insight:
+              "This converts the provided date/time into a Unix timestamp in seconds.",
+            recommendation:
+              "Use it when preparing timestamps for APIs, logs, databases, and automation schedules.",
+            notes: [
+              "Browser datetime-local values do not include timezone text explicitly.",
+            ],
           };
         }
       }
@@ -269,6 +540,14 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
           { label: "Hours remaining", value: formatNumber(totalHours, 2) },
           { label: "Minutes remaining", value: formatNumber(totalMinutes, 2) },
         ],
+        insight:
+          diff >= 0
+            ? "This shows the remaining time until your selected future moment."
+            : "The selected time is already in the past, so the values represent elapsed time since that moment.",
+        recommendation:
+          diff >= 0
+            ? "Use this for deadlines, launches, events, or milestone countdowns."
+            : "Pick a future date if you want a true countdown rather than elapsed time.",
       };
     }
 
@@ -291,6 +570,10 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
             value: formatNumber(totalFocus + totalBreak, 0),
           },
         ],
+        insight:
+          "This estimates the total time required for a Pomodoro-style work block including short breaks.",
+        recommendation:
+          "Use this to plan study sessions, deep work blocks, or task batching with realistic break time included.",
       };
     }
 
@@ -304,6 +587,13 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
 
       return {
         blocks: [{ label: "Time difference", value: `${formatNumber(diff, 2)} hours` }],
+        insight:
+          "This compares two UTC offsets to show the time gap between locations or working regions.",
+        recommendation:
+          "Useful for scheduling calls, remote collaboration, and support coverage planning.",
+        notes: [
+          "This does not automatically account for daylight saving rules.",
+        ],
       };
     }
 
@@ -314,10 +604,16 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
       if (favorable === null || total === null || total === 0) return null;
 
       const percentage = ((favorable as number) / (total as number)) * 100;
+      const interpretation = buildProbabilityInsight(percentage);
 
       return {
         blocks: [
           { label: config.resultLabel || "Probability", value: `${formatNumber(percentage, 2)}%` },
+        ],
+        insight: interpretation.insight,
+        recommendation: interpretation.recommendation,
+        notes: [
+          "The result depends entirely on how well your inputs reflect reality.",
         ],
       };
     }
@@ -336,6 +632,12 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
           { label: "Requests per second", value: formatNumber(perSecond, 2) },
           { label: "Requests per minute", value: formatNumber(perMinute, 2) },
         ],
+        insight:
+          "This expresses your rate limit as average throughput over the chosen time window.",
+        recommendation:
+          perSecond < 1
+            ? "Low average throughput may be fine for small workloads, but check burst traffic separately."
+            : "Compare this result against expected burst traffic and concurrency, not only average usage.",
       };
     }
 
@@ -354,6 +656,12 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
           { label: "Base value", value: formatNumber(base, 2) },
           { label: config.resultLabel || "Estimated result", value: formatNumber(total, 2) },
         ],
+        insight:
+          "This combines direct cost with an overhead adjustment to create a more realistic estimate.",
+        recommendation:
+          (overhead as number) > 25
+            ? "The overhead assumption is fairly high. Confirm whether this is intentional or if costs are being double-counted."
+            : "Test multiple overhead values to understand best-case and worst-case cost scenarios.",
       };
     }
 
@@ -364,9 +672,12 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
       if (numerator === null || period === null || period === 0) return null;
 
       const rate = (numerator as number) / (period as number);
+      const interpretation = buildRateInsight(rate, String(config.resultLabel || "Rate"));
 
       return {
         blocks: [{ label: config.resultLabel || "Rate", value: formatNumber(rate, 2) }],
+        insight: interpretation.insight,
+        recommendation: interpretation.recommendation,
       };
     }
 
@@ -377,9 +688,15 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
       if (views === null || rpm === null) return null;
 
       const revenue = ((views as number) / 1000) * (rpm as number);
+      const interpretation = buildRevenueInsight(revenue);
 
       return {
         blocks: [{ label: config.resultLabel || "Estimated revenue", value: formatNumber(revenue, 2) }],
+        insight: interpretation.insight,
+        recommendation: interpretation.recommendation,
+        notes: [
+          "This estimate does not include taxes, payout thresholds, or platform-specific deductions.",
+        ],
       };
     }
 
@@ -390,6 +707,7 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
     if (numerator === null || denominator === null || denominator === 0) return null;
 
     const computed = ((numerator as number) / (denominator as number)) * multiplier;
+    const interpretation = buildMetricRatioInsight(computed);
 
     return {
       blocks: [
@@ -398,6 +716,8 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
           value: `${formatNumber(computed, Number(config.decimals || 2))}${config.resultSuffix || ""}`,
         },
       ],
+      insight: interpretation.insight,
+      recommendation: interpretation.recommendation,
     };
   }, [preset, a, b, c, d, e, f, fromUnit, toUnit, datetimeA, datetimeB, timeA, timeB, config]);
 
@@ -423,7 +743,7 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
         ) : preset === "sleep-cycle" ? (
           <>
             <input type="time" value={timeA} onChange={(e) => setTimeA(e.target.value)} className={inputClass()} />
-            <input value={a} onChange={(e) => setA(e.target.value)} className={inputClass()} placeholder="Number of cycles (e.g. 6)" />
+            <input value={a} onChange={(e) => setA(e.target.value)} className={inputClass()} placeholder="Number of cycles (e.g. 5 or 6)" />
           </>
         ) : preset === "shift-hours" ? (
           <>
@@ -520,6 +840,31 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
           </div>
         ) : null}
       </div>
+
+      {result?.insight ? (
+        <div className={`mt-6 ${infoBoxClass()}`}>
+          <div className="font-medium text-slate-800">What this means</div>
+          <div className="mt-1">{result.insight}</div>
+        </div>
+      ) : null}
+
+      {result?.recommendation ? (
+        <div className={`mt-4 ${recommendationBoxClass()}`}>
+          <div className="font-medium">Recommendation</div>
+          <div className="mt-1">{result.recommendation}</div>
+        </div>
+      ) : null}
+
+      {result?.notes && result.notes.length > 0 ? (
+        <div className={`mt-4 ${notesBoxClass()}`}>
+          <div className="font-medium text-q-text">Notes</div>
+          <ul className="mt-2 grid gap-1">
+            {result.notes.map((note, index) => (
+              <li key={`${note}-${index}`}>• {note}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </section>
   );
 }
