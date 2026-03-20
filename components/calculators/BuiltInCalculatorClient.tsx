@@ -1063,8 +1063,8 @@ function FormulaCalculator({
         secondary: "Unix timestamp",
         insight:
           "This converts a date/time input into a Unix timestamp measured in seconds.",
-          recommendation:
-            "Use this when preparing timestamps for APIs, databases, scheduling systems, or log comparisons.",
+        recommendation:
+          "Use this when preparing timestamps for APIs, databases, scheduling systems, or log comparisons.",
         notes: getUnixTimestampNotes(),
       };
     }
@@ -1329,12 +1329,35 @@ function FormulaCalculator({
   );
 }
 
-function GenericCalculator() {
+function GenericCalculator({ name }: { name?: string }) {
   return (
-    <Card title="Calculator Interface">
-      <div className="rounded-xl border border-q-border bg-q-bg p-5 text-q-muted">
-        This calculator page is live and database-driven. You can attach a
-        more specific calculator engine later.
+    <Card title={name || "Calculator"}>
+      <div className="grid gap-4">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
+          <div className="text-lg font-semibold">No direct formula available</div>
+          <div className="mt-2 text-sm">
+            This page represents a real concept, but it does not map cleanly to a single universal
+            formula. The result depends on context, definitions, and how the metric is measured.
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-q-border bg-q-bg p-5 text-sm text-q-text">
+          <div className="font-medium">Why this happens</div>
+          <ul className="mt-2 grid gap-2 text-q-muted">
+            <li>• Some topics are analytical concepts rather than strict mathematical formulas.</li>
+            <li>• Results may depend on team rules, platform rules, scoring models, or time windows.</li>
+            <li>• A trustworthy calculator needs a validated domain-specific method before publishing a formula.</li>
+          </ul>
+        </div>
+
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-5 text-sm text-slate-800">
+          <div className="font-medium">What to do instead</div>
+          <ul className="mt-2 grid gap-2">
+            <li>• Break the problem into measurable components such as rates, ratios, or time values.</li>
+            <li>• Use related calculators that measure one part of the concept reliably.</li>
+            <li>• Treat this page as an informational concept page until a real validated engine is available.</li>
+          </ul>
+        </div>
       </div>
     </Card>
   );
@@ -1359,5 +1382,5 @@ export default function BuiltInCalculatorClient({ item }: Props) {
     return <FormulaCalculator config={config} name={item.name} />;
   }
 
-  return <GenericCalculator />;
+  return <GenericCalculator name={item.name} />;
 }
