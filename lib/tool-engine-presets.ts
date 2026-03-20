@@ -80,10 +80,45 @@ const PRESETS: Record<string, ToolEnginePreset> = TOOL_PRESET_TYPES.reduce(
   {} as Record<string, ToolEnginePreset>
 );
 
+/* 🔥 NEW: SMART FALLBACK (SAFE) */
+function inferFallbackEngineType(slug: string): ToolEngineType | null {
+  const s = slug.toLowerCase();
+
+  if (s.includes("password")) return "password-generator";
+  if (s.includes("uuid")) return "uuid-generator";
+  if (s.includes("json")) return "json-formatter";
+  if (s.includes("word")) return "word-counter";
+  if (s.includes("slug")) return "slug-generator";
+  if (s.includes("base64")) return "base64-encoder";
+  if (s.includes("url")) return "url-encoder";
+  if (s.includes("regex")) return "regex-tester";
+  if (s.includes("hash") || s.includes("sha") || s.includes("md5")) return "sha256-generator";
+  if (s.includes("timestamp")) return "timestamp-converter";
+  if (s.includes("binary")) return "text-to-binary";
+  if (s.includes("color") || s.includes("hex") || s.includes("rgb")) return "hex-to-rgb";
+
+  return null;
+}
+
 export function getToolEnginePreset(item: PublicContentItem): ToolEnginePreset {
-  const inferred = inferEngineType("tool", item.slug) || "generic-directory";
-  const engineType = String(item.engine_type || inferred).trim().toLowerCase();
-  const preset = PRESETS[engineType] || PRESETS["generic-directory"];
+  const inferred = inferEngineType("tool", item.slug);
+
+  let engineType = String(item.engine_type || inferred || "").trim().toLowerCase();
+
+  /* 🔥 NEW: fallback before generic */
+  if (!engineType || !PRESETS[engineType]) {
+    const fallback = inferFallbackEngineType(item.slug);
+    if (fallback) {
+      engineType = fallback;
+    }
+  }
+
+  /* FINAL fallback (existing) */
+  if (!engineType || !PRESETS[engineType]) {
+    engineType = "generic-directory";
+  }
+
+  const preset = PRESETS[engineType];
   const itemConfig = normalizeEngineConfig(item.engine_config);
 
   return {
