@@ -8,6 +8,15 @@ type Props = {
   item: PublicContentItem;
 };
 
+type InterpretedResult = {
+  primary: string;
+  secondary: string;
+  extra?: string;
+  insight?: string;
+  recommendation?: string;
+  notes?: string[];
+};
+
 function Card({
   title,
   children,
@@ -29,6 +38,312 @@ function inputClass() {
 
 function panelClass() {
   return "rounded-xl border border-q-border bg-q-bg p-5 text-q-text";
+}
+
+function hintClass() {
+  return "rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-slate-700";
+}
+
+function formatNumber(value: number, decimals = 2) {
+  return value.toFixed(decimals);
+}
+
+function formatCurrency(value: number, decimals = 2) {
+  return Number.isFinite(value) ? value.toFixed(decimals) : "0.00";
+}
+
+function renderInterpretation(result: InterpretedResult) {
+  return (
+    <div className="grid gap-3">
+      <div>
+        {result.secondary}: <strong>{result.primary}</strong>
+      </div>
+
+      {result.extra ? (
+        <div className="text-sm text-q-muted">{result.extra}</div>
+      ) : null}
+
+      {result.insight ? (
+        <div className={hintClass()}>
+          <div className="font-medium text-slate-800">What this means</div>
+          <div className="mt-1">{result.insight}</div>
+        </div>
+      ) : null}
+
+      {result.recommendation ? (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+          <div className="font-medium">Recommendation</div>
+          <div className="mt-1">{result.recommendation}</div>
+        </div>
+      ) : null}
+
+      {result.notes && result.notes.length > 0 ? (
+        <div className="rounded-xl border border-q-border bg-white p-4 text-sm text-q-muted">
+          <div className="font-medium text-q-text">Notes</div>
+          <ul className="mt-2 grid gap-1">
+            {result.notes.map((note, index) => (
+              <li key={`${note}-${index}`}>• {note}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function getBMIInterpretation(bmi: number) {
+  if (bmi < 18.5) {
+    return {
+      category: "Underweight",
+      insight:
+        "Your BMI is below the standard healthy range. This can be a signal to review nutrition, activity levels, or overall health context.",
+      recommendation:
+        "Consider tracking nutrition and speaking with a healthcare professional if low weight is unintentional.",
+    };
+  }
+
+  if (bmi < 25) {
+    return {
+      category: "Normal",
+      insight:
+        "Your BMI is within the standard healthy range for most adults.",
+      recommendation:
+        "Maintain current habits with balanced nutrition, sleep, and regular activity.",
+    };
+  }
+
+  if (bmi < 30) {
+    return {
+      category: "Overweight",
+      insight:
+        "Your BMI is above the standard healthy range. BMI is only a screening metric, but it may indicate elevated health risk over time.",
+      recommendation:
+        "Focus on sustainable diet, movement, and sleep improvements rather than short-term changes.",
+    };
+  }
+
+  return {
+    category: "Obesity",
+    insight:
+      "Your BMI is in a high-risk range. BMI alone is not a diagnosis, but it can indicate a need for more complete health review.",
+    recommendation:
+      "Consider a professional medical assessment for a more accurate evaluation beyond BMI alone.",
+  };
+}
+
+function getLoanInterpretation(principal: number, interest: number) {
+  const interestShare = principal > 0 ? (interest / principal) * 100 : 0;
+
+  if (interestShare < 15) {
+    return {
+      insight:
+        "This loan has a relatively low total interest burden compared with the borrowed amount.",
+      recommendation:
+        "This is generally efficient borrowing, but still compare against prepayment options and fees.",
+    };
+  }
+
+  if (interestShare < 50) {
+    return {
+      insight:
+        "A meaningful portion of the total repayment is interest, which is common for medium-term loans.",
+      recommendation:
+        "Try a shorter term or lower rate quote to reduce total interest if cash flow allows.",
+    };
+  }
+
+  return {
+    insight:
+      "You will repay substantially more than the borrowed amount over the full term.",
+    recommendation:
+      "Review whether a shorter tenure, larger down payment, or refinancing option can reduce interest burden.",
+  };
+}
+
+function getGSTInterpretation(mode: "add" | "remove", amount: number, rate: number) {
+  if (mode === "add") {
+    return {
+      insight:
+        "This shows the tax amount added on top of your base price and the final billed amount.",
+      recommendation:
+        amount > 0 && rate > 0
+          ? "Use this when pricing invoices or checking whether quoted totals match expected tax."
+          : "Enter a valid amount and GST rate for a meaningful result.",
+    };
+  }
+
+  return {
+    insight:
+      "This splits a tax-inclusive amount into the original base amount and the GST portion already included.",
+    recommendation:
+      "Use this when you only have the final billed amount and need to recover the pre-tax value.",
+  };
+}
+
+function getPercentageInterpretation(
+  mode: "of" | "whatPercent" | "change",
+  result: number
+) {
+  if (mode === "of") {
+    return {
+      insight:
+        "This calculates a percentage portion of a whole value.",
+      recommendation:
+        "Useful for discounts, commissions, tax portions, and proportional breakdowns.",
+    };
+  }
+
+  if (mode === "whatPercent") {
+    return {
+      insight:
+        "This tells you how large A is relative to B as a percentage.",
+      recommendation:
+        result > 100
+          ? "Since the result is above 100%, A is larger than B."
+          : "Use this when comparing contribution, completion, or share of total.",
+    };
+  }
+
+  return {
+    insight:
+      "This measures relative growth or decline from the original value B to the new value A.",
+    recommendation:
+      result >= 0
+        ? "Positive values indicate growth; compare over equal time periods for fair analysis."
+        : "Negative values indicate decline; check whether the baseline value is appropriate.",
+  };
+}
+
+function getRateInterpretation(rate: number, label: string) {
+  if (rate <= 0) {
+    return {
+      insight: `${label} is zero or negative, which usually means there is no measurable output in the chosen period.`,
+      recommendation: "Check both the input count and the period value.",
+    };
+  }
+
+  if (rate < 1) {
+    return {
+      insight: `${label} is below 1 per unit period, which suggests a slow rate of output.`,
+      recommendation: "Try a longer observation period if the value looks too small to interpret easily.",
+    };
+  }
+
+  if (rate < 10) {
+    return {
+      insight: `${label} is moderate and likely realistic for ongoing work or growth activity.`,
+      recommendation: "Compare this against historical averages or team benchmarks for better meaning.",
+    };
+  }
+
+  return {
+    insight: `${label} is high relative to a single period.`,
+    recommendation: "Double-check that the period unit is correct and that the input volume is realistic.",
+  };
+}
+
+function getProbabilityInterpretation(percentage: number) {
+  if (percentage < 20) {
+    return {
+      insight: "This is a relatively low probability.",
+      recommendation:
+        "Low does not mean impossible. Use it as directional context, not certainty.",
+    };
+  }
+
+  if (percentage < 60) {
+    return {
+      insight: "This is a moderate probability where outcomes are still uncertain.",
+      recommendation:
+        "Treat the result as a planning signal and combine it with real-world constraints or additional data.",
+    };
+  }
+
+  return {
+    insight: "This is a high probability based on the values entered.",
+    recommendation:
+      "High probability still does not guarantee the outcome. Validate assumptions before acting on it.",
+  };
+}
+
+function getTimeBudgetInterpretation(free: number, total: number) {
+  if (free < 0) {
+    return {
+      insight:
+        "You have allocated more hours than fit into the day, which means the plan is overcommitted.",
+      recommendation:
+        "Reduce one or more commitments, or spread tasks across multiple days to avoid burnout.",
+    };
+  }
+
+  if (free < 1) {
+    return {
+      insight:
+        "Your schedule is extremely tight, leaving almost no buffer for breaks, delays, or recovery.",
+      recommendation:
+        "Add at least a small margin for rest and unexpected tasks if this is meant to be sustainable.",
+    };
+  }
+
+  if (free <= total * 0.25) {
+    return {
+      insight:
+        "You still have some free time, but your day is heavily scheduled.",
+      recommendation:
+        "Protect this remaining time for rest, transitions, and unplanned tasks instead of filling it completely.",
+    };
+  }
+
+  return {
+    insight:
+      "Your schedule leaves a healthy amount of unallocated time.",
+    recommendation:
+      "You likely have room for recovery, flexibility, or optional tasks without overcrowding the day.",
+  };
+}
+
+function getRevenueInterpretation(revenue: number) {
+  if (revenue <= 0) {
+    return {
+      insight:
+        "The estimated revenue is zero or negative based on your current inputs.",
+      recommendation:
+        "Check both traffic volume and RPM assumptions before relying on the estimate.",
+    };
+  }
+
+  if (revenue < 100) {
+    return {
+      insight:
+        "This is a modest revenue estimate, which may be realistic for smaller traffic volumes or lower monetization quality.",
+      recommendation:
+        "Improve either traffic scale or RPM assumptions if this result is below your target.",
+    };
+  }
+
+  if (revenue < 1000) {
+    return {
+      insight:
+        "This is a meaningful mid-range revenue estimate.",
+      recommendation:
+        "Use this as a directional forecast and compare it against historical performance or niche benchmarks.",
+    };
+  }
+
+  return {
+    insight:
+      "This is a large estimated revenue value relative to many small-to-mid traffic scenarios.",
+    recommendation:
+      "Stress-test the assumptions, especially RPM, because optimistic inputs can overstate projected earnings.",
+  };
+}
+
+function getUnixTimestampNotes() {
+  return [
+    "Unix timestamps are typically measured in seconds since January 1, 1970 UTC.",
+    "The converted ISO date is shown in UTC by default.",
+    "If you expected a local time, compare it against your timezone separately.",
+  ];
 }
 
 function AgeCalculator() {
@@ -57,7 +372,19 @@ function AgeCalculator() {
       months += 12;
     }
 
-    return { years, months, days };
+    const nextBirthday = new Date(today.getFullYear(), birth.getMonth(), birth.getDate());
+    if (nextBirthday < today) {
+      nextBirthday.setFullYear(today.getFullYear() + 1);
+    }
+    const msUntilBirthday = nextBirthday.getTime() - today.getTime();
+    const daysUntilBirthday = Math.ceil(msUntilBirthday / (1000 * 60 * 60 * 24));
+
+    return {
+      years,
+      months,
+      days,
+      daysUntilBirthday,
+    };
   }, [birthDate]);
 
   return (
@@ -71,11 +398,15 @@ function AgeCalculator() {
         />
         <div className={panelClass()}>
           {result ? (
-            <span>
-              Age: <strong>{result.years}</strong> years,{" "}
-              <strong>{result.months}</strong> months,{" "}
-              <strong>{result.days}</strong> days
-            </span>
+            renderInterpretation({
+              primary: `${result.years} years, ${result.months} months, ${result.days} days`,
+              secondary: "Calculated age",
+              extra: `Next birthday in approximately ${result.daysUntilBirthday} day${result.daysUntilBirthday === 1 ? "" : "s"}.`,
+              insight:
+                "This calculates exact calendar age based on your birth date and today’s date.",
+              recommendation:
+                "Use this for eligibility checks, forms, school admissions, or age-based planning.",
+            })
           ) : (
             <span className="text-q-muted">Choose a birth date to calculate age.</span>
           )}
@@ -96,13 +427,14 @@ function BMICalculator() {
     if (!height || !weight) return null;
 
     const bmi = weight / Math.pow(height / 100, 2);
+    const interpretation = getBMIInterpretation(bmi);
 
-    let category = "Underweight";
-    if (bmi >= 18.5 && bmi < 25) category = "Normal";
-    else if (bmi >= 25 && bmi < 30) category = "Overweight";
-    else if (bmi >= 30) category = "Obesity";
-
-    return { bmi: bmi.toFixed(1), category };
+    return {
+      bmi,
+      category: interpretation.category,
+      insight: interpretation.insight,
+      recommendation: interpretation.recommendation,
+    };
   }, [heightCm, weightKg]);
 
   return (
@@ -124,9 +456,16 @@ function BMICalculator() {
         />
         <div className={panelClass()}>
           {result ? (
-            <span>
-              BMI: <strong>{result.bmi}</strong> ({result.category})
-            </span>
+            renderInterpretation({
+              primary: `${result.bmi.toFixed(1)} (${result.category})`,
+              secondary: "BMI",
+              insight: result.insight,
+              recommendation: result.recommendation,
+              notes: [
+                "BMI is a screening metric, not a full medical diagnosis.",
+                "Very muscular or highly trained individuals may see misleading BMI values.",
+              ],
+            })
           ) : (
             <span className="text-q-muted">Enter height and weight to calculate BMI.</span>
           )}
@@ -151,10 +490,13 @@ function LoanCalculator() {
 
     if (monthlyRate === 0) {
       const monthly = p / payments;
+      const interpretation = getLoanInterpretation(p, 0);
+
       return {
-        monthly: monthly.toFixed(2),
-        total: (monthly * payments).toFixed(2),
-        interest: "0.00",
+        monthly,
+        total: monthly * payments,
+        interest: 0,
+        ...interpretation,
       };
     }
 
@@ -164,11 +506,13 @@ function LoanCalculator() {
 
     const total = monthly * payments;
     const interest = total - p;
+    const interpretation = getLoanInterpretation(p, interest);
 
     return {
-      monthly: monthly.toFixed(2),
-      total: total.toFixed(2),
-      interest: interest.toFixed(2),
+      monthly,
+      total,
+      interest,
+      ...interpretation,
     };
   }, [principal, annualRate, years]);
 
@@ -198,15 +542,25 @@ function LoanCalculator() {
         />
         <div className={panelClass()}>
           {result ? (
-            <div className="grid gap-2">
+            <div className="grid gap-3">
               <div>
-                Monthly Payment: <strong>{result.monthly}</strong>
+                Monthly Payment: <strong>{formatCurrency(result.monthly)}</strong>
               </div>
               <div>
-                Total Payment: <strong>{result.total}</strong>
+                Total Payment: <strong>{formatCurrency(result.total)}</strong>
               </div>
               <div>
-                Total Interest: <strong>{result.interest}</strong>
+                Total Interest: <strong>{formatCurrency(result.interest)}</strong>
+              </div>
+
+              <div className={hintClass()}>
+                <div className="font-medium text-slate-800">What this means</div>
+                <div className="mt-1">{result.insight}</div>
+              </div>
+
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+                <div className="font-medium">Recommendation</div>
+                <div className="mt-1">{result.recommendation}</div>
               </div>
             </div>
           ) : (
@@ -233,9 +587,13 @@ function EMICalculator() {
     if (monthlyRate === 0) {
       const emi = p / m;
       return {
-        emi: emi.toFixed(2),
-        total: (emi * m).toFixed(2),
-        interest: "0.00",
+        emi,
+        total: emi * m,
+        interest: 0,
+        insight:
+          "With a zero interest rate, your EMI is simply the principal divided by the total months.",
+        recommendation:
+          "Use this as a baseline to compare how much the interest rate changes your repayment burden.",
       };
     }
 
@@ -245,11 +603,15 @@ function EMICalculator() {
 
     const total = emi * m;
     const interest = total - p;
+    const loanNotes = getLoanInterpretation(p, interest);
 
     return {
-      emi: emi.toFixed(2),
-      total: total.toFixed(2),
-      interest: interest.toFixed(2),
+      emi,
+      total,
+      interest,
+      insight:
+        `This EMI reflects the monthly payment needed to fully repay the loan in ${m} month${m === 1 ? "" : "s"}. ${loanNotes.insight}`,
+      recommendation: loanNotes.recommendation,
     };
   }, [principal, annualRate, months]);
 
@@ -279,15 +641,25 @@ function EMICalculator() {
         />
         <div className={panelClass()}>
           {result ? (
-            <div className="grid gap-2">
+            <div className="grid gap-3">
               <div>
-                Monthly EMI: <strong>{result.emi}</strong>
+                Monthly EMI: <strong>{formatCurrency(result.emi)}</strong>
               </div>
               <div>
-                Total Payment: <strong>{result.total}</strong>
+                Total Payment: <strong>{formatCurrency(result.total)}</strong>
               </div>
               <div>
-                Total Interest: <strong>{result.interest}</strong>
+                Total Interest: <strong>{formatCurrency(result.interest)}</strong>
+              </div>
+
+              <div className={hintClass()}>
+                <div className="font-medium text-slate-800">What this means</div>
+                <div className="mt-1">{result.insight}</div>
+              </div>
+
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+                <div className="font-medium">Recommendation</div>
+                <div className="mt-1">{result.recommendation}</div>
               </div>
             </div>
           ) : (
@@ -304,21 +676,64 @@ function PercentageCalculator() {
   const [a, setA] = useState("");
   const [b, setB] = useState("");
 
-  const result = useMemo(() => {
+  const result = useMemo<InterpretedResult | null>(() => {
     const first = Number(a);
     const second = Number(b);
 
     if (!Number.isFinite(first) || !Number.isFinite(second) || a === "" || b === "") {
-      return "";
+      return null;
     }
 
-    if (mode === "of") return `${((first / 100) * second).toFixed(2)}`;
-    if (mode === "whatPercent") {
-      if (second === 0) return "Cannot divide by zero";
-      return `${((first / second) * 100).toFixed(2)}%`;
+    if (mode === "of") {
+      const value = (first / 100) * second;
+      const info = getPercentageInterpretation(mode, value);
+      return {
+        primary: formatNumber(value),
+        secondary: "Calculated value",
+        insight: info.insight,
+        recommendation: info.recommendation,
+      };
     }
-    if (second === 0) return "Cannot divide by zero";
-    return `${(((first - second) / second) * 100).toFixed(2)}%`;
+
+    if (mode === "whatPercent") {
+      if (second === 0) {
+        return {
+          primary: "Cannot divide by zero",
+          secondary: "Result",
+          insight: "A percentage comparison needs a non-zero baseline value.",
+          recommendation: "Use a non-zero value for B.",
+        };
+      }
+
+      const value = (first / second) * 100;
+      const info = getPercentageInterpretation(mode, value);
+
+      return {
+        primary: `${formatNumber(value)}%`,
+        secondary: "Percentage relationship",
+        insight: info.insight,
+        recommendation: info.recommendation,
+      };
+    }
+
+    if (second === 0) {
+      return {
+        primary: "Cannot divide by zero",
+        secondary: "Result",
+        insight: "Percentage change needs a valid original value.",
+        recommendation: "Use a non-zero starting value for B.",
+      };
+    }
+
+    const value = ((first - second) / second) * 100;
+    const info = getPercentageInterpretation(mode, value);
+
+    return {
+      primary: `${formatNumber(value)}%`,
+      secondary: "Percentage change",
+      insight: info.insight,
+      recommendation: info.recommendation,
+    };
   }, [mode, a, b]);
 
   return (
@@ -350,7 +765,11 @@ function PercentageCalculator() {
         />
 
         <div className={panelClass()}>
-          Result: <strong>{result || "Enter values to calculate."}</strong>
+          {result ? (
+            renderInterpretation(result)
+          ) : (
+            <span className="text-q-muted">Enter values to calculate.</span>
+          )}
         </div>
       </div>
     </Card>
@@ -363,7 +782,7 @@ function SimpleInterestCalculator(config: Record<string, unknown>) {
   const [rate, setRate] = useState("");
   const [time, setTime] = useState("");
 
-  const result = useMemo(() => {
+  const result = useMemo<InterpretedResult | null>(() => {
     const p = Number(principal);
     const r = Number(rate);
     const t = Number(time);
@@ -372,10 +791,18 @@ function SimpleInterestCalculator(config: Record<string, unknown>) {
 
     const interest = (p * r * t) / 100;
     const total = p + interest;
+    const interestShare = (interest / p) * 100;
 
     return {
-      interest: interest.toFixed(2),
-      total: total.toFixed(2),
+      primary: formatCurrency(interest),
+      secondary: "Simple interest",
+      extra: `Total amount after interest: ${formatCurrency(total)}`,
+      insight:
+        "Simple interest grows linearly because interest is calculated only on the original principal.",
+      recommendation:
+        interestShare > 50
+          ? "The interest cost is large relative to the principal. Compare with shorter duration or lower-rate options."
+          : "Use this as a baseline before comparing against compound interest products.",
     };
   }, [principal, rate, time]);
 
@@ -405,14 +832,7 @@ function SimpleInterestCalculator(config: Record<string, unknown>) {
         />
         <div className={panelClass()}>
           {result ? (
-            <div className="grid gap-2">
-              <div>
-                Interest: <strong>{result.interest}</strong>
-              </div>
-              <div>
-                Total Amount: <strong>{result.total}</strong>
-              </div>
-            </div>
+            renderInterpretation(result)
           ) : (
             <span className="text-q-muted">Enter values to calculate simple interest.</span>
           )}
@@ -430,7 +850,7 @@ function GSTCalculator(config: Record<string, unknown>) {
   const [rate, setRate] = useState(String(defaultRate));
   const [mode, setMode] = useState<"add" | "remove">("add");
 
-  const result = useMemo(() => {
+  const result = useMemo<InterpretedResult | null>(() => {
     const amt = Number(amount);
     const gstRate = Number(rate);
 
@@ -438,17 +858,27 @@ function GSTCalculator(config: Record<string, unknown>) {
 
     if (mode === "add") {
       const gst = (amt * gstRate) / 100;
+      const interpretation = getGSTInterpretation(mode, amt, gstRate);
+
       return {
-        gst: gst.toFixed(2),
-        total: (amt + gst).toFixed(2),
+        primary: formatCurrency(gst),
+        secondary: "GST amount",
+        extra: `Total with GST: ${formatCurrency(amt + gst)}`,
+        insight: interpretation.insight,
+        recommendation: interpretation.recommendation,
       };
     }
 
     const base = amt / (1 + gstRate / 100);
     const gst = amt - base;
+    const interpretation = getGSTInterpretation(mode, amt, gstRate);
+
     return {
-      gst: gst.toFixed(2),
-      total: base.toFixed(2),
+      primary: formatCurrency(gst),
+      secondary: "GST amount included",
+      extra: `Base amount before GST: ${formatCurrency(base)}`,
+      insight: interpretation.insight,
+      recommendation: interpretation.recommendation,
     };
   }, [amount, rate, mode]);
 
@@ -481,14 +911,7 @@ function GSTCalculator(config: Record<string, unknown>) {
 
         <div className={panelClass()}>
           {result ? (
-            <div className="grid gap-2">
-              <div>
-                GST Amount: <strong>{result.gst}</strong>
-              </div>
-              <div>
-                {mode === "add" ? "Total with GST" : "Base Amount"}: <strong>{result.total}</strong>
-              </div>
-            </div>
+            renderInterpretation(result)
           ) : (
             <span className="text-q-muted">Enter values to calculate GST.</span>
           )}
@@ -611,7 +1034,7 @@ function FormulaCalculator({
     }
   }, [config, preset]);
 
-  const result = useMemo(() => {
+  const result = useMemo<InterpretedResult | null>(() => {
     if (preset === "unix-timestamp") {
       if (mode === "timestamp-to-date") {
         const timestamp = Number(values.timestamp || "");
@@ -623,6 +1046,11 @@ function FormulaCalculator({
         return {
           primary: date.toISOString(),
           secondary: "UTC date/time",
+          insight:
+            "This converts a Unix timestamp into a human-readable UTC date and time.",
+          recommendation:
+            "Use this when debugging logs, APIs, databases, or event records stored as Unix time.",
+          notes: getUnixTimestampNotes(),
         };
       }
 
@@ -633,6 +1061,11 @@ function FormulaCalculator({
       return {
         primary: String(Math.floor(date.getTime() / 1000)),
         secondary: "Unix timestamp",
+        insight:
+          "This converts a date/time input into a Unix timestamp measured in seconds.",
+          recommendation:
+            "Use this when preparing timestamps for APIs, databases, scheduling systems, or log comparisons.",
+        notes: getUnixTimestampNotes(),
       };
     }
 
@@ -650,11 +1083,18 @@ function FormulaCalculator({
 
       const used = sleep + work + commute + exercise + other;
       const free = total - used;
+      const interpretation = getTimeBudgetInterpretation(free, total);
 
       return {
         primary: free.toFixed(2),
         secondary: "Free hours remaining",
         extra: `Allocated hours: ${used.toFixed(2)}`,
+        insight: interpretation.insight,
+        recommendation: interpretation.recommendation,
+        notes: [
+          "This calculator assumes the entered activities are mutually exclusive.",
+          "You can use it for routine planning, work-life balance checks, and schedule stress testing.",
+        ],
       };
     }
 
@@ -673,6 +1113,12 @@ function FormulaCalculator({
         primary: perSecond.toFixed(2),
         secondary: "Requests per second",
         extra: `Requests per minute: ${perMinute.toFixed(2)}`,
+        insight:
+          "This expresses your rate limit as an average throughput per second, which is useful for backend and API capacity planning.",
+        recommendation:
+          perSecond < 1
+            ? "A low request rate may be fine for internal or low-volume use, but confirm peak traffic behavior separately."
+            : "Compare this against expected burst traffic and concurrency, not only average traffic.",
       };
     }
 
@@ -696,6 +1142,12 @@ function FormulaCalculator({
         primary: total.toFixed(Number(config.decimals ?? 2)),
         secondary: String(config.resultLabel || "Estimated result"),
         extra: `Base value: ${base.toFixed(Number(config.decimals ?? 2))}`,
+        insight:
+          "This combines direct cost with an overhead adjustment to produce a more realistic estimate than base cost alone.",
+        recommendation:
+          overheadPercent > 25
+            ? "Your overhead assumption is relatively high. Confirm whether this is intended or if some costs are being double-counted."
+            : "Stress-test the result with multiple overhead values to see best-case and worst-case scenarios.",
       };
     }
 
@@ -708,10 +1160,16 @@ function FormulaCalculator({
       }
 
       const rate = numerator / period;
+      const interpretation = getRateInterpretation(
+        rate,
+        String(config.resultLabel || "Rate")
+      );
 
       return {
         primary: rate.toFixed(Number(config.decimals ?? 2)),
         secondary: String(config.resultLabel || "Rate"),
+        insight: interpretation.insight,
+        recommendation: interpretation.recommendation,
       };
     }
 
@@ -724,10 +1182,41 @@ function FormulaCalculator({
       }
 
       const revenue = (views / 1000) * rpm;
+      const interpretation = getRevenueInterpretation(revenue);
 
       return {
         primary: revenue.toFixed(Number(config.decimals ?? 2)),
         secondary: String(config.resultLabel || "Estimated revenue"),
+        insight: interpretation.insight,
+        recommendation: interpretation.recommendation,
+        notes: [
+          "This is an estimate based on RPM assumptions and does not include payout thresholds, taxes, or platform-specific deductions.",
+        ],
+      };
+    }
+
+    if (preset === "probability") {
+      const a = Number(values.a || "");
+      const b = Number(values.b || "");
+
+      if (!Number.isFinite(a) || !Number.isFinite(b) || b === 0) {
+        return null;
+      }
+
+      const multiplier = Number(config.multiplier ?? 100);
+      const decimals = Number(config.decimals ?? 2);
+      const resultValue = (a / b) * multiplier;
+      const suffix = String(config.resultSuffix || "");
+      const interpretation = getProbabilityInterpretation(resultValue);
+
+      return {
+        primary: `${resultValue.toFixed(decimals)}${suffix}`,
+        secondary: String(config.resultLabel || "Probability"),
+        insight: interpretation.insight,
+        recommendation: interpretation.recommendation,
+        notes: [
+          "The result depends entirely on how well your input values reflect reality.",
+        ],
       };
     }
 
@@ -742,10 +1231,33 @@ function FormulaCalculator({
     const decimals = Number(config.decimals ?? 2);
     const resultValue = (a / b) * multiplier;
     const suffix = String(config.resultSuffix || "");
+    const label = String(config.resultLabel || "Result");
+
+    if (preset === "metric-ratio") {
+      let insight = "This expresses Value A relative to Value B using the configured multiplier.";
+      let recommendation = "Use this to compare efficiency, completion, utilization, or share of total.";
+
+      if (resultValue < 25) {
+        insight = "The ratio is low relative to the baseline.";
+        recommendation = "Review whether the numerator is underperforming or the denominator is too large for the intended target.";
+      } else if (resultValue > 75) {
+        insight = "The ratio is high relative to the baseline.";
+        recommendation = "This may indicate strong performance, but confirm that the baseline and units are appropriate.";
+      }
+
+      return {
+        primary: `${resultValue.toFixed(decimals)}${suffix}`,
+        secondary: label,
+        insight,
+        recommendation,
+      };
+    }
 
     return {
       primary: `${resultValue.toFixed(decimals)}${suffix}`,
-      secondary: String(config.resultLabel || "Result"),
+      secondary: label,
+      insight: "This result is based on the configured formula for this calculator.",
+      recommendation: "Check the units and assumptions behind both values before using the result in decisions.",
     };
   }, [config, dateTimeValue, mode, preset, values]);
 
@@ -807,12 +1319,7 @@ function FormulaCalculator({
 
         <div className={panelClass()}>
           {result ? (
-            <div className="grid gap-2">
-              <div>
-                {result.secondary}: <strong>{result.primary}</strong>
-              </div>
-              {"extra" in result && result.extra ? <div>{result.extra}</div> : null}
-            </div>
+            renderInterpretation(result)
           ) : (
             <span className="text-q-muted">Enter values to calculate.</span>
           )}
@@ -842,8 +1349,12 @@ export default function BuiltInCalculatorClient({ item }: Props) {
   if (engine === "loan-calculator") return <LoanCalculator />;
   if (engine === "emi-calculator") return <EMICalculator />;
   if (engine === "percentage-calculator") return <PercentageCalculator />;
-  if (engine === "simple-interest-calculator") return <SimpleInterestCalculator {...{ config }} />;
-  if (engine === "gst-calculator") return <GSTCalculator {...{ config }} />;
+  if (engine === "simple-interest-calculator") {
+    return <SimpleInterestCalculator config={config} />;
+  }
+  if (engine === "gst-calculator") {
+    return <GSTCalculator config={config} />;
+  }
   if (engine === "formula-calculator") {
     return <FormulaCalculator config={config} name={item.name} />;
   }
