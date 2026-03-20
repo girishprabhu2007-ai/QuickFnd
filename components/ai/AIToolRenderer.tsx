@@ -16,6 +16,21 @@ type RunResponse = {
   error?: string;
 };
 
+type TaskMeta = {
+  title: string;
+  inputLabel: string;
+  inputPlaceholder: string;
+  actionLabel: string;
+  outputLabel: string;
+  audiencePlaceholder: string;
+  supportsAudience: boolean;
+  supportsLength: boolean;
+  lengthOptions: string[];
+  helperText: string;
+  examples: string[];
+  checklist: string[];
+};
+
 function inputClass() {
   return "w-full rounded-xl border border-q-border bg-q-bg p-3 text-q-text outline-none placeholder:text-q-muted";
 }
@@ -32,6 +47,14 @@ function panelClass() {
   return "rounded-xl border border-q-border bg-q-bg p-4";
 }
 
+function softInfoClass() {
+  return "rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-slate-700";
+}
+
+function successHintClass() {
+  return "rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900";
+}
+
 function toConfig(value: unknown): AIToolConfig {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return {};
@@ -40,20 +63,32 @@ function toConfig(value: unknown): AIToolConfig {
   return value as AIToolConfig;
 }
 
-function getTaskMeta(task: string, itemName: string) {
+function getTaskMeta(task: string, itemName: string): TaskMeta {
   switch (task) {
     case "email":
       return {
         title: itemName,
         inputLabel: "What should the email be about?",
         inputPlaceholder:
-          "Example: Write a polite follow-up email to a client after a product demo.",
+          "Example: Write a polite follow-up email to a client after a product demo. Mention pricing, next steps, and suggest a call next week.",
         actionLabel: "Generate Email",
         outputLabel: "Generated email",
         audiencePlaceholder: "Client, hiring manager, support lead",
         supportsAudience: true,
         supportsLength: true,
         lengthOptions: ["short", "medium", "long"],
+        helperText:
+          "Best for follow-ups, outreach, support replies, internal updates, and formal communication drafts.",
+        examples: [
+          "Follow up after a sales demo",
+          "Write a polite job application follow-up",
+          "Draft a customer support apology email",
+        ],
+        checklist: [
+          "State the purpose clearly",
+          "Mention the recipient context",
+          "Add a clear next step or CTA",
+        ],
       };
 
     case "outline":
@@ -61,13 +96,25 @@ function getTaskMeta(task: string, itemName: string) {
         title: itemName,
         inputLabel: "What topic do you want outlined?",
         inputPlaceholder:
-          "Example: Build a blog outline for 'How to launch a SaaS in 2026'.",
+          "Example: Build a blog outline for 'How to launch a SaaS in 2026' for founders and product teams.",
         actionLabel: "Generate Outline",
         outputLabel: "Generated outline",
         audiencePlaceholder: "Beginners, founders, marketers",
         supportsAudience: true,
         supportsLength: true,
         lengthOptions: ["short", "medium", "detailed"],
+        helperText:
+          "Best for blog posts, landing pages, lesson plans, strategy docs, videos, and presentation structures.",
+        examples: [
+          "Blog outline for SEO audit process",
+          "Video script outline for YouTube tutorial",
+          "Course outline for beginner designers",
+        ],
+        checklist: [
+          "Name the topic clearly",
+          "Mention target audience",
+          "Mention desired depth or structure",
+        ],
       };
 
     case "summarization":
@@ -75,13 +122,25 @@ function getTaskMeta(task: string, itemName: string) {
         title: itemName,
         inputLabel: "Paste text to summarize",
         inputPlaceholder:
-          "Paste a paragraph, article excerpt, notes, or research text here.",
+          "Paste a long paragraph, meeting notes, article excerpt, transcript, or research text here.",
         actionLabel: "Generate Summary",
         outputLabel: "Generated summary",
         audiencePlaceholder: "Executives, students, general audience",
         supportsAudience: true,
         supportsLength: true,
         lengthOptions: ["brief", "medium", "detailed"],
+        helperText:
+          "Best for notes, transcripts, reports, articles, user research, docs, and decision summaries.",
+        examples: [
+          "Summarize meeting notes into action points",
+          "Turn an article into executive summary bullets",
+          "Condense research notes for revision",
+        ],
+        checklist: [
+          "Paste complete source text",
+          "Mention who the summary is for",
+          "Choose the right detail level",
+        ],
       };
 
     case "rewrite":
@@ -89,13 +148,25 @@ function getTaskMeta(task: string, itemName: string) {
         title: itemName,
         inputLabel: "Paste text to rewrite",
         inputPlaceholder:
-          "Paste content you want rewritten for clarity, tone, or style.",
+          "Paste text you want rewritten for clarity, tone, readability, persuasion, or simplification.",
         actionLabel: "Rewrite Text",
         outputLabel: "Rewritten result",
         audiencePlaceholder: "Customers, readers, developers",
         supportsAudience: true,
         supportsLength: false,
         lengthOptions: [],
+        helperText:
+          "Best for polishing copy, improving clarity, changing tone, simplifying text, or making content more persuasive.",
+        examples: [
+          "Rewrite marketing copy to sound clearer",
+          "Simplify technical explanation for beginners",
+          "Make an email more professional",
+        ],
+        checklist: [
+          "Paste the original text",
+          "Be explicit about the desired tone",
+          "Add any constraints in extra instructions",
+        ],
       };
 
     default:
@@ -103,15 +174,87 @@ function getTaskMeta(task: string, itemName: string) {
         title: itemName,
         inputLabel: "Enter your prompt or text",
         inputPlaceholder:
-          "Describe what you want the AI tool to generate or transform.",
+          "Describe what you want the AI tool to generate, improve, or transform.",
         actionLabel: "Generate",
         outputLabel: "Generated output",
         audiencePlaceholder: "General audience",
         supportsAudience: true,
         supportsLength: true,
         lengthOptions: ["short", "medium", "long"],
+        helperText:
+          "This is a flexible AI workflow for content generation and transformation.",
+        examples: [
+          "Generate a draft from a short prompt",
+          "Rewrite content for a specific audience",
+          "Create a structured response from rough notes",
+        ],
+        checklist: [
+          "Be specific about the goal",
+          "Mention audience and tone",
+          "Add extra instructions if format matters",
+        ],
       };
   }
+}
+
+function buildPromptQualityHint(
+  task: string,
+  input: string,
+  audience: string,
+  extraInstructions: string
+) {
+  const hasAudience = audience.trim().length > 0;
+  const hasExtra = extraInstructions.trim().length > 0;
+  const inputLength = input.trim().length;
+
+  if (task === "email") {
+    if (inputLength < 40) {
+      return "Add more context about the recipient, purpose, and desired outcome for a better email draft.";
+    }
+    if (!hasAudience) {
+      return "Adding the recipient type usually improves the tone and structure of the generated email.";
+    }
+    if (!hasExtra) {
+      return "Add extra instructions if you want a specific CTA, structure, or level of formality.";
+    }
+    return "Your prompt has enough detail for a more tailored email draft.";
+  }
+
+  if (task === "outline") {
+    if (inputLength < 25) {
+      return "Mention the topic more specifically so the outline is not too broad.";
+    }
+    if (!hasAudience) {
+      return "Adding a target audience usually makes the outline more useful and better scoped.";
+    }
+    return "Your outline prompt should produce a more targeted structure.";
+  }
+
+  if (task === "summarization") {
+    if (inputLength < 120) {
+      return "Summaries work better with enough source text. Try pasting a fuller passage.";
+    }
+    if (!hasAudience) {
+      return "Add the audience if you want the summary tuned for executives, students, or general readers.";
+    }
+    return "This looks like enough source material for a meaningful summary.";
+  }
+
+  if (task === "rewrite") {
+    if (inputLength < 40) {
+      return "Rewrite tasks work better when you provide the full original text, not just a fragment.";
+    }
+    if (!hasExtra) {
+      return "Add extra instructions if you want the rewrite to be clearer, shorter, friendlier, or more persuasive.";
+    }
+    return "You’ve given enough content to produce a stronger rewrite.";
+  }
+
+  if (inputLength < 30) {
+    return "More specific prompts usually give better output.";
+  }
+
+  return "Your prompt has enough detail for a more useful response.";
 }
 
 async function copyText(value: string) {
@@ -149,6 +292,10 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
   const [output, setOutput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const promptHint = useMemo(() => {
+    return buildPromptQualityHint(task, input, audience, extraInstructions);
+  }, [task, input, audience, extraInstructions]);
 
   async function handleRun() {
     setLoading(true);
@@ -194,8 +341,7 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
         <div>
           <h2 className="text-2xl font-semibold text-q-text">{meta.title}</h2>
           <p className="mt-2 max-w-2xl text-sm leading-7 text-q-muted">
-            This AI tool runs a reusable OpenAI engine with task-specific controls.
-            The interface adapts to the selected AI workflow instead of showing the same generic form.
+            {meta.helperText}
           </p>
         </div>
 
@@ -217,6 +363,11 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">
+          <div className={softInfoClass()}>
+            <div className="font-medium text-slate-800">Prompt quality hint</div>
+            <div className="mt-1">{promptHint}</div>
+          </div>
+
           <div>
             <label className="mb-2 block text-sm font-medium text-q-text">
               {meta.inputLabel}
@@ -236,7 +387,7 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
             <textarea
               value={extraInstructions}
               onChange={(e) => setExtraInstructions(e.target.value)}
-              placeholder="Optional: add extra requirements, style notes, or constraints."
+              placeholder="Optional: add format, structure, style, constraints, or details you want the output to follow."
               className={textareaClass("min-h-[100px]")}
             />
           </div>
@@ -274,6 +425,15 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
           {error ? (
             <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">
               {error}
+            </div>
+          ) : null}
+
+          {output ? (
+            <div className={successHintClass()}>
+              <div className="font-medium">How to use this result</div>
+              <div className="mt-1">
+                Review the output, refine the input if needed, and rerun with stronger constraints if you want a tighter draft.
+              </div>
             </div>
           ) : null}
 
@@ -331,11 +491,29 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
           ) : null}
 
           <div className={panelClass()}>
+            <div className="text-xs uppercase tracking-wide text-q-muted">Examples</div>
+            <ul className="mt-3 space-y-2 text-sm leading-6 text-q-muted">
+              {meta.examples.map((example, index) => (
+                <li key={`${example}-${index}`}>• {example}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className={panelClass()}>
+            <div className="text-xs uppercase tracking-wide text-q-muted">Better results checklist</div>
+            <ul className="mt-3 space-y-2 text-sm leading-6 text-q-muted">
+              {meta.checklist.map((item, index) => (
+                <li key={`${item}-${index}`}>• {item}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className={panelClass()}>
             <div className="text-xs uppercase tracking-wide text-q-muted">Tips</div>
             <ul className="mt-3 space-y-2 text-sm leading-6 text-q-muted">
-              <li>• Be specific in your input to get better output.</li>
-              <li>• Use extra instructions to shape structure or style.</li>
-              <li>• Try different tones for noticeably different results.</li>
+              <li>• Stronger context usually improves output quality.</li>
+              <li>• Use extra instructions to shape structure or tone.</li>
+              <li>• Try a different tone if the first draft feels off.</li>
             </ul>
           </div>
         </aside>
