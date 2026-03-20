@@ -46,9 +46,15 @@ function formulaPreset(
   };
 }
 
+function textContainsAny(text: string, values: string[]) {
+  return values.some((value) => text.includes(value));
+}
+
 export function resolveCalculatorRuntime(input: CalculatorRuntimeInput): CalculatorRuntime {
   const slug = safeSlug(input.slug || input.name || "");
   const name = String(input.name || "").trim();
+  const description = String(input.description || "").toLowerCase();
+  const fullText = `${slug} ${name.toLowerCase()} ${description}`.trim();
 
   if (!slug) {
     return {
@@ -139,7 +145,10 @@ export function resolveCalculatorRuntime(input: CalculatorRuntimeInput): Calcula
   }
 
   if (slug.includes("project-time-estimator")) {
-    return formulaPreset("project-time-estimator", name || "Project Time Estimator Calculator");
+    return formulaPreset(
+      "project-time-estimator",
+      name || "Project Time Estimator Calculator"
+    );
   }
 
   if (slug.includes("time-conversion")) {
@@ -162,8 +171,47 @@ export function resolveCalculatorRuntime(input: CalculatorRuntimeInput): Calcula
     return formulaPreset("shift-hours", name || "Work Hours Calculator");
   }
 
-  if (slug.includes("time-zone-difference")) {
+  if (slug.includes("time-zone-difference") || slug.includes("timezone-difference")) {
     return formulaPreset("timezone-difference", name || "Time Zone Difference Calculator");
+  }
+
+  if (slug.includes("work-life-balance")) {
+    return formulaPreset("daily-time-budget", name || "Work-Life Balance Calculator", {
+      titleOverride: name || "Work-Life Balance Calculator",
+      fields: [
+        {
+          key: "total_hours",
+          label: "Total hours available in a day",
+          placeholder: "24",
+        },
+        {
+          key: "sleep_hours",
+          label: "Sleep hours",
+          placeholder: "8",
+        },
+        {
+          key: "work_hours",
+          label: "Work hours",
+          placeholder: "8",
+        },
+        {
+          key: "commute_hours",
+          label: "Commute / transition hours",
+          placeholder: "1",
+        },
+        {
+          key: "exercise_hours",
+          label: "Exercise / health hours",
+          placeholder: "1",
+        },
+        {
+          key: "other_hours",
+          label: "Family / chores / other commitments",
+          placeholder: "3",
+        },
+      ],
+      resultLabel: "Balance score",
+    });
   }
 
   if (slug.includes("merge-conflict") && slug.includes("probability")) {
@@ -193,13 +241,17 @@ export function resolveCalculatorRuntime(input: CalculatorRuntimeInput): Calcula
   }
 
   if (slug.includes("function-performance-cost")) {
-    return formulaPreset("cost-estimator", name || "Function Performance Cost Calculator", {
-      quantityLabel: "Function calls",
-      unitCostLabel: "Cost per call",
-      overheadLabel: "Overhead %",
-      resultLabel: "Estimated total cost",
-      decimals: 4,
-    });
+    return formulaPreset(
+      "cost-estimator",
+      name || "Function Performance Cost Calculator",
+      {
+        quantityLabel: "Function calls",
+        unitCostLabel: "Cost per call",
+        overheadLabel: "Overhead %",
+        resultLabel: "Estimated total cost",
+        decimals: 4,
+      }
+    );
   }
 
   if (slug.includes("code-review-efficiency")) {
@@ -262,7 +314,10 @@ export function resolveCalculatorRuntime(input: CalculatorRuntimeInput): Calcula
     });
   }
 
-  if (slug.includes("youtube") && (slug.includes("revenue-estimator") || slug.includes("revenue"))) {
+  if (
+    slug.includes("youtube") &&
+    (slug.includes("revenue-estimator") || slug.includes("revenue"))
+  ) {
     return formulaPreset("revenue-estimator", name || "YouTube Revenue Estimator", {
       viewsLabel: "Views",
       rpmLabel: "RPM",
@@ -283,28 +338,61 @@ export function resolveCalculatorRuntime(input: CalculatorRuntimeInput): Calcula
   }
 
   if (slug.includes("youtube") && slug.includes("thumbnail-click-through-rate")) {
-    return formulaPreset("metric-ratio", name || "YouTube Thumbnail CTR Calculator", {
-      numeratorLabel: "Clicks",
-      denominatorLabel: "Impressions",
-      resultLabel: "Click-through rate",
+    return formulaPreset(
+      "metric-ratio",
+      name || "YouTube Thumbnail CTR Calculator",
+      {
+        numeratorLabel: "Clicks",
+        denominatorLabel: "Impressions",
+        resultLabel: "Click-through rate",
+        resultSuffix: "%",
+        multiplier: 100,
+        decimals: 2,
+      }
+    );
+  }
+
+  if (slug.includes("youtube") && slug.includes("video-length-optimization")) {
+    return formulaPreset(
+      "metric-ratio",
+      name || "Video Length Optimization Calculator",
+      {
+        numeratorLabel: "Watch minutes",
+        denominatorLabel: "Video length minutes",
+        resultLabel: "Retention multiple",
+        resultSuffix: "x",
+        multiplier: 1,
+        decimals: 2,
+      }
+    );
+  }
+
+  if (slug.includes("audience-demographics")) {
+    return formulaPreset("metric-ratio", name || "Audience Demographics Analyzer", {
+      numeratorLabel: "Audience segment size",
+      denominatorLabel: "Total audience size",
+      resultLabel: "Audience segment share",
       resultSuffix: "%",
       multiplier: 100,
       decimals: 2,
     });
   }
 
-  if (slug.includes("youtube") && slug.includes("video-length-optimization")) {
-    return formulaPreset("metric-ratio", name || "Video Length Optimization Calculator", {
-      numeratorLabel: "Watch minutes",
-      denominatorLabel: "Video length minutes",
-      resultLabel: "Retention multiple",
-      resultSuffix: "x",
-      multiplier: 1,
+  if (slug.includes("hashtag-impact")) {
+    return formulaPreset("metric-ratio", name || "YouTube Hashtag Impact Calculator", {
+      numeratorLabel: "Hashtag-attributed views",
+      denominatorLabel: "Total views",
+      resultLabel: "Hashtag impact",
+      resultSuffix: "%",
+      multiplier: 100,
       decimals: 2,
     });
   }
 
-  if (hasAny(slug, ["probability"])) {
+  if (
+    hasAny(fullText, ["probability", "chance", "likelihood"]) &&
+    !textContainsAny(fullText, ["sleep", "balance", "timestamp"])
+  ) {
     return formulaPreset("probability", name || "Probability Calculator", {
       numeratorLabel: "Favorable outcomes",
       denominatorLabel: "Total outcomes",
@@ -315,7 +403,10 @@ export function resolveCalculatorRuntime(input: CalculatorRuntimeInput): Calcula
     });
   }
 
-  if (hasAny(slug, ["rate", "frequency", "growth"])) {
+  if (
+    hasAny(fullText, ["rate", "frequency", "growth"]) &&
+    !textContainsAny(fullText, ["heart rate", "sleep"])
+  ) {
     return formulaPreset("rate-estimator", name || "Rate Calculator", {
       numeratorLabel: "Units",
       periodLabel: "Period",
@@ -324,7 +415,10 @@ export function resolveCalculatorRuntime(input: CalculatorRuntimeInput): Calcula
     });
   }
 
-  if (hasAny(slug, ["cost", "budget", "revenue", "estimator", "share"])) {
+  if (
+    hasAny(fullText, ["cost", "budget", "revenue", "estimator", "share"]) &&
+    !textContainsAny(fullText, ["balance", "sleep"])
+  ) {
     return formulaPreset("cost-estimator", name || "Estimator Calculator", {
       quantityLabel: "Quantity",
       unitCostLabel: "Value per unit",
@@ -334,7 +428,11 @@ export function resolveCalculatorRuntime(input: CalculatorRuntimeInput): Calcula
     });
   }
 
-  if (hasAll(slug, ["time", "calculator"]) || hasAny(slug, ["time"])) {
+  if (
+    hasAll(slug, ["time", "calculator"]) ||
+    (hasAny(fullText, ["time"]) &&
+      !textContainsAny(fullText, ["sleep", "timestamp", "duration", "countdown", "shift"]))
+  ) {
     return formulaPreset("time-conversion", name || "Time Calculator");
   }
 
