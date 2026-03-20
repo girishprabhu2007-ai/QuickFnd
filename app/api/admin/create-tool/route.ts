@@ -57,6 +57,14 @@ function parseGeneratedItem(raw: string, category: AdminCategory): GeneratedItem
   }
 }
 
+function isWeakSlug(slug: string) {
+  return slug.length < 5 || !slug.includes("-");
+}
+
+function isWeakDescription(desc: string) {
+  return desc.length < 40;
+}
+
 async function generateItemFromIdea(
   idea: string,
   category: AdminCategory
@@ -66,9 +74,19 @@ Return valid JSON only.
 No markdown.
 No code fences.
 
-Create a QuickFnd ${category} entry for this idea: ${idea}
+Create a HIGH QUALITY QuickFnd ${category} entry.
 
-Return exactly this object:
+Idea: ${idea}
+
+STRICT RULES:
+- name must be clear and user-focused
+- slug must be SEO-friendly and specific (avoid generic words)
+- description must explain real user value (not generic filler)
+- related_slugs must be relevant and realistic
+- engine_type must match a REAL usable engine
+- DO NOT invent fake tools
+
+Return exactly:
 {
   "name": "string",
   "slug": "string",
@@ -77,14 +95,6 @@ Return exactly this object:
   "engine_type": "string",
   "engine_config": {}
 }
-
-Rules:
-- slug must be lowercase and hyphen-separated
-- description should be 2 concise SEO-friendly sentences
-- related_slugs should contain 3 to 6 realistic related slugs
-- for AI tools, prefer a real matching AI engine
-- for tools/calculators, choose the closest reusable engine
-- engine_config should stay small and practical
   `.trim();
 
   const openai = getOpenAIClient();
@@ -125,6 +135,17 @@ export async function POST(req: Request) {
       );
     }
 
+    // 🔥 QUALITY GUARD
+    if (isWeakSlug(item.slug) || isWeakDescription(item.description)) {
+      return NextResponse.json(
+        {
+          error:
+            "Generated item is too weak (slug or description). Please refine the idea.",
+        },
+        { status: 400 }
+      );
+    }
+
     const suggestion = suggestAdminEngine(category, {
       name: item.name,
       slug: item.slug,
@@ -144,7 +165,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            "This item does not match a live reusable engine yet. Save it as a request/backlog item instead of publishing a placeholder page.",
+            "This item does not match a real working engine. Avoid publishing fake tools.",
         },
         { status: 400 }
       );
@@ -153,18 +174,6 @@ export async function POST(req: Request) {
     const existing = await findExistingBySlug(category, item.slug);
     if (existing) {
       const path = buildPublicPath(category, item.slug);
-
-      if (requestId) {
-        const supabaseAdmin = getSupabaseAdmin();
-        await supabaseAdmin
-          .from("tool_requests")
-          .update({
-            status: "implemented",
-            created_public_slug: item.slug,
-            implemented_at: new Date().toISOString(),
-          })
-          .eq("id", requestId);
-      }
 
       return NextResponse.json({
         success: true,
@@ -197,27 +206,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    if (requestId) {
-      await supabaseAdmin
-        .from("tool_requests")
-        .update({
-          status: "implemented",
-          created_public_slug: uniqueSlug,
-          implemented_at: new Date().toISOString(),
-        })
-        .eq("id", requestId);
-    }
-
     return NextResponse.json({
       success: true,
       created: true,
-      alreadyExists: false,
       slug: uniqueSlug,
       table,
       path: buildPublicPath(category, uniqueSlug),
       engine_type: suggestion.engine_type,
       engine_config: suggestion.engine_config,
       engine_reason: suggestion.reason,
+      quality: {
+        strong_match: suggestion.is_supported,
+      },
     });
   } catch (error) {
     console.error("create-tool route error:", error);
