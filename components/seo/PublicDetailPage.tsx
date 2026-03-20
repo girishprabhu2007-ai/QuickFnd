@@ -2,9 +2,11 @@ import Link from "next/link";
 import SiteFooter from "@/components/site/SiteFooter";
 import DetailSidebar from "@/components/layout/DetailSidebar";
 import PageSEOSections from "@/components/seo/PageSEOSections";
+import ShareMenu from "@/components/seo/ShareMenu";
 import type { ReactNode } from "react";
 import type { PublicContentItem } from "@/lib/content-pages";
 import { getDisplayDescription } from "@/lib/display-content";
+import { getSiteUrl } from "@/lib/site-url";
 
 type TableName = "tools" | "calculators" | "ai_tools";
 
@@ -111,6 +113,13 @@ export default function PublicDetailPage({
   const label = tableLabel(table);
   const single = singularLabel(table);
   const section = tableSection(table);
+  const siteUrl = getSiteUrl();
+  const canonicalUrl =
+    table === "tools"
+      ? `${siteUrl}/tools/${item.slug}`
+      : table === "calculators"
+        ? `${siteUrl}/calculators/${item.slug}`
+        : `${siteUrl}/ai-tools/${item.slug}`;
 
   return (
     <main className="min-h-screen bg-q-bg text-q-text">
@@ -169,6 +178,8 @@ export default function PublicDetailPage({
                       Request a tool
                     </Link>
                   </div>
+
+                  <ShareMenu title={item.name} url={canonicalUrl} />
                 </section>
 
                 {primaryContent ? <div className="max-w-4xl">{primaryContent}</div> : null}
