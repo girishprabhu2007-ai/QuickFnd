@@ -25,6 +25,11 @@ type TaskMeta = {
   checklist: string[];
 };
 
+type EmailOutputParts = {
+  subject: string;
+  body: string;
+};
+
 const GENERIC_TASK_VALUES = new Set([
   "",
   "text-generation",
@@ -70,6 +75,18 @@ function badgeClass() {
 
 function labelClass() {
   return "mb-2 block text-sm font-medium text-q-text";
+}
+
+function outputShellClass() {
+  return "rounded-2xl border border-q-border bg-q-bg p-5 md:p-6";
+}
+
+function outputInnerClass() {
+  return "rounded-2xl border border-q-border bg-q-card p-4 text-sm leading-7 text-q-text";
+}
+
+function copyButtonClass() {
+  return "rounded-xl border border-q-border bg-q-bg px-3 py-2 text-xs font-semibold text-q-text transition hover:bg-q-card-hover";
 }
 
 function normalize(value: unknown) {
@@ -363,6 +380,229 @@ function buildPromptGeneratorInput(state: PromptFormState) {
   ]
     .filter((line) => line.split(": ")[1]?.trim())
     .join("\n");
+}
+
+function parseEmailOutput(raw: string): EmailOutputParts | null {
+  const text = String(raw || "").trim();
+  if (!text) return null;
+
+  const subjectMatch = text.match(/Subject:\s*(.+)/i);
+  const bodyMatch = text.match(/Body:\s*([\s\S]+)/i);
+
+  if (!subjectMatch && !bodyMatch) {
+    return null;
+  }
+
+  return {
+    subject: subjectMatch?.[1]?.trim() || "",
+    body: bodyMatch?.[1]?.trim() || text,
+  };
+}
+
+function renderOutlineLines(output: string) {
+  return output
+    .split("\n")
+    .map((line) => line.trimEnd())
+    .filter((line) => line.trim().length > 0);
+}
+
+function OutputHeader({
+  label,
+  ready,
+}: {
+  label: string;
+  ready: boolean;
+}) {
+  return (
+    <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="text-sm font-semibold text-q-text">{label}</div>
+      {ready ? (
+        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
+          Ready
+        </span>
+      ) : (
+        <span className="rounded-full border border-q-border bg-q-card px-3 py-1 text-xs font-medium text-q-muted">
+          Waiting for input
+        </span>
+      )}
+    </div>
+  );
+}
+
+function EmailOutputView({ output }: { output: string }) {
+  const parsed = parseEmailOutput(output);
+
+  if (!output) {
+    return (
+      <div className={outputShellClass()}>
+        <OutputHeader label="Generated email" ready={false} />
+        <div className={`min-h-[220px] ${outputInnerClass()}`}>
+          Your generated result will appear here.
+        </div>
+      </div>
+    );
+  }
+
+  if (!parsed) {
+    return (
+      <div className={outputShellClass()}>
+        <OutputHeader label="Generated email" ready />
+        <div className={`min-h-[220px] whitespace-pre-wrap ${outputInnerClass()}`}>
+          {output}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={outputShellClass()}>
+      <OutputHeader label="Generated email" ready />
+
+      <div className="grid gap-4">
+        <div className="rounded-2xl border border-q-border bg-q-card p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="text-xs font-semibold uppercase tracking-wide text-q-muted">
+              Subject
+            </div>
+            <button
+              onClick={() => copyText(parsed.subject)}
+              className={copyButtonClass()}
+            >
+              Copy Subject
+            </button>
+          </div>
+          <div className="whitespace-pre-wrap text-sm leading-7 text-q-text">
+            {parsed.subject || "No subject detected."}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-q-border bg-q-card p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="text-xs font-semibold uppercase tracking-wide text-q-muted">
+              Body
+            </div>
+            <button
+              onClick={() => copyText(parsed.body)}
+              className={copyButtonClass()}
+            >
+              Copy Body
+            </button>
+          </div>
+          <div className="whitespace-pre-wrap text-sm leading-7 text-q-text">
+            {parsed.body || "No body detected."}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OutlineOutputView({ output }: { output: string }) {
+  const lines = renderOutlineLines(output);
+
+  if (!output) {
+    return (
+      <div className={outputShellClass()}>
+        <OutputHeader label="Generated outline" ready={false} />
+        <div className={`min-h-[220px] ${outputInnerClass()}`}>
+          Your generated result will appear here.
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={outputShellClass()}>
+      <OutputHeader label="Generated outline" ready />
+
+      <div className="rounded-2xl border border-q-border bg-q-card p-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="text-xs font-semibold uppercase tracking-wide text-q-muted">
+            Outline
+          </div>
+          <button
+            onClick={() => copyText(output)}
+            className={copyButtonClass()}
+          >
+            Copy Outline
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {lines.map((line, index) => {
+            const trimmed = line.trim();
+
+            const isHeading =
+              /^title:/i.test(trimmed) ||
+              /^h2[:\s-]/i.test(trimmed) ||
+              /^##\s/.test(trimmed);
+
+            const isSubHeading =
+              /^h3[:\s-]/i.test(trimmed) ||
+              /^###\s/.test(trimmed);
+
+            return (
+              <div
+                key={`${trimmed}-${index}`}
+                className={
+                  isHeading
+                    ? "rounded-xl border border-blue-200/70 bg-blue-50/70 p-3 text-sm font-semibold text-slate-900"
+                    : isSubHeading
+                    ? "rounded-xl border border-q-border bg-q-bg p-3 text-sm font-medium text-q-text"
+                    : "rounded-xl border border-q-border bg-q-bg p-3 text-sm leading-7 text-q-text"
+                }
+              >
+                {trimmed}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PromptOutputView({ output }: { output: string }) {
+  return (
+    <div className={outputShellClass()}>
+      <OutputHeader label="Generated prompt" ready={Boolean(output)} />
+      <div className="rounded-2xl border border-q-border bg-q-card p-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="text-xs font-semibold uppercase tracking-wide text-q-muted">
+            Prompt
+          </div>
+          <button
+            onClick={() => copyText(output)}
+            disabled={!output}
+            className={`${copyButtonClass()} disabled:cursor-not-allowed disabled:opacity-60`}
+          >
+            Copy Prompt
+          </button>
+        </div>
+
+        <div className="min-h-[220px] whitespace-pre-wrap rounded-2xl border border-q-border bg-q-bg p-4 text-sm leading-7 text-q-text">
+          {output || "Your generated result will appear here."}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GenericOutputView({
+  output,
+  label,
+}: {
+  output: string;
+  label: string;
+}) {
+  return (
+    <div className={outputShellClass()}>
+      <OutputHeader label={label} ready={Boolean(output)} />
+      <div className={`min-h-[220px] whitespace-pre-wrap ${outputInnerClass()}`}>
+        {output || "Your generated result will appear here."}
+      </div>
+    </div>
+  );
 }
 
 export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
@@ -800,24 +1040,15 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
             </div>
           ) : null}
 
-          <div className="rounded-2xl border border-q-border bg-q-bg p-5 md:p-6">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div className="text-sm font-semibold text-q-text">{meta.outputLabel}</div>
-              {output ? (
-                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
-                  Ready
-                </span>
-              ) : (
-                <span className="rounded-full border border-q-border bg-q-card px-3 py-1 text-xs font-medium text-q-muted">
-                  Waiting for input
-                </span>
-              )}
-            </div>
-
-            <div className="min-h-[220px] whitespace-pre-wrap rounded-2xl border border-q-border bg-q-card p-4 text-sm leading-7 text-q-text">
-              {output || "Your generated result will appear here."}
-            </div>
-          </div>
+          {task === "email" ? (
+            <EmailOutputView output={output} />
+          ) : task === "outline" ? (
+            <OutlineOutputView output={output} />
+          ) : task === "prompt-generator" ? (
+            <PromptOutputView output={output} />
+          ) : (
+            <GenericOutputView output={output} label={meta.outputLabel} />
+          )}
         </div>
 
         <aside className="space-y-4">
