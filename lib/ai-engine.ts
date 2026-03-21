@@ -1,71 +1,92 @@
 import { getOpenAIClient } from "@/lib/openai-server";
 
+type AIEngineType =
+  | "email-writer"
+  | "blog-outline"
+  | "prompt-generator"
+  | "general";
+
 type AIConfig = {
-  task?: string;
+  engineType?: AIEngineType;
   tone?: string;
-  outputType?: string;
   audience?: string;
   length?: string;
-  extraInstructions?: string;
+  purpose?: string;
 };
 
-function buildSystemPrompt(config: AIConfig) {
-  const task = String(config.task || "text-generation").toLowerCase();
-  const tone = String(config.tone || "professional");
-  const audience = String(config.audience || "");
-  const length = String(config.length || "");
-  const extra = String(config.extraInstructions || "");
+function buildSystemPrompt(input: string, config: AIConfig) {
+  const engine = config.engineType || "general";
 
-  let prompt = "You are a high-quality AI assistant.";
+  switch (engine) {
+    case "email-writer":
+      return `
+You are an expert email writing assistant.
 
-  switch (task) {
-    case "rewrite":
-      prompt += " Rewrite the user's text clearly while preserving meaning.";
-      break;
+Write a clear, professional, and practical email.
 
-    case "summarization":
-      prompt += " Summarize the user's text clearly and concisely.";
-      break;
+Rules:
+- Direct and structured
+- No fluff
+- Ready to send
+- Use subject + body format
 
-    case "email":
-      prompt += " Write a professional and practical email.";
-      break;
+User request:
+${input}
+`;
 
-    case "outline":
-      prompt += " Create a structured outline with headings.";
-      break;
+    case "blog-outline":
+      return `
+You are a professional content strategist.
+
+Create a structured blog outline.
+
+Rules:
+- Use clear H2 and H3 sections
+- Logical flow
+- SEO-friendly headings
+- No unnecessary text
+
+Topic:
+${input}
+`;
+
+    case "prompt-generator":
+      return `
+You are an expert in crafting high-quality AI prompts.
+
+Convert the user's idea into a powerful, optimized prompt.
+
+Rules:
+- Clear instructions
+- Include context
+- Include output format
+- Ready to paste into AI tools
+
+User idea:
+${input}
+`;
 
     default:
-      prompt += " Generate high-quality text output.";
+      return `
+You are a helpful AI assistant.
+
+Provide a high-quality, clear, and useful response.
+
+User input:
+${input}
+`;
   }
-
-  prompt += ` Use a ${tone} tone.`;
-
-  if (audience) {
-    prompt += ` Target audience: ${audience}.`;
-  }
-
-  if (length) {
-    prompt += ` Output length: ${length}.`;
-  }
-
-  if (extra) {
-    prompt += ` Additional instructions: ${extra}`;
-  }
-
-  return prompt;
 }
 
 export async function runAITool(input: string, config: AIConfig) {
   const openai = getOpenAIClient();
 
-  const systemPrompt = buildSystemPrompt(config);
+  const systemPrompt = buildSystemPrompt(input, config);
 
   const response = await openai.responses.create({
     model: "gpt-4.1-mini",
     input: [
       { role: "system", content: systemPrompt },
-      { role: "user", content: input },
     ],
   });
 

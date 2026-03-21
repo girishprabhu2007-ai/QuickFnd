@@ -212,7 +212,12 @@ const STATIC_AI_TOOLS: PublicContentItem[] = [
     description: "Generate better prompts for AI tools based on your goal and desired style.",
     related_slugs: ["ai-email-writer", "ai-blog-outline-generator"],
     engine_type: "ai-prompt-generator",
-    engine_config: {},
+    engine_config: {
+      task: "prompt-generator",
+      tone: "clear",
+      outputType: "prompt",
+      title: "AI Prompt Generator",
+    },
   },
   {
     name: "AI Email Writer",
@@ -220,7 +225,13 @@ const STATIC_AI_TOOLS: PublicContentItem[] = [
     description: "Generate polished emails with AI using your purpose, recipient, and tone.",
     related_slugs: ["ai-prompt-generator", "ai-blog-outline-generator"],
     engine_type: "ai-email-writer",
-    engine_config: {},
+    engine_config: {
+      task: "email",
+      tone: "professional",
+      outputType: "email",
+      title: "AI Email Writer",
+      toneOptions: ["professional", "friendly", "persuasive"],
+    },
   },
   {
     name: "AI Blog Outline Generator",
@@ -228,7 +239,12 @@ const STATIC_AI_TOOLS: PublicContentItem[] = [
     description: "Create structured blog outlines with AI for a target audience and topic.",
     related_slugs: ["ai-email-writer", "ai-prompt-generator"],
     engine_type: "ai-blog-outline-generator",
-    engine_config: {},
+    engine_config: {
+      task: "outline",
+      tone: "clear",
+      outputType: "outline",
+      title: "AI Blog Outline Generator",
+    },
   },
 ];
 

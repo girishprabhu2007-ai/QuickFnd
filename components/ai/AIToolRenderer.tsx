@@ -31,6 +31,21 @@ type TaskMeta = {
   checklist: string[];
 };
 
+const GENERIC_TASK_VALUES = new Set([
+  "",
+  "text-generation",
+  "text generation",
+  "general",
+  "default",
+]);
+
+const GENERIC_OUTPUT_VALUES = new Set([
+  "",
+  "text",
+  "general",
+  "default",
+]);
+
 function inputClass() {
   return "w-full rounded-xl border border-q-border bg-q-bg p-3 text-q-text outline-none placeholder:text-q-muted";
 }
@@ -55,12 +70,73 @@ function successHintClass() {
   return "rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900";
 }
 
+function normalize(value: unknown) {
+  return String(value || "").trim().toLowerCase();
+}
+
 function toConfig(value: unknown): AIToolConfig {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return {};
   }
 
   return value as AIToolConfig;
+}
+
+function inferTaskFromItem(item: PublicContentItem, config: AIToolConfig) {
+  const configuredTask = normalize(config.task);
+
+  if (configuredTask && !GENERIC_TASK_VALUES.has(configuredTask)) {
+    return configuredTask;
+  }
+
+  const slug = String(item.slug || "").trim().toLowerCase();
+  const name = String(item.name || "").trim().toLowerCase();
+
+  if (slug.includes("email") || name.includes("email")) {
+    return "email";
+  }
+
+  if (slug.includes("outline") || name.includes("outline")) {
+    return "outline";
+  }
+
+  if (slug.includes("prompt") || name.includes("prompt")) {
+    return "prompt-generator";
+  }
+
+  if (slug.includes("rewrite") || name.includes("rewrite")) {
+    return "rewrite";
+  }
+
+  if (slug.includes("summary") || slug.includes("summarize") || name.includes("summary")) {
+    return "summarization";
+  }
+
+  return "text-generation";
+}
+
+function inferOutputTypeFromItem(item: PublicContentItem, config: AIToolConfig, task: string) {
+  const configuredOutputType = normalize(config.outputType);
+
+  if (configuredOutputType && !GENERIC_OUTPUT_VALUES.has(configuredOutputType)) {
+    return configuredOutputType;
+  }
+
+  const slug = String(item.slug || "").trim().toLowerCase();
+
+  if (task === "email" || slug.includes("email")) {
+    return "email";
+  }
+
+  if (task === "outline" || slug.includes("outline")) {
+    return "outline";
+  }
+
+  if (task === "prompt-generator" || slug.includes("prompt")) {
+    return "prompt";
+  }
+
+  return "text";
 }
 
 function getTaskMeta(task: string, itemName: string): TaskMeta {
@@ -114,6 +190,32 @@ function getTaskMeta(task: string, itemName: string): TaskMeta {
           "Name the topic clearly",
           "Mention target audience",
           "Mention desired depth or structure",
+        ],
+      };
+
+    case "prompt-generator":
+      return {
+        title: itemName,
+        inputLabel: "What do you need the prompt to achieve?",
+        inputPlaceholder:
+          "Example: Create a strong ChatGPT prompt to generate a weekly content calendar for a fitness brand.",
+        actionLabel: "Generate Prompt",
+        outputLabel: "Generated prompt",
+        audiencePlaceholder: "ChatGPT, Claude, Midjourney, general AI user",
+        supportsAudience: true,
+        supportsLength: true,
+        lengthOptions: ["short", "medium", "detailed"],
+        helperText:
+          "Best for turning rough ideas into stronger, ready-to-use prompts for AI writing, coding, image, and research workflows.",
+        examples: [
+          "Prompt for a product description generator",
+          "Prompt for an SEO article brief",
+          "Prompt for a Midjourney image concept",
+        ],
+        checklist: [
+          "Describe the end goal clearly",
+          "Mention the target AI or audience",
+          "Include output format requirements",
         ],
       };
 
@@ -230,6 +332,16 @@ function buildPromptQualityHint(
     return "Your outline prompt should produce a more targeted structure.";
   }
 
+  if (task === "prompt-generator") {
+    if (inputLength < 25) {
+      return "Describe the exact result you want so the generated prompt is more useful.";
+    }
+    if (!hasExtra) {
+      return "Add extra instructions if you want the prompt to enforce format, tone, or constraints.";
+    }
+    return "This should generate a stronger, more usable AI prompt.";
+  }
+
   if (task === "summarization") {
     if (inputLength < 120) {
       return "Summaries work better with enough source text. Try pasting a fuller passage.";
@@ -267,20 +379,32 @@ async function copyText(value: string) {
 
 export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
   const config = toConfig(item.engine_config);
-  const task = String(config.task || "text-generation").trim().toLowerCase();
-  const outputType = String(config.outputType || "text").trim().toLowerCase();
+  const task = inferTaskFromItem(item, config);
+  const outputType = inferOutputTypeFromItem(item, config, task);
 
   const toneOptions = useMemo(() => {
     const fromConfig = Array.isArray(config.toneOptions)
-      ? config.toneOptions.map((item) => String(item || "").trim()).filter(Boolean)
+      ? config.toneOptions.map((entry) => String(entry || "").trim()).filter(Boolean)
       : [];
 
     if (fromConfig.length > 0) {
       return fromConfig;
     }
 
+    if (task === "email") {
+      return ["professional", "friendly", "persuasive"];
+    }
+
+    if (task === "outline") {
+      return ["clear", "professional", "educational"];
+    }
+
+    if (task === "prompt-generator") {
+      return ["clear", "precise", "creative"];
+    }
+
     return ["professional", "friendly", "clear", "persuasive", "casual"];
-  }, [config.toneOptions]);
+  }, [config.toneOptions, task]);
 
   const meta = getTaskMeta(task, item.name);
 
@@ -502,8 +626,8 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
           <div className={panelClass()}>
             <div className="text-xs uppercase tracking-wide text-q-muted">Better results checklist</div>
             <ul className="mt-3 space-y-2 text-sm leading-6 text-q-muted">
-              {meta.checklist.map((item, index) => (
-                <li key={`${item}-${index}`}>• {item}</li>
+              {meta.checklist.map((entry, index) => (
+                <li key={`${entry}-${index}`}>• {entry}</li>
               ))}
             </ul>
           </div>
