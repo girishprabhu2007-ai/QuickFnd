@@ -26,6 +26,47 @@ function normalizeItem(item: Record<string, unknown>): PublicContentItem {
   };
 }
 
+function normalize(value: string | null | undefined) {
+  return String(value || "").trim().toLowerCase();
+}
+
+const GENERIC_TASK_VALUES = new Set([
+  "",
+  "text-generation",
+  "general",
+  "default",
+]);
+
+function isGenericAITool(item: PublicContentItem) {
+  if (!item.engine_config) return true;
+
+  const config = item.engine_config as Record<string, unknown>;
+  const task = normalize(config.task as string);
+
+  return GENERIC_TASK_VALUES.has(task);
+}
+
+function mergeItemWithStatic(
+  table: PublicTable,
+  dbItem: PublicContentItem
+): PublicContentItem {
+  if (table !== "ai_tools") return dbItem;
+
+  const staticItem = getStaticItem(table, dbItem.slug);
+  if (!staticItem) return dbItem;
+
+  // 🔥 CRITICAL LOGIC
+  if (isGenericAITool(dbItem)) {
+    return {
+      ...dbItem,
+      engine_type: staticItem.engine_type,
+      engine_config: staticItem.engine_config,
+    };
+  }
+
+  return dbItem;
+}
+
 function uniqueBySlug(items: PublicContentItem[]) {
   const seen = new Set<string>();
   const output: PublicContentItem[] = [];
@@ -45,7 +86,12 @@ function mergeWithStaticItems(
   dbItems: PublicContentItem[]
 ): PublicContentItem[] {
   const staticItems = getStaticItems(table);
-  return uniqueBySlug([...dbItems, ...staticItems]);
+
+  const mergedDb = dbItems.map((item) =>
+    mergeItemWithStatic(table, item)
+  );
+
+  return uniqueBySlug([...mergedDb, ...staticItems]);
 }
 
 async function safeSelectAll(table: PublicTable) {
@@ -106,7 +152,10 @@ export async function getContentItem(
   const { data, error } = await safeSelectBySlug(table, slug);
 
   if (!error && data) {
-    return normalizeItem(data as Record<string, unknown>);
+    return mergeItemWithStatic(
+      table,
+      normalizeItem(data as Record<string, unknown>)
+    );
   }
 
   if (error && (error as { code?: string }).code !== "PGRST116") {
@@ -153,7 +202,10 @@ export async function getRelatedContent(
     ? data.map((item) => normalizeItem(item as Record<string, unknown>))
     : [];
 
-  const found = new Map(dbItems.map((item) => [item.slug, item]));
+  const found = new Map(
+    dbItems.map((item) => [item.slug, mergeItemWithStatic(table, item)])
+  );
+
   const ordered: PublicContentItem[] = [];
 
   for (const slug of cleaned) {
