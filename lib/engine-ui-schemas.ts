@@ -304,52 +304,6 @@ export function getEngineUISchema(
     };
   }
 
-  if (family === "text-transformer") {
-    const modes = asStringArray(config.modes);
-    const options: EngineUIFieldOption[] = [];
-
-    if (modes.includes("lowercase")) {
-      options.push({ label: "Lowercase", value: "lowercase" });
-    }
-    if (modes.includes("uppercase")) {
-      options.push({ label: "Uppercase", value: "uppercase" });
-    }
-    if (modes.includes("titlecase")) {
-      options.push({ label: "Title Case", value: "titlecase" });
-    }
-    if (modes.includes("slug")) {
-      options.push({ label: "Slug", value: "slug" });
-    }
-    if (modes.includes("trim")) {
-      options.push({ label: "Trim Spaces", value: "trim" });
-    }
-
-    const fields: EngineUIField[] = [
-      {
-        key: "input",
-        type: "textarea",
-        label: "Text",
-        placeholder: "Enter text to transform",
-        rows: 6,
-      },
-    ];
-
-    if (options.length > 1) {
-      fields.push(
-        selectField("mode", "Transformation", options)
-      );
-    }
-
-    return {
-      fields,
-      action: {
-        label: "Transform Text",
-        copyLabel: "Copy Output",
-      },
-      outputPlaceholder: "Transformed text will appear here",
-    };
-  }
-
   if (family === "text-formatter") {
     const mode = String(config.mode || "json").trim().toLowerCase();
 
@@ -424,7 +378,9 @@ export function getEngineUISchema(
         copyLabel: "Copy Matches",
       },
       outputPlaceholder:
-        mode === "extract" ? "Extracted matches will appear here" : "Regex result will appear here",
+        mode === "extract"
+          ? "Extracted matches will appear here"
+          : "Regex result will appear here",
     };
   }
 

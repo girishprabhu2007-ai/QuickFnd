@@ -829,9 +829,11 @@ function TextTransformer({
   config: Record<string, unknown>;
 }) {
   const [input, setInput] = useState("");
+  const [output, setOutput] = useState<Record<string, string>>({});
+
   const modes = asStringArray(config.modes, ["lowercase", "uppercase", "titlecase", "slug"]);
 
-  const output = useMemo(() => {
+  function runTransform() {
     const result: Record<string, string> = {};
 
     if (modes.includes("lowercase")) result.lowercase = input.toLowerCase();
@@ -840,8 +842,8 @@ function TextTransformer({
     if (modes.includes("slug")) result.slug = slugify(input);
     if (modes.includes("trim")) result.trim = input.trim();
 
-    return result;
-  }, [input, modes]);
+    setOutput(result);
+  }
 
   return (
     <Card title={title}>
@@ -852,6 +854,15 @@ function TextTransformer({
           placeholder="Enter text to transform"
           className={textareaClass("min-h-[160px]")}
         />
+
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={runTransform}
+            className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover"
+          >
+            Transform Text
+          </button>
+        </div>
 
         <div className="grid gap-4">
           {Object.entries(output).map(([key, value]) => (
