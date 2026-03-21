@@ -13,85 +13,26 @@ function normalize(value: string | null | undefined) {
 }
 
 /**
- * Canonical public representatives for duplicated tool families.
- * Only the canonical slug should remain publicly visible.
- */
-const CANONICAL_TOOL_FAMILIES: Record<string, string> = {
-  "base64-family": "base64-encoder",
-  "url-family": "url-encoder",
-  "text-case-family": "text-case-converter",
-  "slug-family": "slug-generator",
-  "json-family": "json-formatter",
-  "binary-family": "text-to-binary",
-  "color-family": "hex-to-rgb",
-};
-
-/**
  * Generic / placeholder engines are not considered a working public engine.
  */
 const PLACEHOLDER_ENGINE_TYPES = new Set<string>(["", "auto", "generic-directory"]);
 
 /**
- * Explicitly hidden tools even if they technically have an engine.
+ * Strict explicit suppression only.
+ *
+ * IMPORTANT:
+ * - No broad family-pattern hiding.
+ * - Only known duplicate / low-value public slugs go here.
+ * - This keeps counts stable and behavior predictable.
  */
-const HARD_HIDDEN_SLUGS = new Set<string>(["text-transformer"]);
+const HIDDEN_PUBLIC_TOOL_SLUGS = new Set<string>([
+  "base64-decoder",
+  "url-decoder",
+  "text-transformer",
+]);
 
-function detectFamily(slug: string): string | null {
-  if (!slug) return null;
-
-  if (slug.includes("base64")) return "base64-family";
-
-  if (
-    slug.includes("url-encoder") ||
-    slug.includes("url-decoder") ||
-    (slug.includes("url") && (slug.includes("encode") || slug.includes("decode")))
-  ) {
-    return "url-family";
-  }
-
-  if (
-    slug.includes("text-case") ||
-    slug.includes("case-style") ||
-    slug.includes("case-conversion") ||
-    slug.includes("text-transform")
-  ) {
-    return "text-case-family";
-  }
-
-  if (slug.includes("slug")) return "slug-family";
-
-  if (
-    slug.includes("json-formatter") ||
-    slug.includes("json-pretty") ||
-    slug.includes("json-minify")
-  ) {
-    return "json-family";
-  }
-
-  if (slug.includes("text-to-binary") || slug.includes("binary-to-text")) {
-    return "binary-family";
-  }
-
-  if (slug.includes("hex-to-rgb") || slug.includes("rgb-to-hex")) {
-    return "color-family";
-  }
-
-  return null;
-}
-
-function isCanonicalFamilyMismatch(slug: string) {
-  const family = detectFamily(slug);
-
-  if (!family) {
-    return false;
-  }
-
-  const canonicalSlug = CANONICAL_TOOL_FAMILIES[family];
-  return Boolean(canonicalSlug && slug !== canonicalSlug);
-}
-
-function isNonPublicDuplicate(slug: string) {
-  return HARD_HIDDEN_SLUGS.has(slug) || isCanonicalFamilyMismatch(slug);
+function isExplicitlyHidden(slug: string) {
+  return HIDDEN_PUBLIC_TOOL_SLUGS.has(slug);
 }
 
 export function resolveToolEngineType(item: ToolVisibilityItem): string {
@@ -105,7 +46,11 @@ export function isToolPlaceholder(item: ToolVisibilityItem): boolean {
     return true;
   }
 
-  if (isNonPublicDuplicate(slug)) {
+  /**
+   * Explicitly hidden tools are inventory-policy exclusions,
+   * not admin placeholders.
+   */
+  if (isExplicitlyHidden(slug)) {
     return false;
   }
 
@@ -120,7 +65,7 @@ export function isToolPubliclyVisible(item: ToolVisibilityItem): boolean {
     return false;
   }
 
-  if (isNonPublicDuplicate(slug)) {
+  if (isExplicitlyHidden(slug)) {
     return false;
   }
 
