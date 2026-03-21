@@ -8,86 +8,156 @@ type AIEngineType =
 
 type AIConfig = {
   engineType?: AIEngineType;
+  task?: string;
   tone?: string;
   audience?: string;
   length?: string;
   purpose?: string;
+  outputType?: string;
 };
 
-function buildSystemPrompt(input: string, config: AIConfig) {
-  const engine = config.engineType || "general";
+function normalize(value: unknown) {
+  return String(value || "").trim().toLowerCase();
+}
 
-  switch (engine) {
-    case "email-writer":
-      return `
+function resolveEngineType(config: AIConfig): AIEngineType {
+  const explicitEngine = normalize(config.engineType);
+  const task = normalize(config.task);
+
+  if (explicitEngine === "email-writer") return "email-writer";
+  if (explicitEngine === "blog-outline") return "blog-outline";
+  if (explicitEngine === "prompt-generator") return "prompt-generator";
+
+  if (task === "email") return "email-writer";
+  if (task === "outline") return "blog-outline";
+  if (task === "prompt-generator") return "prompt-generator";
+
+  return "general";
+}
+
+function buildEmailPrompt(input: string, config: AIConfig) {
+  const tone = String(config.tone || "professional").trim();
+  const audience = String(config.audience || "").trim();
+  const length = String(config.length || "medium").trim();
+
+  return `
 You are an expert email writing assistant.
 
-Write a clear, professional, and practical email.
+Write a clear, practical, polished email.
 
-Rules:
-- Direct and structured
-- No fluff
-- Ready to send
-- Use subject + body format
+Requirements:
+- Use exactly this structure:
+Subject: <subject line>
+
+Body:
+<email body>
+- The subject must be concise and relevant.
+- The body must be ready to send.
+- Do not include explanations before or after the email.
+- Do not include markdown fences.
+- Keep the tone ${tone}.
+- Target audience: ${audience || "general recipient"}.
+- Length: ${length}.
 
 User request:
 ${input}
-`;
+`.trim();
+}
 
-    case "blog-outline":
-      return `
+function buildOutlinePrompt(input: string, config: AIConfig) {
+  const tone = String(config.tone || "clear").trim();
+  const audience = String(config.audience || "").trim();
+  const length = String(config.length || "medium").trim();
+
+  return `
 You are a professional content strategist.
 
-Create a structured blog outline.
+Create a structured outline.
 
-Rules:
-- Use clear H2 and H3 sections
-- Logical flow
-- SEO-friendly headings
-- No unnecessary text
+Requirements:
+- Start with a title line.
+- Then provide a clean hierarchical outline.
+- Use H2 and H3 style labels in plain text.
+- Keep the structure logical and useful.
+- No intro commentary.
+- No markdown fences.
+- Tone: ${tone}.
+- Target audience: ${audience || "general audience"}.
+- Depth: ${length}.
 
-Topic:
+User topic and context:
 ${input}
-`;
+`.trim();
+}
 
-    case "prompt-generator":
-      return `
+function buildPromptGeneratorPrompt(input: string, config: AIConfig) {
+  const tone = String(config.tone || "clear").trim();
+  const audience = String(config.audience || "").trim();
+  const length = String(config.length || "medium").trim();
+
+  return `
 You are an expert in crafting high-quality AI prompts.
 
-Convert the user's idea into a powerful, optimized prompt.
+Convert the user's idea into one strong, optimized prompt.
 
-Rules:
-- Clear instructions
-- Include context
-- Include output format
-- Ready to paste into AI tools
+Requirements:
+- Return only the final prompt.
+- No explanation, no notes, no headings.
+- The prompt must be directly usable in another AI tool.
+- Include context, constraints, and output expectations where relevant.
+- Tone/style goal: ${tone}.
+- Intended audience or target system: ${audience || "general AI use"}.
+- Detail level: ${length}.
 
 User idea:
 ${input}
-`;
+`.trim();
+}
 
-    default:
-      return `
-You are a helpful AI assistant.
+function buildGeneralPrompt(input: string, config: AIConfig) {
+  const tone = String(config.tone || "professional").trim();
+  const audience = String(config.audience || "").trim();
+  const length = String(config.length || "medium").trim();
 
-Provide a high-quality, clear, and useful response.
+  return `
+You are a high-quality AI assistant.
+
+Provide a useful, clear, well-structured response.
+
+Requirements:
+- Be direct and user-ready.
+- Do not add unnecessary filler.
+- Keep the tone ${tone}.
+- Target audience: ${audience || "general audience"}.
+- Length: ${length}.
 
 User input:
 ${input}
-`;
+`.trim();
+}
+
+function buildSystemPrompt(input: string, config: AIConfig) {
+  const engine = resolveEngineType(config);
+
+  switch (engine) {
+    case "email-writer":
+      return buildEmailPrompt(input, config);
+    case "blog-outline":
+      return buildOutlinePrompt(input, config);
+    case "prompt-generator":
+      return buildPromptGeneratorPrompt(input, config);
+    default:
+      return buildGeneralPrompt(input, config);
   }
 }
 
 export async function runAITool(input: string, config: AIConfig) {
   const openai = getOpenAIClient();
-
   const systemPrompt = buildSystemPrompt(input, config);
 
   const response = await openai.responses.create({
     model: "gpt-4.1-mini",
-    input: [
-      { role: "system", content: systemPrompt },
-    ],
+    input: [{ role: "system", content: systemPrompt }],
   });
 
   return response.output_text || "";
