@@ -4,7 +4,16 @@ import Link from "next/link";
 import BuiltInCalculatorClient from "@/components/calculators/BuiltInCalculatorClient";
 import JsonLd from "@/components/seo/JsonLd";
 import PublicDetailPage from "@/components/seo/PublicDetailPage";
-import { getContentItem, getRelatedContent, getCalculators } from "@/lib/db";
+import {
+  RelatedToolsSection,
+  TopicLinksSection,
+} from "@/components/seo/InternalLinkSections";
+import {
+  getContentItem,
+  getCalculators,
+  getTools,
+  getAITools,
+} from "@/lib/db";
 import { buildMetaDescription, buildPageTitle } from "@/lib/content-pages";
 import {
   buildBreadcrumbSchema,
@@ -12,10 +21,14 @@ import {
   buildSoftwareSchema,
 } from "@/lib/seo-content";
 import { getSiteUrl } from "@/lib/site-url";
+import { isContentPubliclyVisible } from "@/lib/public-content-visibility";
 import {
-  isContentPubliclyVisible,
-  filterVisibleContent,
-} from "@/lib/public-content-visibility";
+  getRelatedVisibleCalculators,
+  getCalculatorTopicLinks,
+  getRelatedTopics,
+  getTopicBySlug,
+  dedupeTopicLinkItems,
+} from "@/lib/internal-linking";
 import type { PublicContentItem } from "@/lib/content-pages";
 
 type Props = {
@@ -29,7 +42,12 @@ function CalculatorFallback({
   suggestions,
 }: {
   item: PublicContentItem;
-  suggestions: PublicContentItem[];
+  suggestions: {
+    name: string;
+    slug: string;
+    href: string;
+    description: string;
+  }[];
 }) {
   return (
     <main className="min-h-screen bg-q-bg px-4 py-10 text-q-text">
@@ -44,10 +62,11 @@ function CalculatorFallback({
             {suggestions.map((s) => (
               <Link
                 key={s.slug}
-                href={`/calculators/${s.slug}`}
-                className="rounded-xl border border-q-border bg-q-bg p-4"
+                href={s.href}
+                className="rounded-xl border border-q-border bg-q-bg p-4 transition hover:bg-q-card-hover"
               >
-                {s.name}
+                <div className="font-medium text-q-text">{s.name}</div>
+                <div className="mt-1 text-sm text-q-muted">/{s.slug}</div>
               </Link>
             ))}
           </div>
@@ -113,19 +132,49 @@ export default async function CalculatorPage({ params }: Props) {
 
   if (!item) notFound();
 
+  const [allCalculators, allTools, aiTools] = await Promise.all([
+    getCalculators(),
+    getTools(),
+    getAITools(),
+  ]);
+
   if (!isContentPubliclyVisible(item)) {
-    const all = await getCalculators();
-    const suggestions = filterVisibleContent(all)
-      .filter((entry) => entry.slug !== item.slug)
-      .slice(0, 6);
+    const suggestions = getRelatedVisibleCalculators(
+      item,
+      allCalculators,
+      allTools,
+      aiTools,
+      6
+    );
 
     return <CalculatorFallback item={item} suggestions={suggestions} />;
   }
 
-  const related = await getRelatedContent(
-    "calculators",
-    item.related_slugs,
-    item.slug
+  const relatedCalculators = getRelatedVisibleCalculators(
+    item,
+    allCalculators,
+    allTools,
+    aiTools,
+    6
+  );
+
+  const topicLinks = getCalculatorTopicLinks(item, allTools, allCalculators, aiTools);
+  const primaryTopic = getTopicBySlug(item.slug, allTools, allCalculators, aiTools);
+  const nearbyTopics = primaryTopic
+    ? getRelatedTopics(primaryTopic.key, allTools, allCalculators, aiTools, 3)
+    : [];
+
+  const topicLinkKeys = new Set(topicLinks.map((topic) => topic.key));
+  const relatedTopics = dedupeTopicLinkItems(
+    nearbyTopics.filter((topic) => !topicLinkKeys.has(topic.key))
+  );
+
+  const secondaryContent = (
+    <div className="space-y-8">
+      <TopicLinksSection title="Explore This Topic" items={topicLinks} />
+      <RelatedToolsSection title="Related Calculators" items={relatedCalculators} />
+      <TopicLinksSection title="Nearby Topics" items={relatedTopics} />
+    </div>
   );
 
   return (
@@ -146,8 +195,10 @@ export default async function CalculatorPage({ params }: Props) {
       <PublicDetailPage
         table="calculators"
         item={item}
-        relatedItems={filterVisibleContent(related)}
+        relatedItems={[]}
         primaryContent={<BuiltInCalculatorClient item={item} />}
+        secondaryContent={secondaryContent}
+        showRelatedItemsSection={false}
       />
     </>
   );

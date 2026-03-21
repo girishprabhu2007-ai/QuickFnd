@@ -869,19 +869,23 @@ function TextTransformer({
 function SnippetManager({ title }: { title: string }) {
   const [snippetTitle, setSnippetTitle] = useState("");
   const [code, setCode] = useState("");
-  const [snippets, setSnippets] = useState<Snippet[]>([]);
-
-  useEffect(() => {
+  const [snippets, setSnippets] = useState<Snippet[]>(() => {
     try {
-      const stored = window.localStorage.getItem("quickfnd-snippets");
-      if (stored) {
-        const parsed = JSON.parse(stored) as Snippet[];
-        setSnippets(Array.isArray(parsed) ? parsed : []);
+      if (typeof window === "undefined") {
+        return [];
       }
+
+      const stored = window.localStorage.getItem("quickfnd-snippets");
+      if (!stored) {
+        return [];
+      }
+
+      const parsed = JSON.parse(stored) as Snippet[];
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
-      // ignore storage issues
+      return [];
     }
-  }, []);
+  });
 
   useEffect(() => {
     try {

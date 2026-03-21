@@ -12,6 +12,47 @@ type Props = {
   toolName: string;
 };
 
+type PasswordLikeResult = {
+  score?: unknown;
+  label?: unknown;
+};
+
+function isPasswordLikeResult(value: unknown): value is PasswordLikeResult {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+  return "score" in record && "label" in record;
+}
+
+function normalizeResult(raw: unknown): ToolEngineRunResult {
+  if (!raw || typeof raw !== "object") {
+    return { output: "" };
+  }
+
+  if (isPasswordLikeResult(raw)) {
+    const label = String(raw.label || "");
+    const score = raw.score;
+
+    return {
+      output: label,
+      meta: [
+        { label: "Strength", value: label },
+        {
+          label: "Score",
+          value:
+            typeof score === "number" || typeof score === "string"
+              ? score
+              : "",
+        },
+      ],
+    };
+  }
+
+  return raw as ToolEngineRunResult;
+}
+
 export default function DynamicToolEngineClient({
   engineType,
   toolName,
@@ -42,40 +83,28 @@ export default function DynamicToolEngineClient({
   }, [engineType]);
 
   const title = useMemo(() => {
-    return engine?.title || toolName;
+    return engine?.title || engine?.name || toolName;
   }, [engine, toolName]);
 
-  function normalizeResult(raw: any): ToolEngineRunResult {
-    if (!raw) return { output: "" };
-
-    // password strength special handling
-    if ("score" in raw && "label" in raw) {
-      return {
-        output: raw.label,
-        meta: [
-          { label: "Strength", value: raw.label },
-          { label: "Score", value: raw.score },
-        ],
-      };
-    }
-
-    return raw;
-  }
-
-  function handleRun() {
-    if (!engine) return;
-
-    const raw = engine.run(input);
-    const normalized = normalizeResult(raw);
-    setResult(normalized);
-  }
-
   async function copyOutput() {
-    if (!result?.output) return;
+    if (!result?.output) {
+      return;
+    }
 
     try {
       await navigator.clipboard.writeText(result.output);
-    } catch {}
+    } catch {
+      // ignore clipboard failures
+    }
+  }
+
+  function handleRun() {
+    if (!engine) {
+      return;
+    }
+
+    const rawResult = engine.run(input);
+    setResult(normalizeResult(rawResult));
   }
 
   if (engineLoading) {
@@ -102,19 +131,27 @@ export default function DynamicToolEngineClient({
     <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
       <h2 className="text-2xl font-semibold text-q-text">{title}</h2>
 
-      <p className="mt-3 text-sm text-q-muted">{engine.description}</p>
+      <p className="mt-3 text-sm leading-7 text-q-muted">
+        {engine.description}
+      </p>
 
-      <textarea
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        placeholder={engine.inputPlaceholder}
-        className="mt-4 w-full rounded-2xl border border-q-border p-4"
-      />
+      <div className="mt-6">
+        <label className="mb-2 block text-sm font-medium text-q-text">
+          {engine.inputLabel}
+        </label>
 
-      <div className="mt-4 flex gap-3">
+        <textarea
+          value={input}
+          onChange={(event) => setInput(event.target.value)}
+          placeholder={engine.inputPlaceholder}
+          className="min-h-[180px] w-full rounded-2xl border border-q-border bg-q-bg p-4 text-q-text outline-none placeholder:text-q-muted"
+        />
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-3">
         <button
           onClick={handleRun}
-          className="rounded-xl bg-q-primary px-4 py-2 text-white"
+          className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white transition hover:bg-q-primary-hover"
         >
           {engine.actionLabel}
         </button>
@@ -122,27 +159,46 @@ export default function DynamicToolEngineClient({
         <button
           onClick={copyOutput}
           disabled={!result?.output}
-          className="rounded-xl border px-4 py-2"
+          className="rounded-xl border border-q-border bg-q-bg px-4 py-2 font-medium text-q-text transition hover:bg-q-card-hover disabled:opacity-50"
         >
-          Copy
+          Copy Output
         </button>
       </div>
 
-      {result?.meta && (
-        <div className="mt-4 grid gap-3">
-          {result.meta.map((m) => (
-            <div key={m.label}>
-              {m.label}: {m.value}
+      {result?.error ? (
+        <div className="mt-5 rounded-2xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">
+          {result.error}
+        </div>
+      ) : null}
+
+      {result?.meta && result.meta.length > 0 ? (
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {result.meta.map((item) => (
+            <div
+              key={`${item.label}-${String(item.value)}`}
+              className="rounded-xl border border-q-border bg-q-bg p-4"
+            >
+              <div className="text-sm text-q-muted">{item.label}</div>
+              <div className="mt-2 text-lg font-semibold text-q-text">
+                {item.value}
+              </div>
             </div>
           ))}
         </div>
-      )}
+      ) : null}
 
-      <textarea
-        readOnly
-        value={result?.output || ""}
-        className="mt-4 w-full rounded-2xl border p-4"
-      />
+      <div className="mt-6">
+        <label className="mb-2 block text-sm font-medium text-q-text">
+          {engine.outputLabel}
+        </label>
+
+        <textarea
+          readOnly
+          value={result?.output || ""}
+          placeholder="Output will appear here"
+          className="min-h-[180px] w-full rounded-2xl border border-q-border bg-q-bg p-4 text-q-text outline-none placeholder:text-q-muted"
+        />
+      </div>
     </section>
   );
 }

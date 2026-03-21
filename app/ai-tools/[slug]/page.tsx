@@ -10,7 +10,6 @@ import {
 } from "@/components/seo/InternalLinkSections";
 import {
   getContentItem,
-  getRelatedContent,
   getAITools,
   getTools,
   getCalculators,
@@ -22,15 +21,13 @@ import {
   buildSoftwareSchema,
 } from "@/lib/seo-content";
 import { getSiteUrl } from "@/lib/site-url";
+import { isContentPubliclyVisible } from "@/lib/public-content-visibility";
 import {
-  isContentPubliclyVisible,
-  filterVisibleContent,
-} from "@/lib/public-content-visibility";
-import {
-  getRelatedVisibleTools,
-  getToolTopicLinks,
+  getRelatedVisibleAITools,
+  getAIToolTopicLinks,
   getRelatedTopics,
-  getTopicByToolSlug,
+  getTopicBySlug,
+  dedupeTopicLinkItems,
 } from "@/lib/internal-linking";
 import type { PublicContentItem } from "@/lib/content-pages";
 
@@ -45,7 +42,12 @@ function AIToolFallback({
   suggestions,
 }: {
   item: PublicContentItem;
-  suggestions: PublicContentItem[];
+  suggestions: {
+    name: string;
+    slug: string;
+    href: string;
+    description: string;
+  }[];
 }) {
   return (
     <main className="min-h-screen bg-q-bg px-4 py-10 text-q-text">
@@ -60,7 +62,7 @@ function AIToolFallback({
             {suggestions.map((s) => (
               <Link
                 key={s.slug}
-                href={`/ai-tools/${s.slug}`}
+                href={s.href}
                 className="rounded-xl border border-q-border bg-q-bg p-4 transition hover:bg-q-card-hover"
               >
                 <div className="font-medium text-q-text">{s.name}</div>
@@ -132,41 +134,47 @@ export default async function AIToolPage({ params }: Props) {
     notFound();
   }
 
+  const [allAITools, allTools, calculators] = await Promise.all([
+    getAITools(),
+    getTools(),
+    getCalculators(),
+  ]);
+
   if (!isContentPubliclyVisible(item)) {
-    const all = await getAITools();
-    const suggestions = filterVisibleContent(all)
-      .filter((entry) => entry.slug !== item.slug)
-      .slice(0, 6);
+    const suggestions = getRelatedVisibleAITools(
+      item,
+      allAITools,
+      allTools,
+      calculators,
+      6
+    );
 
     return <AIToolFallback item={item} suggestions={suggestions} />;
   }
 
-  const [allTools, calculators, aiTools, related] = await Promise.all([
-    getTools(),
-    getCalculators(),
-    getAITools(),
-    getRelatedContent("ai_tools", item.related_slugs, item.slug),
-  ]);
-
-  const smartRelatedTools = getRelatedVisibleTools(
+  const relatedAITools = getRelatedVisibleAITools(
     item,
+    allAITools,
     allTools,
     calculators,
-    aiTools,
     6
   );
 
-  const topicLinks = getToolTopicLinks(item, allTools, calculators, aiTools);
-
-  const primaryTopic = getTopicByToolSlug(item.slug, allTools, calculators, aiTools);
-  const relatedTopics = primaryTopic
-    ? getRelatedTopics(primaryTopic.key, allTools, calculators, aiTools, 3)
+  const topicLinks = getAIToolTopicLinks(item, allTools, calculators, allAITools);
+  const primaryTopic = getTopicBySlug(item.slug, allTools, calculators, allAITools);
+  const nearbyTopics = primaryTopic
+    ? getRelatedTopics(primaryTopic.key, allTools, calculators, allAITools, 3)
     : [];
+
+  const topicLinkKeys = new Set(topicLinks.map((topic) => topic.key));
+  const relatedTopics = dedupeTopicLinkItems(
+    nearbyTopics.filter((topic) => !topicLinkKeys.has(topic.key))
+  );
 
   const secondaryContent = (
     <div className="space-y-8">
       <TopicLinksSection title="Explore This Topic" items={topicLinks} />
-      <RelatedToolsSection title="Related AI Tools" items={smartRelatedTools} />
+      <RelatedToolsSection title="Related AI Tools" items={relatedAITools} />
       <TopicLinksSection title="Nearby Topics" items={relatedTopics} />
     </div>
   );
@@ -189,7 +197,7 @@ export default async function AIToolPage({ params }: Props) {
       <PublicDetailPage
         table="ai_tools"
         item={item}
-        relatedItems={filterVisibleContent(related)}
+        relatedItems={[]}
         primaryContent={<AIToolRenderer item={item} />}
         secondaryContent={secondaryContent}
         showRelatedItemsSection={false}

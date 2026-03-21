@@ -1,6 +1,8 @@
 import { buildHomepageTaxonomy } from "@/lib/admin-taxonomy";
 import { filterVisibleTools } from "@/lib/public-tool-visibility";
+import { filterVisibleContent } from "@/lib/public-content-visibility";
 import { getTopicCollections, type TopicPageData } from "@/lib/programmatic-seo";
+import type { PublicContentItem } from "@/lib/content-pages";
 
 type MinimalTool = {
   name: string;
@@ -14,12 +16,14 @@ type MinimalCalculator = {
   name: string;
   slug: string;
   description?: string | null;
+  related_slugs?: string[] | null;
 };
 
 type MinimalAITool = {
   name: string;
   slug: string;
   description?: string | null;
+  related_slugs?: string[] | null;
 };
 
 export type InternalLinkItem = {
@@ -36,6 +40,46 @@ export type TopicLinkItem = {
   totalCount: number;
 };
 
+type ContentType = "tools" | "calculators" | "ai-tools";
+
+type RankedEntry<T extends { slug: string }> = {
+  item: T;
+  score: number;
+  topicKey: string;
+  diversityKey: string;
+};
+
+const GENERIC_STOP_WORDS = new Set([
+  "tool",
+  "tools",
+  "calculator",
+  "calculators",
+  "checker",
+  "checkers",
+  "generator",
+  "generators",
+  "online",
+  "free",
+  "best",
+  "quick",
+  "quickfnd",
+  "simple",
+  "easy",
+  "fast",
+  "advanced",
+  "smart",
+  "utility",
+  "utilities",
+  "app",
+  "apps",
+  "page",
+  "pages",
+  "using",
+  "with",
+  "for",
+  "and",
+]);
+
 function normalizeText(value: string | null | undefined) {
   return String(value || "").trim().toLowerCase();
 }
@@ -43,7 +87,8 @@ function normalizeText(value: string | null | undefined) {
 function tokenize(value: string | null | undefined) {
   return normalizeText(value)
     .split(/[^a-z0-9]+/)
-    .filter((word) => word.length >= 3);
+    .filter((word) => word.length >= 3)
+    .filter((word) => !GENERIC_STOP_WORDS.has(word));
 }
 
 function wordSet(value: string | null | undefined) {
@@ -52,34 +97,316 @@ function wordSet(value: string | null | undefined) {
 
 function overlapScore(a: Set<string>, b: Set<string>) {
   let score = 0;
+
   for (const word of a) {
-    if (b.has(word)) score += 1;
+    if (b.has(word)) {
+      score += 1;
+    }
   }
+
   return score;
 }
 
-function itemText(item: { name: string; slug: string; description?: string | null }) {
+function itemText(item: {
+  name: string;
+  slug: string;
+  description?: string | null;
+}) {
   return `${item.name} ${item.slug} ${item.description || ""}`;
 }
 
-function getToolTopicKey(
-  slug: string,
+function safeDescription(value: string | null | undefined) {
+  return String(value || "").trim();
+}
+
+function toPublicContentItem<T extends { name: string; slug: string; description?: string | null }>(
+  item: T
+): PublicContentItem {
+  return {
+    name: item.name,
+    slug: item.slug,
+    description: safeDescription(item.description),
+    related_slugs: [],
+    engine_type: null,
+    engine_config: {},
+    created_at: null,
+  };
+}
+
+function toPublicToolItem(item: MinimalTool): PublicContentItem {
+  return {
+    name: item.name,
+    slug: item.slug,
+    description: safeDescription(item.description),
+    related_slugs: Array.isArray(item.related_slugs) ? item.related_slugs : [],
+    engine_type: (item.engine_type ?? null) as PublicContentItem["engine_type"],
+    engine_config: {},
+    created_at: null,
+  };
+}
+
+function getTopicItemSlugs(topic: TopicPageData) {
+  const record = topic as unknown as Record<string, unknown>;
+  const slugs: string[] = [];
+
+  for (const key of ["tools", "calculators", "aiTools", "ai_tools"]) {
+    const value = record[key];
+
+    if (!Array.isArray(value)) {
+      continue;
+    }
+
+    for (const entry of value) {
+      if (!entry || typeof entry !== "object") {
+        continue;
+      }
+
+      const slug = String((entry as Record<string, unknown>).slug || "").trim();
+
+      if (slug) {
+        slugs.push(slug);
+      }
+    }
+  }
+
+  return slugs;
+}
+
+function getTopicContext(
   allTools: MinimalTool[],
   calculators: MinimalCalculator[],
   aiTools: MinimalAITool[]
 ) {
-  const visibleTools = filterVisibleTools(allTools);
+  const visibleTools = filterVisibleTools(allTools.map(toPublicToolItem));
+  const visibleCalculators = filterVisibleContent(
+    calculators.map(toPublicContentItem)
+  );
+  const visibleAITools = filterVisibleContent(aiTools.map(toPublicContentItem));
+
   const topics = getTopicCollections({
     tools: visibleTools,
-    calculators,
-    aiTools,
+    calculators: visibleCalculators,
+    aiTools: visibleAITools,
   });
 
-  const topic = topics.find((entry) =>
-    entry.tools.some((tool) => tool.slug === slug)
-  );
+  const slugToTopicKey = new Map<string, string>();
 
-  return topic?.key || "";
+  for (const topic of topics) {
+    for (const slug of getTopicItemSlugs(topic)) {
+      if (!slugToTopicKey.has(slug)) {
+        slugToTopicKey.set(slug, topic.key);
+      }
+    }
+  }
+
+  return {
+    topics,
+    visibleTools: visibleTools as unknown as MinimalTool[],
+    visibleCalculators: visibleCalculators as unknown as MinimalCalculator[],
+    visibleAITools: visibleAITools as unknown as MinimalAITool[],
+    slugToTopicKey,
+  };
+}
+
+function getTopicKeyForSlug(
+  slug: string,
+  slugToTopicKey: Map<string, string>
+) {
+  return slugToTopicKey.get(slug) || "";
+}
+
+function buildRelatedSlugSet(item: {
+  related_slugs?: string[] | null;
+}) {
+  return new Set(
+    Array.isArray(item.related_slugs)
+      ? item.related_slugs.map((slug) => String(slug || "").trim()).filter(Boolean)
+      : []
+  );
+}
+
+function dedupeBySlug<T extends { slug: string }>(
+  items: T[],
+  excludeSlugs: string[] = []
+) {
+  const seen = new Set(excludeSlugs.map((slug) => normalizeText(slug)));
+  const output: T[] = [];
+
+  for (const item of items) {
+    const key = normalizeText(item.slug);
+
+    if (!key || seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    output.push(item);
+  }
+
+  return output;
+}
+
+export function dedupeInternalLinkItems(
+  items: InternalLinkItem[],
+  excludeSlugs: string[] = []
+) {
+  return dedupeBySlug(items, excludeSlugs);
+}
+
+export function dedupeTopicLinkItems(items: TopicLinkItem[]) {
+  const seen = new Set<string>();
+  const output: TopicLinkItem[] = [];
+
+  for (const item of items) {
+    const key = normalizeText(item.key || item.href);
+
+    if (!key || seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    output.push(item);
+  }
+
+  return output;
+}
+
+function buildInternalLinkItem(
+  item: { name: string; slug: string; description?: string | null },
+  basePath: ContentType
+): InternalLinkItem {
+  return {
+    name: item.name,
+    slug: item.slug,
+    href: `/${basePath}/${item.slug}`,
+    description: safeDescription(item.description),
+  };
+}
+
+function rankCandidates<T extends { slug: string; name: string; description?: string | null }>(
+  currentItem: T & { related_slugs?: string[] | null; engine_type?: string | null },
+  candidates: T[],
+  options: {
+    basePath: ContentType;
+    currentTopicKey: string;
+    getTopicKey: (slug: string) => string;
+    currentEngine?: string;
+    getCandidateEngine?: (item: T) => string;
+    limit: number;
+  }
+) {
+  const currentWords = wordSet(itemText(currentItem));
+  const currentSlugTokens = wordSet(currentItem.slug);
+  const currentRelatedSlugs = buildRelatedSlugSet(currentItem);
+
+  const ranked: RankedEntry<T>[] = candidates
+    .filter((candidate) => candidate.slug !== currentItem.slug)
+    .map((candidate) => {
+      const candidateWords = wordSet(itemText(candidate));
+      const candidateSlugTokens = wordSet(candidate.slug);
+      const topicKey = options.getTopicKey(candidate.slug);
+      const candidateEngine = options.getCandidateEngine
+        ? options.getCandidateEngine(candidate)
+        : "";
+
+      let score = 0;
+
+      if (currentRelatedSlugs.has(candidate.slug)) {
+        score += 60;
+      }
+
+      const sharedIntentWords = overlapScore(currentWords, candidateWords);
+      score += sharedIntentWords * 6;
+
+      const sharedSlugWords = overlapScore(currentSlugTokens, candidateSlugTokens);
+      score += sharedSlugWords * 4;
+
+      if (options.currentTopicKey && topicKey === options.currentTopicKey) {
+        score += 24;
+      }
+
+      if (
+        options.currentEngine &&
+        candidateEngine &&
+        candidateEngine === options.currentEngine
+      ) {
+        score += 10;
+      }
+
+      if (
+        normalizeText(currentItem.name) === normalizeText(candidate.name) ||
+        normalizeText(currentItem.slug) === normalizeText(candidate.slug)
+      ) {
+        score = -9999;
+      }
+
+      return {
+        item: candidate,
+        score,
+        topicKey,
+        diversityKey:
+          candidateEngine || topicKey || tokenize(candidate.slug)[0] || candidate.slug,
+      };
+    })
+    .filter((entry) => entry.score >= 12)
+    .sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+
+      return a.item.name.localeCompare(b.item.name);
+    });
+
+  const selected: RankedEntry<T>[] = [];
+  const diversityCounts = new Map<string, number>();
+  const topicCounts = new Map<string, number>();
+  const seenSlugs = new Set<string>();
+
+  for (const entry of ranked) {
+    const slugKey = normalizeText(entry.item.slug);
+
+    if (seenSlugs.has(slugKey)) {
+      continue;
+    }
+
+    const diversityCount = diversityCounts.get(entry.diversityKey) || 0;
+    const topicCount = entry.topicKey ? topicCounts.get(entry.topicKey) || 0 : 0;
+
+    if (diversityCount >= 2 || topicCount >= 2) {
+      continue;
+    }
+
+    selected.push(entry);
+    seenSlugs.add(slugKey);
+    diversityCounts.set(entry.diversityKey, diversityCount + 1);
+
+    if (entry.topicKey) {
+      topicCounts.set(entry.topicKey, topicCount + 1);
+    }
+
+    if (selected.length >= options.limit) {
+      break;
+    }
+  }
+
+  if (selected.length < options.limit) {
+    for (const entry of ranked) {
+      const slugKey = normalizeText(entry.item.slug);
+
+      if (seenSlugs.has(slugKey)) {
+        continue;
+      }
+
+      selected.push(entry);
+      seenSlugs.add(slugKey);
+
+      if (selected.length >= options.limit) {
+        break;
+      }
+    }
+  }
+
+  return selected.map((entry) => buildInternalLinkItem(entry.item, options.basePath));
 }
 
 export function getRelatedVisibleTools(
@@ -89,75 +416,79 @@ export function getRelatedVisibleTools(
   aiTools: MinimalAITool[],
   limit = 6
 ): InternalLinkItem[] {
-  const visibleTools = filterVisibleTools(allTools).filter(
-    (tool) => tool.slug !== currentTool.slug
+  const context = getTopicContext(allTools, calculators, aiTools);
+
+  const related = rankCandidates(currentTool, context.visibleTools, {
+    basePath: "tools",
+    currentTopicKey: getTopicKeyForSlug(currentTool.slug, context.slugToTopicKey),
+    getTopicKey: (slug) => getTopicKeyForSlug(slug, context.slugToTopicKey),
+    currentEngine: normalizeText(currentTool.engine_type),
+    getCandidateEngine: (tool) => normalizeText(tool.engine_type),
+    limit,
+  });
+
+  return dedupeInternalLinkItems(related, [currentTool.slug]);
+}
+
+export function getRelatedVisibleCalculators(
+  currentCalculator: MinimalCalculator,
+  allCalculators: MinimalCalculator[],
+  allTools: MinimalTool[],
+  aiTools: MinimalAITool[],
+  limit = 6
+): InternalLinkItem[] {
+  const context = getTopicContext(allTools, allCalculators, aiTools);
+
+  const related = rankCandidates(currentCalculator, context.visibleCalculators, {
+    basePath: "calculators",
+    currentTopicKey: getTopicKeyForSlug(
+      currentCalculator.slug,
+      context.slugToTopicKey
+    ),
+    getTopicKey: (slug) => getTopicKeyForSlug(slug, context.slugToTopicKey),
+    limit,
+  });
+
+  return dedupeInternalLinkItems(related, [currentCalculator.slug]);
+}
+
+export function getRelatedVisibleAITools(
+  currentAITool: MinimalAITool,
+  allAITools: MinimalAITool[],
+  allTools: MinimalTool[],
+  calculators: MinimalCalculator[],
+  limit = 6
+): InternalLinkItem[] {
+  const context = getTopicContext(allTools, calculators, allAITools);
+
+  const related = rankCandidates(currentAITool, context.visibleAITools, {
+    basePath: "ai-tools",
+    currentTopicKey: getTopicKeyForSlug(currentAITool.slug, context.slugToTopicKey),
+    getTopicKey: (slug) => getTopicKeyForSlug(slug, context.slugToTopicKey),
+    limit,
+  });
+
+  return dedupeInternalLinkItems(related, [currentAITool.slug]);
+}
+
+function buildTopicLinksForSlug(
+  slug: string,
+  allTools: MinimalTool[],
+  calculators: MinimalCalculator[],
+  aiTools: MinimalAITool[]
+) {
+  const context = getTopicContext(allTools, calculators, aiTools);
+
+  return dedupeTopicLinkItems(
+    context.topics
+      .filter((topic) => getTopicItemSlugs(topic).includes(slug))
+      .map((topic) => ({
+        key: topic.key,
+        label: topic.label,
+        href: `/topics/${topic.key}`,
+        totalCount: topic.totalCount,
+      }))
   );
-
-  const currentWords = wordSet(itemText(currentTool));
-  const currentRelatedSlugs = new Set(
-    Array.isArray(currentTool.related_slugs) ? currentTool.related_slugs : []
-  );
-  const currentEngine = normalizeText(currentTool.engine_type);
-  const currentTopicKey = getToolTopicKey(
-    currentTool.slug,
-    allTools,
-    calculators,
-    aiTools
-  );
-
-  const ranked = visibleTools
-    .map((tool) => {
-      let score = 0;
-
-      if (currentRelatedSlugs.has(tool.slug)) {
-        score += 40;
-      }
-
-      const candidateWords = wordSet(itemText(tool));
-      const sharedWordCount = overlapScore(currentWords, candidateWords);
-      score += sharedWordCount * 4;
-
-      const candidateEngine = normalizeText(tool.engine_type);
-      if (currentEngine && candidateEngine && candidateEngine === currentEngine) {
-        score += 18;
-      }
-
-      const candidateTopicKey = getToolTopicKey(
-        tool.slug,
-        allTools,
-        calculators,
-        aiTools
-      );
-      if (currentTopicKey && candidateTopicKey === currentTopicKey) {
-        score += 16;
-      }
-
-      const currentSlugTokens = tokenize(currentTool.slug);
-      const candidateSlugTokens = new Set(tokenize(tool.slug));
-      const sharedSlugTokens = currentSlugTokens.filter((token) =>
-        candidateSlugTokens.has(token)
-      ).length;
-      score += sharedSlugTokens * 3;
-
-      return {
-        tool,
-        score,
-      };
-    })
-    .filter((entry) => entry.score >= 10)
-    .sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      return a.tool.name.localeCompare(b.tool.name);
-    })
-    .slice(0, limit)
-    .map((entry) => ({
-      name: entry.tool.name,
-      slug: entry.tool.slug,
-      href: `/tools/${entry.tool.slug}`,
-      description: String(entry.tool.description || ""),
-    }));
-
-  return ranked;
 }
 
 export function getToolTopicLinks(
@@ -166,22 +497,30 @@ export function getToolTopicLinks(
   calculators: MinimalCalculator[],
   aiTools: MinimalAITool[]
 ): TopicLinkItem[] {
-  const visibleTools = filterVisibleTools(allTools);
+  return buildTopicLinksForSlug(currentTool.slug, allTools, calculators, aiTools);
+}
 
-  const topics = getTopicCollections({
-    tools: visibleTools,
+export function getCalculatorTopicLinks(
+  currentCalculator: MinimalCalculator,
+  allTools: MinimalTool[],
+  calculators: MinimalCalculator[],
+  aiTools: MinimalAITool[]
+): TopicLinkItem[] {
+  return buildTopicLinksForSlug(
+    currentCalculator.slug,
+    allTools,
     calculators,
-    aiTools,
-  });
+    aiTools
+  );
+}
 
-  return topics
-    .filter((topic) => topic.tools.some((item) => item.slug === currentTool.slug))
-    .map((topic) => ({
-      key: topic.key,
-      label: topic.label,
-      href: `/topics/${topic.key}`,
-      totalCount: topic.totalCount,
-    }));
+export function getAIToolTopicLinks(
+  currentAITool: MinimalAITool,
+  allTools: MinimalTool[],
+  calculators: MinimalCalculator[],
+  aiTools: MinimalAITool[]
+): TopicLinkItem[] {
+  return buildTopicLinksForSlug(currentAITool.slug, allTools, calculators, aiTools);
 }
 
 export function getRelatedTopics(
@@ -191,38 +530,29 @@ export function getRelatedTopics(
   aiTools: MinimalAITool[],
   limit = 4
 ): TopicLinkItem[] {
-  const visibleTools = filterVisibleTools(allTools);
+  const context = getTopicContext(allTools, calculators, aiTools);
+  const currentTopic = context.topics.find((topic) => topic.key === currentTopicKey);
 
-  const topics = getTopicCollections({
-    tools: visibleTools,
-    calculators,
-    aiTools,
-  });
-
-  const currentTopic = topics.find((topic) => topic.key === currentTopicKey);
-  if (!currentTopic) return [];
+  if (!currentTopic) {
+    return [];
+  }
 
   const currentWords = wordSet(
-    `${currentTopic.label} ${currentTopic.tools.map((item) => item.slug).join(" ")}`
+    `${currentTopic.label} ${getTopicItemSlugs(currentTopic).join(" ")}`
   );
 
-  return topics
+  const related = context.topics
     .filter((topic) => topic.key !== currentTopicKey)
     .map((topic) => {
-      const topicWords = wordSet(
-        `${topic.label} ${topic.tools.map((item) => item.slug).join(" ")}`
-      );
-
+      const topicWords = wordSet(`${topic.label} ${getTopicItemSlugs(topic).join(" ")}`);
       const sharedWords = overlapScore(currentWords, topicWords);
-      const sharedTools = topic.tools.filter((item) =>
-        currentTopic.tools.some((currentItem) => currentItem.slug === item.slug)
+
+      const currentSlugs = new Set(getTopicItemSlugs(currentTopic));
+      const sharedItems = getTopicItemSlugs(topic).filter((slug) =>
+        currentSlugs.has(slug)
       ).length;
 
-      const labelWordsCurrent = wordSet(currentTopic.label);
-      const labelWordsCandidate = wordSet(topic.label);
-      const sharedLabelWords = overlapScore(labelWordsCurrent, labelWordsCandidate);
-
-      const score = sharedWords + sharedTools * 5 + sharedLabelWords * 4;
+      const score = sharedWords * 3 + sharedItems * 8;
 
       return {
         key: topic.key,
@@ -232,10 +562,16 @@ export function getRelatedTopics(
         score,
       };
     })
-    .filter((topic) => topic.score >= 3)
+    .filter((topic) => topic.score >= 4)
     .sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      if (b.totalCount !== a.totalCount) return b.totalCount - a.totalCount;
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+
+      if (b.totalCount !== a.totalCount) {
+        return b.totalCount - a.totalCount;
+      }
+
       return a.label.localeCompare(b.label);
     })
     .slice(0, limit)
@@ -245,6 +581,8 @@ export function getRelatedTopics(
       href,
       totalCount,
     }));
+
+  return dedupeTopicLinkItems(related);
 }
 
 export function getTopicOverviewData(input: {
@@ -252,13 +590,28 @@ export function getTopicOverviewData(input: {
   calculators: MinimalCalculator[];
   aiTools: MinimalAITool[];
 }) {
-  const visibleTools = filterVisibleTools(input.tools);
+  const visibleTools = filterVisibleTools(input.tools.map(toPublicToolItem));
 
   return buildHomepageTaxonomy({
     tools: visibleTools,
-    calculators: input.calculators,
-    aiTools: input.aiTools,
+    calculators: filterVisibleContent(
+      input.calculators.map(toPublicContentItem)
+    ),
+    aiTools: filterVisibleContent(input.aiTools.map(toPublicContentItem)),
   });
+}
+
+export function getTopicBySlug(
+  slug: string,
+  allTools: MinimalTool[],
+  calculators: MinimalCalculator[],
+  aiTools: MinimalAITool[]
+): TopicPageData | null {
+  const context = getTopicContext(allTools, calculators, aiTools);
+
+  return (
+    context.topics.find((topic) => getTopicItemSlugs(topic).includes(slug)) || null
+  );
 }
 
 export function getTopicByToolSlug(
@@ -267,15 +620,5 @@ export function getTopicByToolSlug(
   calculators: MinimalCalculator[],
   aiTools: MinimalAITool[]
 ): TopicPageData | null {
-  const visibleTools = filterVisibleTools(allTools);
-
-  const topics = getTopicCollections({
-    tools: visibleTools,
-    calculators,
-    aiTools,
-  });
-
-  return (
-    topics.find((topic) => topic.tools.some((item) => item.slug === slug)) || null
-  );
+  return getTopicBySlug(slug, allTools, calculators, aiTools);
 }

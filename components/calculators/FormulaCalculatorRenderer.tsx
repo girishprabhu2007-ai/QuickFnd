@@ -285,6 +285,7 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
   const [datetimeB, setDatetimeB] = useState("");
   const [timeA, setTimeA] = useState("");
   const [timeB, setTimeB] = useState("");
+  const [countdownNow] = useState(() => Date.now());
 
   const result = useMemo<ResultPayload | null>(() => {
     if (preset === "daily-time-budget") {
@@ -525,7 +526,7 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
     if (preset === "countdown") {
       if (!datetimeA) return null;
       const future = new Date(datetimeA).getTime();
-      const now = Date.now();
+      const now = countdownNow;
 
       if (!Number.isFinite(future)) return null;
 
@@ -719,7 +720,7 @@ export default function FormulaCalculatorRenderer({ item }: Props) {
       insight: interpretation.insight,
       recommendation: interpretation.recommendation,
     };
-  }, [preset, a, b, c, d, e, f, fromUnit, toUnit, datetimeA, datetimeB, timeA, timeB, config]);
+  }, [preset, a, b, c, d, e, f, fromUnit, toUnit, datetimeA, datetimeB, timeA, timeB, config, countdownNow]);
 
   return (
     <section className={sectionClass()}>

@@ -9,7 +9,6 @@ import {
 } from "@/components/seo/InternalLinkSections";
 import {
   getContentItem,
-  getRelatedContent,
   getTools,
   getCalculators,
   getAITools,
@@ -21,15 +20,13 @@ import {
   buildSoftwareSchema,
 } from "@/lib/seo-content";
 import { getSiteUrl } from "@/lib/site-url";
-import {
-  filterVisibleTools,
-  isToolPubliclyVisible,
-} from "@/lib/public-tool-visibility";
+import { isToolPubliclyVisible } from "@/lib/public-tool-visibility";
 import {
   getRelatedVisibleTools,
   getToolTopicLinks,
   getRelatedTopics,
   getTopicByToolSlug,
+  dedupeTopicLinkItems,
 } from "@/lib/internal-linking";
 import type { PublicContentItem } from "@/lib/content-pages";
 
@@ -39,54 +36,17 @@ type Props = {
 
 export const revalidate = 300;
 
-function getFallbackSuggestions(
-  item: PublicContentItem,
-  allTools: PublicContentItem[]
-) {
-  const visibleTools = filterVisibleTools(allTools).filter(
-    (tool) => tool.slug !== item.slug
-  );
-
-  const relatedSlugSet = new Set(
-    Array.isArray(item.related_slugs) ? item.related_slugs : []
-  );
-
-  const itemWords = `${item.name} ${item.slug} ${item.description || ""}`
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter(Boolean);
-
-  const ranked = visibleTools
-    .map((tool) => {
-      let score = 0;
-
-      if (relatedSlugSet.has(tool.slug)) score += 50;
-
-      const text = `${tool.name} ${tool.slug} ${tool.description || ""}`.toLowerCase();
-
-      for (const word of itemWords) {
-        if (word.length < 3) continue;
-        if (text.includes(word)) score += 4;
-      }
-
-      if (tool.engine_type && item.engine_type && tool.engine_type === item.engine_type) {
-        score += 20;
-      }
-
-      return { tool, score };
-    })
-    .sort((a, b) => b.score - a.score)
-    .map((entry) => entry.tool);
-
-  return ranked.slice(0, 6);
-}
-
 function ToolUpgradeFallback({
   item,
   suggestions,
 }: {
   item: PublicContentItem;
-  suggestions: PublicContentItem[];
+  suggestions: {
+    name: string;
+    slug: string;
+    href: string;
+    description: string;
+  }[];
 }) {
   return (
     <main className="min-h-screen bg-q-bg px-4 py-8 text-q-text sm:px-6 lg:px-8 lg:py-12">
@@ -129,7 +89,7 @@ function ToolUpgradeFallback({
                 {suggestions.map((tool) => (
                   <Link
                     key={tool.slug}
-                    href={`/tools/${tool.slug}`}
+                    href={tool.href}
                     className="rounded-2xl border border-q-border bg-q-bg p-5 transition hover:-translate-y-0.5 hover:border-blue-400/50"
                   >
                     <div className="text-lg font-semibold text-q-text">{tool.name}</div>
@@ -222,20 +182,17 @@ export default async function ToolDetailPage({ params }: Props) {
     return notFoundPage();
   }
 
-  if (!isToolPubliclyVisible(item)) {
-    const allTools = await getTools();
-    const suggestions = getFallbackSuggestions(item, allTools);
-    return <ToolUpgradeFallback item={item} suggestions={suggestions} />;
-  }
-
-  const [allTools, calculators, aiTools, relatedRaw] = await Promise.all([
+  const [allTools, calculators, aiTools] = await Promise.all([
     getTools(),
     getCalculators(),
     getAITools(),
-    getRelatedContent("tools", item.related_slugs, item.slug),
   ]);
 
-  const relatedItems = filterVisibleTools(relatedRaw);
+  if (!isToolPubliclyVisible(item)) {
+    const suggestions = getRelatedVisibleTools(item, allTools, calculators, aiTools, 6);
+    return <ToolUpgradeFallback item={item} suggestions={suggestions} />;
+  }
+
   const smartRelatedTools = getRelatedVisibleTools(
     item,
     allTools,
@@ -243,12 +200,17 @@ export default async function ToolDetailPage({ params }: Props) {
     aiTools,
     6
   );
-  const topicLinks = getToolTopicLinks(item, allTools, calculators, aiTools);
 
+  const topicLinks = getToolTopicLinks(item, allTools, calculators, aiTools);
   const primaryTopic = getTopicByToolSlug(item.slug, allTools, calculators, aiTools);
-  const relatedTopics = primaryTopic
+  const nearbyTopics = primaryTopic
     ? getRelatedTopics(primaryTopic.key, allTools, calculators, aiTools, 3)
     : [];
+
+  const topicLinkKeys = new Set(topicLinks.map((topic) => topic.key));
+  const relatedTopics = dedupeTopicLinkItems(
+    nearbyTopics.filter((topic) => !topicLinkKeys.has(topic.key))
+  );
 
   const secondaryContent = (
     <div className="space-y-8">
@@ -273,7 +235,7 @@ export default async function ToolDetailPage({ params }: Props) {
       <PublicDetailPage
         table="tools"
         item={item}
-        relatedItems={relatedItems}
+        relatedItems={[]}
         primaryContent={<BuiltInToolClient item={item} />}
         secondaryContent={secondaryContent}
         showRelatedItemsSection={false}

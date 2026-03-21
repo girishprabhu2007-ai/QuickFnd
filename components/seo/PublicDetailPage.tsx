@@ -96,6 +96,27 @@ function getItemBenefits(item: PublicContentItem): string[] {
   return asStringArray(source);
 }
 
+function dedupeRelatedItems(
+  currentSlug: string,
+  items: PublicContentItem[]
+): PublicContentItem[] {
+  const seen = new Set<string>([String(currentSlug || "").trim().toLowerCase()]);
+  const output: PublicContentItem[] = [];
+
+  for (const item of items) {
+    const slug = String(item.slug || "").trim().toLowerCase();
+
+    if (!slug || seen.has(slug)) {
+      continue;
+    }
+
+    seen.add(slug);
+    output.push(item);
+  }
+
+  return output;
+}
+
 export default function PublicDetailPage({
   table,
   item,
@@ -108,6 +129,7 @@ export default function PublicDetailPage({
   const faqs = getItemFaqs(item);
   const steps = getItemHowToSteps(item);
   const benefits = getItemBenefits(item);
+  const dedupedRelatedItems = dedupeRelatedItems(item.slug, relatedItems);
   const hasCustomContentSections =
     steps.length > 0 || benefits.length > 0 || faqs.length > 0;
   const label = tableLabel(table);
@@ -248,13 +270,13 @@ export default function PublicDetailPage({
                   <PageSEOSections table={table} item={item} />
                 ) : null}
 
-                {showRelatedItemsSection && relatedItems.length > 0 ? (
+                {showRelatedItemsSection && dedupedRelatedItems.length > 0 ? (
                   <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
                     <h2 className="text-2xl font-semibold text-q-text">
                       Related {label}
                     </h2>
                     <div className="mt-5 grid gap-4 md:grid-cols-2">
-                      {relatedItems.map((related) => (
+                      {dedupedRelatedItems.map((related) => (
                         <Link
                           key={related.slug}
                           href={detailHref(table, related.slug)}

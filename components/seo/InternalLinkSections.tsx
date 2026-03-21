@@ -1,5 +1,9 @@
 import Link from "next/link";
 import type { InternalLinkItem, TopicLinkItem } from "@/lib/internal-linking";
+import {
+  dedupeInternalLinkItems,
+  dedupeTopicLinkItems,
+} from "@/lib/internal-linking";
 
 function LinkCard({
   item,
@@ -14,7 +18,7 @@ function LinkCard({
       <div className="text-lg font-semibold text-q-text">{item.name}</div>
       <div className="mt-2 text-sm text-q-muted">/{item.slug}</div>
       <p className="mt-3 text-sm leading-6 text-q-muted">
-        {item.description || "Open this related QuickFnd tool."}
+        {item.description || "Open this related QuickFnd page."}
       </p>
       <div className="mt-4 text-sm font-medium text-blue-500">Open →</div>
     </Link>
@@ -41,19 +45,21 @@ function TopicCard({
 }
 
 export function RelatedToolsSection({
-  title = "Related Tools",
+  title = "Related Items",
   items,
 }: {
   title?: string;
   items: InternalLinkItem[];
 }) {
-  if (items.length === 0) return null;
+  const dedupedItems = dedupeInternalLinkItems(items);
+
+  if (dedupedItems.length === 0) return null;
 
   return (
     <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
       <h2 className="text-2xl font-semibold text-q-text">{title}</h2>
       <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {items.map((item) => (
+        {dedupedItems.map((item) => (
           <LinkCard key={item.href} item={item} />
         ))}
       </div>
@@ -68,13 +74,15 @@ export function TopicLinksSection({
   title: string;
   items: TopicLinkItem[];
 }) {
-  if (items.length === 0) return null;
+  const dedupedItems = dedupeTopicLinkItems(items);
+
+  if (dedupedItems.length === 0) return null;
 
   return (
     <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
       <h2 className="text-2xl font-semibold text-q-text">{title}</h2>
       <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {items.map((item) => (
+        {dedupedItems.map((item) => (
           <TopicCard key={item.href} item={item} />
         ))}
       </div>
