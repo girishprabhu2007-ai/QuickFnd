@@ -78,7 +78,7 @@ export default function TopicLandingPage({
   topic: TopicPageData;
 }) {
   return (
-    <main className="bg-q-bg px-4 py-8 text-q-text sm:px-6 lg:px-8 lg:py-12">
+    <section className="bg-q-bg px-4 py-8 text-q-text sm:px-6 lg:px-8 lg:py-12">
       <section className="mx-auto max-w-7xl space-y-8">
         <section className="rounded-3xl border border-q-border bg-q-card p-6 md:p-8 lg:p-10">
           <p className="text-sm uppercase tracking-[0.2em] text-blue-500">
@@ -157,6 +157,6 @@ export default function TopicLandingPage({
           </div>
         </section>
       </section>
-    </main>
+    </section>
   );
 }

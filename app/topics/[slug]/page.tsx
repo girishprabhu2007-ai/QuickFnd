@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import JsonLd from "@/components/seo/JsonLd";
 import TopicLandingPage from "@/components/seo/TopicLandingPage";
 import { TopicLinksSection } from "@/components/seo/InternalLinkSections";
+import SiteFooter from "@/components/site/SiteFooter";
 import { getTools, getCalculators, getAITools } from "@/lib/db";
 import { getTopicBySlug, getTopicCollections } from "@/lib/programmatic-seo";
 import { getRelatedTopics } from "@/lib/internal-linking";
@@ -175,12 +176,16 @@ export default async function TopicPage({ params }: Props) {
       <JsonLd id="topic-breadcrumb-schema" data={buildBreadcrumbSchema(topic)} />
       <JsonLd id="topic-collection-schema" data={buildCollectionSchema(topic)} />
       <JsonLd id="topic-faq-schema" data={buildFaqSchema(topic)} />
+
       <TopicLandingPage topic={topic} />
+
       <main className="bg-q-bg px-4 pb-12 text-q-text sm:px-6 lg:px-8">
         <section className="mx-auto max-w-7xl space-y-8">
           <TopicLinksSection title="Related Topics" items={relatedTopics} />
         </section>
       </main>
+
+      <SiteFooter />
     </>
   );
 }
