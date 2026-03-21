@@ -1,32 +1,40 @@
-export type ToolEngineMetaItem = {
+export type ToolEngineResultMetaItem = {
   label: string;
   value: string | number;
 };
 
-export type ToolEngineRunResult = {
+export type ToolEngineResult = {
   output?: string;
   error?: string;
-  meta?: ToolEngineMetaItem[];
+  meta?: ToolEngineResultMetaItem[];
+  score?: number;
+  label?: string;
+  colorClass?: string;
+  feedback?: string[];
+  percentage?: number;
+  [key: string]: unknown;
 };
 
-export type ToolEngineDefinition = {
-  engineType: string;
-  title: string;
-  description: string;
-  inputLabel: string;
-  inputPlaceholder: string;
-  outputLabel: string;
-  actionLabel: string;
-  run: (input: string) => ToolEngineRunResult;
+export type ToolEngineRunResult = ToolEngineResult;
+
+export type ToolEngineRunContext = {
+  input?: string;
+  password?: string;
+  config?: Record<string, unknown>;
+  [key: string]: unknown;
 };
 
-/*
-  Backward compatibility for older engine experiments.
-  This prevents old files like engines/password-strength.ts
-  from breaking the build.
-*/
 export type ToolEngine = {
-  name: string;
+  engineType?: string;
+  type?: string;
+  name?: string;
+  title?: string;
   description: string;
-  run: (input: any) => any;
+  inputLabel?: string;
+  inputPlaceholder?: string;
+  outputLabel?: string;
+  actionLabel?: string;
+  run(input: string | ToolEngineRunContext): ToolEngineResult;
 };
+
+export type ToolEngineDefinition = ToolEngine;

@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { ToolEngineDefinition, ToolEngineRunResult } from "@/engines/types";
+import type {
+  ToolEngineDefinition,
+  ToolEngineRunResult,
+} from "@/engines/types";
 import { loadEngine } from "@/lib/engine-loader";
 
 type Props = {
@@ -25,9 +28,7 @@ export default function DynamicToolEngineClient({
       setEngineLoading(true);
       const loadedEngine = await loadEngine(engineType);
 
-      if (!active) {
-        return;
-      }
+      if (!active) return;
 
       setEngine(loadedEngine);
       setEngineLoading(false);
@@ -44,25 +45,37 @@ export default function DynamicToolEngineClient({
     return engine?.title || toolName;
   }, [engine, toolName]);
 
-  async function copyOutput() {
-    if (!result?.output) {
-      return;
+  function normalizeResult(raw: any): ToolEngineRunResult {
+    if (!raw) return { output: "" };
+
+    // password strength special handling
+    if ("score" in raw && "label" in raw) {
+      return {
+        output: raw.label,
+        meta: [
+          { label: "Strength", value: raw.label },
+          { label: "Score", value: raw.score },
+        ],
+      };
     }
 
-    try {
-      await navigator.clipboard.writeText(result.output);
-    } catch {
-      // ignore clipboard failures
-    }
+    return raw;
   }
 
   function handleRun() {
-    if (!engine) {
-      return;
-    }
+    if (!engine) return;
 
-    const nextResult = engine.run(input);
-    setResult(nextResult);
+    const raw = engine.run(input);
+    const normalized = normalizeResult(raw);
+    setResult(normalized);
+  }
+
+  async function copyOutput() {
+    if (!result?.output) return;
+
+    try {
+      await navigator.clipboard.writeText(result.output);
+    } catch {}
   }
 
   if (engineLoading) {
@@ -78,14 +91,8 @@ export default function DynamicToolEngineClient({
     return (
       <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
         <h2 className="text-2xl font-semibold text-q-text">{toolName}</h2>
-
-        <div className="mt-5 rounded-xl border border-q-border bg-q-bg p-4 text-sm text-q-muted">
-          This tool exists in the database, but no matching plugin engine file was found.
-        </div>
-
-        <div className="mt-4 rounded-xl border border-q-border bg-q-bg p-4 text-sm text-q-muted">
-          Expected engine file:
-          <div className="mt-2 font-mono text-q-text">/engines/{engineType}.ts</div>
+        <div className="mt-5 text-sm text-q-muted">
+          Engine not found for this tool.
         </div>
       </section>
     );
@@ -95,25 +102,19 @@ export default function DynamicToolEngineClient({
     <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
       <h2 className="text-2xl font-semibold text-q-text">{title}</h2>
 
-      <p className="mt-3 text-sm leading-7 text-q-muted">{engine.description}</p>
+      <p className="mt-3 text-sm text-q-muted">{engine.description}</p>
 
-      <div className="mt-6">
-        <label className="mb-2 block text-sm font-medium text-q-text">
-          {engine.inputLabel}
-        </label>
+      <textarea
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        placeholder={engine.inputPlaceholder}
+        className="mt-4 w-full rounded-2xl border border-q-border p-4"
+      />
 
-        <textarea
-          value={input}
-          onChange={(event) => setInput(event.target.value)}
-          placeholder={engine.inputPlaceholder}
-          className="min-h-[180px] w-full rounded-2xl border border-q-border bg-q-bg p-4 text-q-text outline-none placeholder:text-q-muted"
-        />
-      </div>
-
-      <div className="mt-4 flex flex-wrap gap-3">
+      <div className="mt-4 flex gap-3">
         <button
           onClick={handleRun}
-          className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white transition hover:bg-q-primary-hover"
+          className="rounded-xl bg-q-primary px-4 py-2 text-white"
         >
           {engine.actionLabel}
         </button>
@@ -121,46 +122,27 @@ export default function DynamicToolEngineClient({
         <button
           onClick={copyOutput}
           disabled={!result?.output}
-          className="rounded-xl border border-q-border bg-q-bg px-4 py-2 font-medium text-q-text transition hover:bg-q-card-hover disabled:opacity-50"
+          className="rounded-xl border px-4 py-2"
         >
-          Copy Output
+          Copy
         </button>
       </div>
 
-      {result?.error ? (
-        <div className="mt-5 rounded-2xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">
-          {result.error}
-        </div>
-      ) : null}
-
-      {result?.meta && result.meta.length > 0 ? (
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {result.meta.map((item) => (
-            <div
-              key={`${item.label}-${String(item.value)}`}
-              className="rounded-xl border border-q-border bg-q-bg p-4"
-            >
-              <div className="text-sm text-q-muted">{item.label}</div>
-              <div className="mt-2 text-lg font-semibold text-q-text">
-                {item.value}
-              </div>
+      {result?.meta && (
+        <div className="mt-4 grid gap-3">
+          {result.meta.map((m) => (
+            <div key={m.label}>
+              {m.label}: {m.value}
             </div>
           ))}
         </div>
-      ) : null}
+      )}
 
-      <div className="mt-6">
-        <label className="mb-2 block text-sm font-medium text-q-text">
-          {engine.outputLabel}
-        </label>
-
-        <textarea
-          readOnly
-          value={result?.output || ""}
-          placeholder="Output will appear here"
-          className="min-h-[180px] w-full rounded-2xl border border-q-border bg-q-bg p-4 text-q-text outline-none placeholder:text-q-muted"
-        />
-      </div>
+      <textarea
+        readOnly
+        value={result?.output || ""}
+        className="mt-4 w-full rounded-2xl border p-4"
+      />
     </section>
   );
 }

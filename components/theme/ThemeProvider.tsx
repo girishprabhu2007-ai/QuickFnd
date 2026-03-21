@@ -1,29 +1,46 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
-type ThemeMode = "dark" | "light";
+type Theme = "light" | "dark";
 
 type ThemeContextValue = {
-  theme: ThemeMode;
-  setTheme: (theme: ThemeMode) => void;
+  theme: Theme;
+  setTheme: (value: Theme) => void;
   toggleTheme: () => void;
   mounted: boolean;
 };
 
-const ThemeContext = createContext<ThemeContextValue | null>(null);
+const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-const STORAGE_KEY = "quickfnd-theme";
+function getInitialTheme(): Theme {
+  if (typeof window === "undefined") return "light";
 
-function applyTheme(theme: ThemeMode) {
+  const stored = window.localStorage.getItem("theme");
+
+  if (stored === "light" || stored === "dark") {
+    return stored;
+  }
+
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+}
+
+function applyTheme(theme: Theme) {
   const root = document.documentElement;
 
-  if (theme === "light") {
-    root.classList.remove("dark");
-    root.setAttribute("data-theme", "light");
-  } else {
+  if (theme === "dark") {
     root.classList.add("dark");
-    root.setAttribute("data-theme", "dark");
+  } else {
+    root.classList.remove("dark");
   }
 }
 
@@ -32,34 +49,25 @@ export default function ThemeProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [theme, setThemeState] = useState<ThemeMode>("dark");
+  const [theme, setThemeState] = useState<Theme>(getInitialTheme);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
+    applyTheme(theme);
+    window.localStorage.setItem("theme", theme);
+  }, [theme]);
 
-    if (stored === "light" || stored === "dark") {
-      setThemeState(stored);
-      applyTheme(stored);
-    } else {
-      const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
-      const nextTheme: ThemeMode = prefersLight ? "light" : "dark";
-      setThemeState(nextTheme);
-      applyTheme(nextTheme);
-    }
-
+  useEffect(() => {
     setMounted(true);
   }, []);
 
-  function setTheme(nextTheme: ThemeMode) {
-    setThemeState(nextTheme);
-    window.localStorage.setItem(STORAGE_KEY, nextTheme);
-    applyTheme(nextTheme);
-  }
+  const setTheme = useCallback((value: Theme) => {
+    setThemeState(value);
+  }, []);
 
-  function toggleTheme() {
-    setTheme(theme === "dark" ? "light" : "dark");
-  }
+  const toggleTheme = useCallback(() => {
+    setThemeState((prev) => (prev === "dark" ? "light" : "dark"));
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -68,18 +76,18 @@ export default function ThemeProvider({
       toggleTheme,
       mounted,
     }),
-    [theme, mounted]
+    [theme, setTheme, toggleTheme, mounted]
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
-export function useThemeMode() {
+export function useTheme() {
   const context = useContext(ThemeContext);
-
-  if (!context) {
-    throw new Error("useThemeMode must be used inside ThemeProvider.");
-  }
-
+  if (!context) throw new Error("useTheme must be used within ThemeProvider");
   return context;
+}
+
+export function useThemeMode() {
+  return useTheme();
 }

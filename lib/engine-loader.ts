@@ -20,8 +20,8 @@ export async function loadEngine(
   }
 
   try {
-    const module = await import(`../engines/${safeEngineType}`);
-    return (module.default || null) as ToolEngineDefinition | null;
+    const engineModule = await import(`../engines/${safeEngineType}`);
+    return (engineModule.default || null) as ToolEngineDefinition | null;
   } catch (error) {
     console.warn(`Engine not found for type: ${safeEngineType}`, error);
     return null;
