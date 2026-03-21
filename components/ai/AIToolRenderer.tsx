@@ -18,14 +18,8 @@ type RunResponse = {
 
 type TaskMeta = {
   title: string;
-  inputLabel: string;
-  inputPlaceholder: string;
   actionLabel: string;
   outputLabel: string;
-  audiencePlaceholder: string;
-  supportsAudience: boolean;
-  supportsLength: boolean;
-  lengthOptions: string[];
   helperText: string;
   examples: string[];
   checklist: string[];
@@ -72,6 +66,10 @@ function successHintClass() {
 
 function badgeClass() {
   return "rounded-full border border-q-border bg-q-bg px-3 py-1 text-xs font-medium uppercase tracking-wide text-q-muted";
+}
+
+function labelClass() {
+  return "mb-2 block text-sm font-medium text-q-text";
 }
 
 function normalize(value: unknown) {
@@ -148,156 +146,114 @@ function getTaskMeta(task: string, itemName: string): TaskMeta {
     case "email":
       return {
         title: itemName,
-        inputLabel: "What should the email be about?",
-        inputPlaceholder:
-          "Example: Write a polite follow-up email to a client after a product demo. Mention pricing, next steps, and suggest a call next week.",
         actionLabel: "Generate Email",
         outputLabel: "Generated email",
-        audiencePlaceholder: "Client, hiring manager, support lead",
-        supportsAudience: true,
-        supportsLength: true,
-        lengthOptions: ["short", "medium", "long"],
         helperText:
-          "Best for follow-ups, outreach, support replies, internal updates, and formal communication drafts.",
+          "Create a send-ready email draft with clearer intent, better structure, and a stronger call to action.",
         examples: [
-          "Follow up after a sales demo",
-          "Write a polite job application follow-up",
-          "Draft a customer support apology email",
+          "Client follow-up after demo",
+          "Job application follow-up",
+          "Customer support apology email",
         ],
         checklist: [
           "State the purpose clearly",
           "Mention the recipient context",
-          "Add a clear next step or CTA",
+          "Add a specific next step",
         ],
       };
 
     case "outline":
       return {
         title: itemName,
-        inputLabel: "What topic do you want outlined?",
-        inputPlaceholder:
-          "Example: Build a blog outline for 'How to launch a SaaS in 2026' for founders and product teams.",
         actionLabel: "Generate Outline",
         outputLabel: "Generated outline",
-        audiencePlaceholder: "Beginners, founders, marketers",
-        supportsAudience: true,
-        supportsLength: true,
-        lengthOptions: ["short", "medium", "detailed"],
         helperText:
-          "Best for blog posts, landing pages, lesson plans, strategy docs, videos, and presentation structures.",
+          "Create structured outlines for blog posts, landing pages, videos, lessons, and strategy documents.",
         examples: [
-          "Blog outline for SEO audit process",
-          "Video script outline for YouTube tutorial",
-          "Course outline for beginner designers",
+          "SEO audit guide outline",
+          "YouTube tutorial script outline",
+          "Beginner course structure",
         ],
         checklist: [
           "Name the topic clearly",
-          "Mention target audience",
-          "Mention desired depth or structure",
+          "Mention the target audience",
+          "Choose the right depth",
         ],
       };
 
     case "prompt-generator":
       return {
         title: itemName,
-        inputLabel: "What do you need the prompt to achieve?",
-        inputPlaceholder:
-          "Example: Create a strong ChatGPT prompt to generate a weekly content calendar for a fitness brand.",
         actionLabel: "Generate Prompt",
         outputLabel: "Generated prompt",
-        audiencePlaceholder: "ChatGPT, Claude, Midjourney, general AI user",
-        supportsAudience: true,
-        supportsLength: true,
-        lengthOptions: ["short", "medium", "detailed"],
         helperText:
-          "Best for turning rough ideas into stronger, ready-to-use prompts for AI writing, coding, image, and research workflows.",
+          "Turn rough ideas into stronger prompts with context, constraints, and a clearer output format.",
         examples: [
           "Prompt for a product description generator",
           "Prompt for an SEO article brief",
-          "Prompt for a Midjourney image concept",
+          "Prompt for a Midjourney concept",
         ],
         checklist: [
-          "Describe the end goal clearly",
-          "Mention the target AI or audience",
-          "Include output format requirements",
+          "Describe the outcome you want",
+          "Mention the target AI or use case",
+          "Add constraints or formatting needs",
         ],
       };
 
     case "summarization":
       return {
         title: itemName,
-        inputLabel: "Paste text to summarize",
-        inputPlaceholder:
-          "Paste a long paragraph, meeting notes, article excerpt, transcript, or research text here.",
         actionLabel: "Generate Summary",
         outputLabel: "Generated summary",
-        audiencePlaceholder: "Executives, students, general audience",
-        supportsAudience: true,
-        supportsLength: true,
-        lengthOptions: ["brief", "medium", "detailed"],
         helperText:
-          "Best for notes, transcripts, reports, articles, user research, docs, and decision summaries.",
+          "Condense long text into a clearer summary for decisions, reading, revision, or reporting.",
         examples: [
-          "Summarize meeting notes into action points",
-          "Turn an article into executive summary bullets",
-          "Condense research notes for revision",
+          "Summarize meeting notes",
+          "Executive summary for an article",
+          "Condense research notes",
         ],
         checklist: [
-          "Paste complete source text",
-          "Mention who the summary is for",
-          "Choose the right detail level",
+          "Paste enough source text",
+          "Mention the audience",
+          "Choose the level of detail",
         ],
       };
 
     case "rewrite":
       return {
         title: itemName,
-        inputLabel: "Paste text to rewrite",
-        inputPlaceholder:
-          "Paste text you want rewritten for clarity, tone, readability, persuasion, or simplification.",
         actionLabel: "Rewrite Text",
         outputLabel: "Rewritten result",
-        audiencePlaceholder: "Customers, readers, developers",
-        supportsAudience: true,
-        supportsLength: false,
-        lengthOptions: [],
         helperText:
-          "Best for polishing copy, improving clarity, changing tone, simplifying text, or making content more persuasive.",
+          "Improve clarity, tone, persuasion, readability, or structure while keeping the original intent.",
         examples: [
-          "Rewrite marketing copy to sound clearer",
-          "Simplify technical explanation for beginners",
+          "Rewrite marketing copy more clearly",
+          "Simplify a technical explanation",
           "Make an email more professional",
         ],
         checklist: [
           "Paste the original text",
-          "Be explicit about the desired tone",
-          "Add any constraints in extra instructions",
+          "Be explicit about the target tone",
+          "Add extra constraints if needed",
         ],
       };
 
     default:
       return {
         title: itemName,
-        inputLabel: "Enter your prompt or text",
-        inputPlaceholder:
-          "Describe what you want the AI tool to generate, improve, or transform.",
         actionLabel: "Generate",
         outputLabel: "Generated output",
-        audiencePlaceholder: "General audience",
-        supportsAudience: true,
-        supportsLength: true,
-        lengthOptions: ["short", "medium", "long"],
         helperText:
-          "This is a flexible AI workflow for content generation and transformation.",
+          "Use this AI tool to generate, improve, or transform content with clearer instructions and constraints.",
         examples: [
           "Generate a draft from a short prompt",
-          "Rewrite content for a specific audience",
-          "Create a structured response from rough notes",
+          "Rewrite content for an audience",
+          "Create a structured response",
         ],
         checklist: [
           "Be specific about the goal",
           "Mention audience and tone",
-          "Add extra instructions if format matters",
+          "Add formatting requirements",
         ],
       };
   }
@@ -305,72 +261,42 @@ function getTaskMeta(task: string, itemName: string): TaskMeta {
 
 function buildPromptQualityHint(
   task: string,
-  input: string,
-  audience: string,
-  extraInstructions: string
+  primaryText: string,
+  secondarySignals: string[]
 ) {
-  const hasAudience = audience.trim().length > 0;
-  const hasExtra = extraInstructions.trim().length > 0;
-  const inputLength = input.trim().length;
+  const length = primaryText.trim().length;
+  const filledSignals = secondarySignals.filter((value) => value.trim().length > 0).length;
 
   if (task === "email") {
-    if (inputLength < 40) {
-      return "Add more context about the recipient, purpose, and desired outcome for a better email draft.";
-    }
-    if (!hasAudience) {
-      return "Adding the recipient type usually improves the tone and structure of the generated email.";
-    }
-    if (!hasExtra) {
-      return "Add extra instructions if you want a specific CTA, structure, or level of formality.";
-    }
-    return "Your prompt has enough detail for a more tailored email draft.";
+    if (length < 20) return "Add more purpose and context for a stronger draft.";
+    if (filledSignals < 2) return "Adding recipient, subject, or CTA will make the email more useful.";
+    return "This should generate a more tailored email draft.";
   }
 
   if (task === "outline") {
-    if (inputLength < 25) {
-      return "Mention the topic more specifically so the outline is not too broad.";
-    }
-    if (!hasAudience) {
-      return "Adding a target audience usually makes the outline more useful and better scoped.";
-    }
-    return "Your outline prompt should produce a more targeted structure.";
+    if (length < 15) return "Use a more specific topic so the outline is not too broad.";
+    if (filledSignals < 2) return "Adding audience, goal, or depth will improve the outline.";
+    return "This should generate a more targeted outline.";
   }
 
   if (task === "prompt-generator") {
-    if (inputLength < 25) {
-      return "Describe the exact result you want so the generated prompt is more useful.";
-    }
-    if (!hasExtra) {
-      return "Add extra instructions if you want the prompt to enforce format, tone, or constraints.";
-    }
-    return "This should generate a stronger, more usable AI prompt.";
+    if (length < 15) return "Describe the end goal more clearly for a stronger prompt.";
+    if (filledSignals < 2) return "Adding context, constraints, or output format will improve the prompt.";
+    return "This should generate a stronger, more usable prompt.";
   }
 
   if (task === "summarization") {
-    if (inputLength < 120) {
-      return "Summaries work better with enough source text. Try pasting a fuller passage.";
-    }
-    if (!hasAudience) {
-      return "Add the audience if you want the summary tuned for executives, students, or general readers.";
-    }
+    if (length < 120) return "Summaries work better with more source text.";
     return "This looks like enough source material for a meaningful summary.";
   }
 
   if (task === "rewrite") {
-    if (inputLength < 40) {
-      return "Rewrite tasks work better when you provide the full original text, not just a fragment.";
-    }
-    if (!hasExtra) {
-      return "Add extra instructions if you want the rewrite to be clearer, shorter, friendlier, or more persuasive.";
-    }
-    return "You’ve given enough content to produce a stronger rewrite.";
+    if (length < 40) return "Rewrite tasks work better when you provide the full original text.";
+    return "You’ve provided enough text for a stronger rewrite.";
   }
 
-  if (inputLength < 30) {
-    return "More specific prompts usually give better output.";
-  }
-
-  return "Your prompt has enough detail for a more useful response.";
+  if (length < 30) return "More specific inputs usually give better output.";
+  return "Your input has enough detail for a more useful response.";
 }
 
 async function copyText(value: string) {
@@ -381,10 +307,69 @@ async function copyText(value: string) {
   }
 }
 
+type EmailFormState = {
+  subject: string;
+  purpose: string;
+  recipient: string;
+  context: string;
+  cta: string;
+};
+
+type OutlineFormState = {
+  topic: string;
+  audience: string;
+  goal: string;
+  depth: string;
+  notes: string;
+};
+
+type PromptFormState = {
+  goal: string;
+  context: string;
+  constraints: string;
+  outputFormat: string;
+};
+
+function buildEmailInput(state: EmailFormState) {
+  return [
+    `Subject: ${state.subject}`,
+    `Recipient: ${state.recipient}`,
+    `Purpose: ${state.purpose}`,
+    `Context: ${state.context}`,
+    `Call to action: ${state.cta}`,
+  ]
+    .filter((line) => line.split(": ")[1]?.trim())
+    .join("\n");
+}
+
+function buildOutlineInput(state: OutlineFormState) {
+  return [
+    `Topic: ${state.topic}`,
+    `Audience: ${state.audience}`,
+    `Goal: ${state.goal}`,
+    `Depth: ${state.depth}`,
+    `Notes: ${state.notes}`,
+  ]
+    .filter((line) => line.split(": ")[1]?.trim())
+    .join("\n");
+}
+
+function buildPromptGeneratorInput(state: PromptFormState) {
+  return [
+    `Goal: ${state.goal}`,
+    `Context: ${state.context}`,
+    `Constraints: ${state.constraints}`,
+    `Desired output format: ${state.outputFormat}`,
+  ]
+    .filter((line) => line.split(": ")[1]?.trim())
+    .join("\n");
+}
+
 export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
   const config = toConfig(item.engine_config);
   const task = inferTaskFromItem(item, config);
   const outputType = inferOutputTypeFromItem(item, config, task);
+  const meta = getTaskMeta(task, item.name);
 
   const toneOptions = useMemo(() => {
     const fromConfig = Array.isArray(config.toneOptions)
@@ -395,35 +380,79 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
       return fromConfig;
     }
 
-    if (task === "email") {
-      return ["professional", "friendly", "persuasive"];
-    }
-
-    if (task === "outline") {
-      return ["clear", "professional", "educational"];
-    }
-
-    if (task === "prompt-generator") {
-      return ["clear", "precise", "creative"];
-    }
+    if (task === "email") return ["professional", "friendly", "persuasive"];
+    if (task === "outline") return ["clear", "professional", "educational"];
+    if (task === "prompt-generator") return ["clear", "precise", "creative"];
 
     return ["professional", "friendly", "clear", "persuasive", "casual"];
   }, [config.toneOptions, task]);
 
-  const meta = getTaskMeta(task, item.name);
-
-  const [input, setInput] = useState("");
   const [tone, setTone] = useState(String(config.tone || toneOptions[0] || "professional"));
+  const [length, setLength] = useState("medium");
   const [audience, setAudience] = useState("");
-  const [length, setLength] = useState(meta.lengthOptions[1] || meta.lengthOptions[0] || "");
   const [extraInstructions, setExtraInstructions] = useState("");
+  const [genericInput, setGenericInput] = useState("");
   const [output, setOutput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [emailForm, setEmailForm] = useState<EmailFormState>({
+    subject: "",
+    purpose: "",
+    recipient: "",
+    context: "",
+    cta: "",
+  });
+
+  const [outlineForm, setOutlineForm] = useState<OutlineFormState>({
+    topic: "",
+    audience: "",
+    goal: "",
+    depth: "medium",
+    notes: "",
+  });
+
+  const [promptForm, setPromptForm] = useState<PromptFormState>({
+    goal: "",
+    context: "",
+    constraints: "",
+    outputFormat: "",
+  });
+
+  const primaryInput = useMemo(() => {
+    if (task === "email") return buildEmailInput(emailForm);
+    if (task === "outline") return buildOutlineInput(outlineForm);
+    if (task === "prompt-generator") return buildPromptGeneratorInput(promptForm);
+    return genericInput;
+  }, [task, emailForm, outlineForm, promptForm, genericInput]);
+
   const promptHint = useMemo(() => {
-    return buildPromptQualityHint(task, input, audience, extraInstructions);
-  }, [task, input, audience, extraInstructions]);
+    const secondarySignals =
+      task === "email"
+        ? [emailForm.subject, emailForm.recipient, emailForm.cta, extraInstructions]
+        : task === "outline"
+        ? [outlineForm.audience, outlineForm.goal, outlineForm.depth, extraInstructions]
+        : task === "prompt-generator"
+        ? [promptForm.context, promptForm.constraints, promptForm.outputFormat, extraInstructions]
+        : [audience, extraInstructions, length];
+
+    return buildPromptQualityHint(task, primaryInput, secondarySignals);
+  }, [
+    task,
+    primaryInput,
+    emailForm.subject,
+    emailForm.recipient,
+    emailForm.cta,
+    outlineForm.audience,
+    outlineForm.goal,
+    outlineForm.depth,
+    promptForm.context,
+    promptForm.constraints,
+    promptForm.outputFormat,
+    audience,
+    extraInstructions,
+    length,
+  ]);
 
   async function handleRun() {
     setLoading(true);
@@ -431,19 +460,23 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
     setOutput("");
 
     try {
+      const composedInput = [primaryInput, extraInstructions ? `Extra instructions: ${extraInstructions}` : ""]
+        .filter(Boolean)
+        .join("\n\n");
+
       const res = await fetch("/api/ai/run", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          input,
+          input: composedInput,
           config: {
             task,
             tone,
             outputType,
-            audience,
-            length,
+            audience: task === "outline" ? outlineForm.audience : audience,
+            length: task === "outline" ? outlineForm.depth : length,
             extraInstructions,
           },
         }),
@@ -462,6 +495,37 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
       setLoading(false);
     }
   }
+
+  function resetAll() {
+    setGenericInput("");
+    setAudience("");
+    setLength("medium");
+    setExtraInstructions("");
+    setOutput("");
+    setError("");
+    setEmailForm({
+      subject: "",
+      purpose: "",
+      recipient: "",
+      context: "",
+      cta: "",
+    });
+    setOutlineForm({
+      topic: "",
+      audience: "",
+      goal: "",
+      depth: "medium",
+      notes: "",
+    });
+    setPromptForm({
+      goal: "",
+      context: "",
+      constraints: "",
+      outputFormat: "",
+    });
+  }
+
+  const canRun = primaryInput.trim().length > 0;
 
   return (
     <section className={cardClass()}>
@@ -505,22 +569,189 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
             <div className="mt-1">{promptHint}</div>
           </div>
 
-          <div className={panelClass()}>
-            <label className="mb-3 block text-sm font-medium text-q-text">
-              {meta.inputLabel}
-            </label>
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={meta.inputPlaceholder}
-              className={textareaClass("min-h-[220px]")}
-            />
-          </div>
+          {task === "email" ? (
+            <div className="grid gap-4">
+              <div className={panelClass()}>
+                <label className={labelClass()}>Email subject</label>
+                <input
+                  value={emailForm.subject}
+                  onChange={(e) => setEmailForm((prev) => ({ ...prev, subject: e.target.value }))}
+                  placeholder="Follow-up after product demo"
+                  className={inputClass()}
+                />
+              </div>
+
+              <div className={panelClass()}>
+                <label className={labelClass()}>Recipient</label>
+                <input
+                  value={emailForm.recipient}
+                  onChange={(e) => setEmailForm((prev) => ({ ...prev, recipient: e.target.value }))}
+                  placeholder="Client, hiring manager, support lead"
+                  className={inputClass()}
+                />
+              </div>
+
+              <div className={panelClass()}>
+                <label className={labelClass()}>Purpose</label>
+                <textarea
+                  value={emailForm.purpose}
+                  onChange={(e) => setEmailForm((prev) => ({ ...prev, purpose: e.target.value }))}
+                  placeholder="Explain why you are sending this email."
+                  className={textareaClass("min-h-[120px]")}
+                />
+              </div>
+
+              <div className={panelClass()}>
+                <label className={labelClass()}>Context</label>
+                <textarea
+                  value={emailForm.context}
+                  onChange={(e) => setEmailForm((prev) => ({ ...prev, context: e.target.value }))}
+                  placeholder="Add relevant background, product, timing, or previous conversation details."
+                  className={textareaClass("min-h-[120px]")}
+                />
+              </div>
+
+              <div className={panelClass()}>
+                <label className={labelClass()}>Call to action</label>
+                <input
+                  value={emailForm.cta}
+                  onChange={(e) => setEmailForm((prev) => ({ ...prev, cta: e.target.value }))}
+                  placeholder="Suggest a call next week, ask for feedback, confirm next steps"
+                  className={inputClass()}
+                />
+              </div>
+            </div>
+          ) : task === "outline" ? (
+            <div className="grid gap-4">
+              <div className={panelClass()}>
+                <label className={labelClass()}>Topic</label>
+                <input
+                  value={outlineForm.topic}
+                  onChange={(e) => setOutlineForm((prev) => ({ ...prev, topic: e.target.value }))}
+                  placeholder="How to launch a SaaS in 2026"
+                  className={inputClass()}
+                />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className={panelClass()}>
+                  <label className={labelClass()}>Audience</label>
+                  <input
+                    value={outlineForm.audience}
+                    onChange={(e) =>
+                      setOutlineForm((prev) => ({ ...prev, audience: e.target.value }))
+                    }
+                    placeholder="Founders, marketers, beginners"
+                    className={inputClass()}
+                  />
+                </div>
+
+                <div className={panelClass()}>
+                  <label className={labelClass()}>Depth</label>
+                  <select
+                    value={outlineForm.depth}
+                    onChange={(e) => setOutlineForm((prev) => ({ ...prev, depth: e.target.value }))}
+                    className={inputClass()}
+                  >
+                    <option value="short">Short</option>
+                    <option value="medium">Medium</option>
+                    <option value="detailed">Detailed</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className={panelClass()}>
+                <label className={labelClass()}>Goal</label>
+                <input
+                  value={outlineForm.goal}
+                  onChange={(e) => setOutlineForm((prev) => ({ ...prev, goal: e.target.value }))}
+                  placeholder="SEO article, lesson plan, landing page, video script"
+                  className={inputClass()}
+                />
+              </div>
+
+              <div className={panelClass()}>
+                <label className={labelClass()}>Notes or required sections</label>
+                <textarea
+                  value={outlineForm.notes}
+                  onChange={(e) => setOutlineForm((prev) => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Mention sections, angles, keywords, or structure requirements."
+                  className={textareaClass("min-h-[140px]")}
+                />
+              </div>
+            </div>
+          ) : task === "prompt-generator" ? (
+            <div className="grid gap-4">
+              <div className={panelClass()}>
+                <label className={labelClass()}>Goal</label>
+                <textarea
+                  value={promptForm.goal}
+                  onChange={(e) => setPromptForm((prev) => ({ ...prev, goal: e.target.value }))}
+                  placeholder="Describe exactly what you want the prompt to help produce."
+                  className={textareaClass("min-h-[120px]")}
+                />
+              </div>
+
+              <div className={panelClass()}>
+                <label className={labelClass()}>Context</label>
+                <textarea
+                  value={promptForm.context}
+                  onChange={(e) => setPromptForm((prev) => ({ ...prev, context: e.target.value }))}
+                  placeholder="Add brand, audience, niche, domain knowledge, or use-case context."
+                  className={textareaClass("min-h-[120px]")}
+                />
+              </div>
+
+              <div className={panelClass()}>
+                <label className={labelClass()}>Constraints</label>
+                <textarea
+                  value={promptForm.constraints}
+                  onChange={(e) =>
+                    setPromptForm((prev) => ({ ...prev, constraints: e.target.value }))
+                  }
+                  placeholder="Tone, banned words, style, length, formatting, or factual constraints."
+                  className={textareaClass("min-h-[120px]")}
+                />
+              </div>
+
+              <div className={panelClass()}>
+                <label className={labelClass()}>Desired output format</label>
+                <input
+                  value={promptForm.outputFormat}
+                  onChange={(e) =>
+                    setPromptForm((prev) => ({ ...prev, outputFormat: e.target.value }))
+                  }
+                  placeholder="Bullets, table, JSON, paragraph, headings"
+                  className={inputClass()}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className={panelClass()}>
+              <label className={labelClass()}>
+                {task === "summarization"
+                  ? "Paste text to summarize"
+                  : task === "rewrite"
+                  ? "Paste text to rewrite"
+                  : "Enter your prompt or text"}
+              </label>
+              <textarea
+                value={genericInput}
+                onChange={(e) => setGenericInput(e.target.value)}
+                placeholder={
+                  task === "summarization"
+                    ? "Paste a long paragraph, transcript, article, or notes here."
+                    : task === "rewrite"
+                    ? "Paste the original text you want rewritten."
+                    : "Describe what you want the AI tool to generate, improve, or transform."
+                }
+                className={textareaClass("min-h-[220px]")}
+              />
+            </div>
+          )}
 
           <div className={panelClass()}>
-            <label className="mb-3 block text-sm font-medium text-q-text">
-              Extra instructions
-            </label>
+            <label className={labelClass()}>Extra instructions</label>
             <textarea
               value={extraInstructions}
               onChange={(e) => setExtraInstructions(e.target.value)}
@@ -532,7 +763,7 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
           <div className="flex flex-wrap gap-3">
             <button
               onClick={handleRun}
-              disabled={loading || !input.trim()}
+              disabled={loading || !canRun}
               className="rounded-2xl bg-q-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-q-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? "Generating..." : meta.actionLabel}
@@ -547,12 +778,7 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
             </button>
 
             <button
-              onClick={() => {
-                setInput("");
-                setOutput("");
-                setError("");
-                setExtraInstructions("");
-              }}
+              onClick={resetAll}
               className="rounded-2xl border border-q-border bg-q-bg px-5 py-3 text-sm font-semibold text-q-text transition hover:bg-q-card-hover"
             >
               Reset
@@ -569,7 +795,7 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
             <div className={successHintClass()}>
               <div className="font-medium">How to use this result</div>
               <div className="mt-1">
-                Review the output, refine the input if needed, and rerun with stronger constraints if you want a tighter draft.
+                Review the output, refine the fields if needed, and rerun with stronger constraints if you want a tighter result.
               </div>
             </div>
           ) : null}
@@ -610,19 +836,19 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
             </select>
           </div>
 
-          {meta.supportsAudience ? (
+          {task !== "outline" && task !== "email" && task !== "prompt-generator" ? (
             <div className={panelClass()}>
               <div className="mb-2 text-sm font-medium text-q-text">Audience</div>
               <input
                 value={audience}
                 onChange={(e) => setAudience(e.target.value)}
-                placeholder={meta.audiencePlaceholder}
+                placeholder="General audience"
                 className={inputClass()}
               />
             </div>
           ) : null}
 
-          {meta.supportsLength ? (
+          {task !== "outline" ? (
             <div className={panelClass()}>
               <div className="mb-2 text-sm font-medium text-q-text">Length</div>
               <select
@@ -630,11 +856,10 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
                 onChange={(e) => setLength(e.target.value)}
                 className={inputClass()}
               >
-                {meta.lengthOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option.charAt(0).toUpperCase() + option.slice(1)}
-                  </option>
-                ))}
+                <option value="short">Short</option>
+                <option value="medium">Medium</option>
+                <option value="long">Long</option>
+                <option value="detailed">Detailed</option>
               </select>
             </div>
           ) : null}
@@ -662,7 +887,7 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
             <ul className="mt-3 space-y-2 text-sm leading-6 text-q-muted">
               <li>• Stronger context usually improves output quality.</li>
               <li>• Use extra instructions to shape structure or tone.</li>
-              <li>• Try a different tone if the first draft feels off.</li>
+              <li>• Structured inputs usually produce better drafts than one vague prompt.</li>
             </ul>
           </div>
         </aside>
