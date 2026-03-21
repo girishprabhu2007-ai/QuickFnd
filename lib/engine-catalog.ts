@@ -720,10 +720,27 @@ export function inferEngineType(category: EngineCategory, slug: string): EngineT
     if (value.includes("number") && value.includes("generator")) return "number-generator";
 
     if (value === "currency-converter") return "currency-converter";
+
     if (
       value === "unit-converter" ||
-      (value.includes("convert") &&
-        !includesAny(value, ["currency", "base64", "url", "timestamp", "hex", "rgb", "binary"]))
+      includesAny(value, [
+        "meter-to",
+        "meters-to",
+        "feet-to",
+        "foot-to",
+        "inch-to",
+        "inches-to",
+        "cm-to",
+        "mm-to",
+        "km-to",
+        "mile-to",
+        "miles-to",
+        "yard-to",
+        "yards-to",
+        "length-converter",
+        "distance-converter",
+        "unit-converter",
+      ])
     ) {
       return "unit-converter";
     }
