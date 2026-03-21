@@ -178,9 +178,7 @@ function getTopicContext(
   aiTools: MinimalAITool[]
 ) {
   const visibleTools = filterVisibleTools(allTools.map(toPublicToolItem));
-  const visibleCalculators = filterVisibleContent(
-    calculators.map(toPublicContentItem)
-  );
+  const visibleCalculators = filterVisibleContent(calculators.map(toPublicContentItem));
   const visibleAITools = filterVisibleContent(aiTools.map(toPublicContentItem));
 
   const topics = getTopicCollections({
@@ -208,10 +206,7 @@ function getTopicContext(
   };
 }
 
-function getTopicKeyForSlug(
-  slug: string,
-  slugToTopicKey: Map<string, string>
-) {
+function getTopicKeyForSlug(slug: string, slugToTopicKey: Map<string, string>) {
   return slugToTopicKey.get(slug) || "";
 }
 
@@ -225,10 +220,7 @@ function buildRelatedSlugSet(item: {
   );
 }
 
-function dedupeBySlug<T extends { slug: string }>(
-  items: T[],
-  excludeSlugs: string[] = []
-) {
+function dedupeBySlug<T extends { slug: string }>(items: T[], excludeSlugs: string[] = []) {
   const seen = new Set(excludeSlugs.map((slug) => normalizeText(slug)));
   const output: T[] = [];
 
@@ -246,10 +238,7 @@ function dedupeBySlug<T extends { slug: string }>(
   return output;
 }
 
-export function dedupeInternalLinkItems(
-  items: InternalLinkItem[],
-  excludeSlugs: string[] = []
-) {
+export function dedupeInternalLinkItems(items: InternalLinkItem[], excludeSlugs: string[] = []) {
   return dedupeBySlug(items, excludeSlugs);
 }
 
@@ -312,25 +301,21 @@ function rankCandidates<T extends { slug: string; name: string; description?: st
       let score = 0;
 
       if (currentRelatedSlugs.has(candidate.slug)) {
-        score += 60;
+        score += 100;
       }
 
       const sharedIntentWords = overlapScore(currentWords, candidateWords);
-      score += sharedIntentWords * 6;
+      score += sharedIntentWords * 3;
 
       const sharedSlugWords = overlapScore(currentSlugTokens, candidateSlugTokens);
-      score += sharedSlugWords * 4;
+      score += sharedSlugWords * 2;
 
       if (options.currentTopicKey && topicKey === options.currentTopicKey) {
-        score += 24;
+        score += 30;
       }
 
-      if (
-        options.currentEngine &&
-        candidateEngine &&
-        candidateEngine === options.currentEngine
-      ) {
-        score += 10;
+      if (options.currentEngine && candidateEngine && candidateEngine === options.currentEngine) {
+        score += 40;
       }
 
       if (
@@ -344,11 +329,10 @@ function rankCandidates<T extends { slug: string; name: string; description?: st
         item: candidate,
         score,
         topicKey,
-        diversityKey:
-          candidateEngine || topicKey || tokenize(candidate.slug)[0] || candidate.slug,
+        diversityKey: candidateEngine || topicKey || tokenize(candidate.slug)[0] || candidate.slug,
       };
     })
-    .filter((entry) => entry.score >= 12)
+    .filter((entry) => entry.score >= 20)
     .sort((a, b) => {
       if (b.score !== a.score) {
         return b.score - a.score;
@@ -372,7 +356,7 @@ function rankCandidates<T extends { slug: string; name: string; description?: st
     const diversityCount = diversityCounts.get(entry.diversityKey) || 0;
     const topicCount = entry.topicKey ? topicCounts.get(entry.topicKey) || 0 : 0;
 
-    if (diversityCount >= 2 || topicCount >= 2) {
+    if (diversityCount >= 1 || topicCount >= 2) {
       continue;
     }
 
@@ -441,10 +425,7 @@ export function getRelatedVisibleCalculators(
 
   const related = rankCandidates(currentCalculator, context.visibleCalculators, {
     basePath: "calculators",
-    currentTopicKey: getTopicKeyForSlug(
-      currentCalculator.slug,
-      context.slugToTopicKey
-    ),
+    currentTopicKey: getTopicKeyForSlug(currentCalculator.slug, context.slugToTopicKey),
     getTopicKey: (slug) => getTopicKeyForSlug(slug, context.slugToTopicKey),
     limit,
   });
@@ -506,12 +487,7 @@ export function getCalculatorTopicLinks(
   calculators: MinimalCalculator[],
   aiTools: MinimalAITool[]
 ): TopicLinkItem[] {
-  return buildTopicLinksForSlug(
-    currentCalculator.slug,
-    allTools,
-    calculators,
-    aiTools
-  );
+  return buildTopicLinksForSlug(currentCalculator.slug, allTools, calculators, aiTools);
 }
 
 export function getAIToolTopicLinks(
@@ -537,9 +513,7 @@ export function getRelatedTopics(
     return [];
   }
 
-  const currentWords = wordSet(
-    `${currentTopic.label} ${getTopicItemSlugs(currentTopic).join(" ")}`
-  );
+  const currentWords = wordSet(`${currentTopic.label} ${getTopicItemSlugs(currentTopic).join(" ")}`);
 
   const related = context.topics
     .filter((topic) => topic.key !== currentTopicKey)
@@ -548,9 +522,7 @@ export function getRelatedTopics(
       const sharedWords = overlapScore(currentWords, topicWords);
 
       const currentSlugs = new Set(getTopicItemSlugs(currentTopic));
-      const sharedItems = getTopicItemSlugs(topic).filter((slug) =>
-        currentSlugs.has(slug)
-      ).length;
+      const sharedItems = getTopicItemSlugs(topic).filter((slug) => currentSlugs.has(slug)).length;
 
       const score = sharedWords * 3 + sharedItems * 8;
 
@@ -594,9 +566,7 @@ export function getTopicOverviewData(input: {
 
   return buildHomepageTaxonomy({
     tools: visibleTools,
-    calculators: filterVisibleContent(
-      input.calculators.map(toPublicContentItem)
-    ),
+    calculators: filterVisibleContent(input.calculators.map(toPublicContentItem)),
     aiTools: filterVisibleContent(input.aiTools.map(toPublicContentItem)),
   });
 }
@@ -609,9 +579,7 @@ export function getTopicBySlug(
 ): TopicPageData | null {
   const context = getTopicContext(allTools, calculators, aiTools);
 
-  return (
-    context.topics.find((topic) => getTopicItemSlugs(topic).includes(slug)) || null
-  );
+  return context.topics.find((topic) => getTopicItemSlugs(topic).includes(slug)) || null;
 }
 
 export function getTopicByToolSlug(
