@@ -47,27 +47,31 @@ const GENERIC_OUTPUT_VALUES = new Set([
 ]);
 
 function inputClass() {
-  return "w-full rounded-xl border border-q-border bg-q-bg p-3 text-q-text outline-none placeholder:text-q-muted";
+  return "w-full rounded-2xl border border-q-border bg-q-bg px-4 py-3 text-q-text outline-none transition placeholder:text-q-muted focus:border-blue-400/60";
 }
 
 function textareaClass(minHeight = "min-h-[160px]") {
-  return `w-full rounded-xl border border-q-border bg-q-bg p-4 text-q-text outline-none placeholder:text-q-muted ${minHeight}`;
+  return `w-full rounded-2xl border border-q-border bg-q-bg px-4 py-4 text-q-text outline-none transition placeholder:text-q-muted focus:border-blue-400/60 ${minHeight}`;
 }
 
 function cardClass() {
-  return "rounded-2xl border border-q-border bg-q-card p-6";
+  return "rounded-3xl border border-q-border bg-q-card p-6 shadow-sm md:p-8";
 }
 
 function panelClass() {
-  return "rounded-xl border border-q-border bg-q-bg p-4";
+  return "rounded-2xl border border-q-border bg-q-bg p-4";
 }
 
 function softInfoClass() {
-  return "rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-slate-700";
+  return "rounded-2xl border border-blue-200/70 bg-blue-50/80 p-4 text-sm text-slate-700";
 }
 
 function successHintClass() {
-  return "rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900";
+  return "rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900";
+}
+
+function badgeClass() {
+  return "rounded-full border border-q-border bg-q-bg px-3 py-1 text-xs font-medium uppercase tracking-wide text-q-muted";
 }
 
 function normalize(value: unknown) {
@@ -461,39 +465,48 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
 
   return (
     <section className={cardClass()}>
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold text-q-text">{meta.title}</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-7 text-q-muted">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+        <div className="max-w-3xl">
+          <div className="flex flex-wrap gap-2">
+            <span className={badgeClass()}>{task.replace(/-/g, " ")}</span>
+            <span className={badgeClass()}>{outputType.replace(/-/g, " ")}</span>
+          </div>
+
+          <h2 className="mt-4 text-2xl font-semibold text-q-text md:text-3xl">
+            {meta.title}
+          </h2>
+
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-q-muted md:text-base">
             {meta.helperText}
           </p>
         </div>
 
-        <div className="grid min-w-[220px] gap-3 sm:grid-cols-2 md:grid-cols-1">
+        <div className="grid min-w-[240px] gap-3 sm:grid-cols-2 lg:grid-cols-1">
           <div className={panelClass()}>
             <div className="text-xs uppercase tracking-wide text-q-muted">Task</div>
-            <div className="mt-2 text-sm font-medium capitalize text-q-text">
+            <div className="mt-2 text-sm font-semibold capitalize text-q-text">
               {task.replace(/-/g, " ")}
             </div>
           </div>
+
           <div className={panelClass()}>
             <div className="text-xs uppercase tracking-wide text-q-muted">Output type</div>
-            <div className="mt-2 text-sm font-medium capitalize text-q-text">
+            <div className="mt-2 text-sm font-semibold capitalize text-q-text">
               {outputType.replace(/-/g, " ")}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="space-y-4">
+      <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="space-y-5">
           <div className={softInfoClass()}>
             <div className="font-medium text-slate-800">Prompt quality hint</div>
             <div className="mt-1">{promptHint}</div>
           </div>
 
-          <div>
-            <label className="mb-2 block text-sm font-medium text-q-text">
+          <div className={panelClass()}>
+            <label className="mb-3 block text-sm font-medium text-q-text">
               {meta.inputLabel}
             </label>
             <textarea
@@ -504,15 +517,15 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
             />
           </div>
 
-          <div>
-            <label className="mb-2 block text-sm font-medium text-q-text">
+          <div className={panelClass()}>
+            <label className="mb-3 block text-sm font-medium text-q-text">
               Extra instructions
             </label>
             <textarea
               value={extraInstructions}
               onChange={(e) => setExtraInstructions(e.target.value)}
               placeholder="Optional: add format, structure, style, constraints, or details you want the output to follow."
-              className={textareaClass("min-h-[100px]")}
+              className={textareaClass("min-h-[110px]")}
             />
           </div>
 
@@ -520,7 +533,7 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
             <button
               onClick={handleRun}
               disabled={loading || !input.trim()}
-              className="rounded-xl bg-q-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-q-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-2xl bg-q-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-q-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? "Generating..." : meta.actionLabel}
             </button>
@@ -528,7 +541,7 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
             <button
               onClick={() => copyText(output)}
               disabled={!output}
-              className="rounded-xl border border-q-border bg-q-bg px-5 py-2.5 text-sm font-semibold text-q-text transition hover:bg-q-card-hover disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-2xl border border-q-border bg-q-bg px-5 py-3 text-sm font-semibold text-q-text transition hover:bg-q-card-hover disabled:cursor-not-allowed disabled:opacity-60"
             >
               Copy Output
             </button>
@@ -540,14 +553,14 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
                 setError("");
                 setExtraInstructions("");
               }}
-              className="rounded-xl border border-q-border bg-q-bg px-5 py-2.5 text-sm font-semibold text-q-text transition hover:bg-q-card-hover"
+              className="rounded-2xl border border-q-border bg-q-bg px-5 py-3 text-sm font-semibold text-q-text transition hover:bg-q-card-hover"
             >
               Reset
             </button>
           </div>
 
           {error ? (
-            <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">
+            <div className="rounded-2xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">
               {error}
             </div>
           ) : null}
@@ -561,9 +574,21 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
             </div>
           ) : null}
 
-          <div className={panelClass()}>
-            <div className="mb-2 text-sm font-medium text-q-text">{meta.outputLabel}</div>
-            <div className="min-h-[180px] whitespace-pre-wrap text-sm leading-7 text-q-text">
+          <div className="rounded-2xl border border-q-border bg-q-bg p-5 md:p-6">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="text-sm font-semibold text-q-text">{meta.outputLabel}</div>
+              {output ? (
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
+                  Ready
+                </span>
+              ) : (
+                <span className="rounded-full border border-q-border bg-q-card px-3 py-1 text-xs font-medium text-q-muted">
+                  Waiting for input
+                </span>
+              )}
+            </div>
+
+            <div className="min-h-[220px] whitespace-pre-wrap rounded-2xl border border-q-border bg-q-card p-4 text-sm leading-7 text-q-text">
               {output || "Your generated result will appear here."}
             </div>
           </div>
