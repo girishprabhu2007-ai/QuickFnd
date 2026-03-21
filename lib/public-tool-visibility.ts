@@ -18,8 +18,7 @@ function normalize(value: string | null | undefined) {
 const PLACEHOLDER_ENGINE_TYPES = new Set<string>(["", "auto", "generic-directory"]);
 
 /**
- * Canonical tools (TRUST SOURCE)
- * These should always remain visible
+ * Canonical tools (trusted core set)
  */
 const CANONICAL_TOOL_SLUGS = new Set<string>([
   "password-generator",
@@ -33,53 +32,26 @@ const CANONICAL_TOOL_SLUGS = new Set<string>([
   "text-case-converter",
   "random-number-generator",
   "meters-to-feet-converter",
+  "timestamp-converter",
 ]);
 
 /**
- * Explicit known low-value duplicates
+ * Explicit hard removals (verified duplicates / low-value)
  */
 const HARD_HIDDEN_SLUGS = new Set<string>([
+  // Phase 1
   "base64-decoder",
   "url-decoder",
   "text-transformer",
+
+  // Phase 3.3 (explicit cleanup)
+  "lowercase-text-converter",
+  "uppercase-text-converter",
+  "url-encoding-and-decoding-tool",
+  "timestamp-to-date-converter",
+  "tweet-timestamp-converter",
+  "unix-timestamp-converter",
 ]);
-
-/**
- * Weak variants detection (STRICT but safe)
- */
-function isWeakVariant(slug: string) {
-  if (!slug) return false;
-
-  // text-case explosion
-  if (
-    slug.includes("lowercase") ||
-    slug.includes("uppercase") ||
-    slug.includes("sentence-case") ||
-    slug.includes("title-case")
-  ) {
-    return true;
-  }
-
-  // url variants
-  if (
-    slug.includes("youtube-url") ||
-    slug.includes("seo-url") ||
-    slug.includes("campaign-url")
-  ) {
-    return true;
-  }
-
-  // timestamp variants
-  if (
-    slug.includes("tweet-timestamp") ||
-    slug.includes("date-converter") ||
-    slug.includes("timestamp-to")
-  ) {
-    return true;
-  }
-
-  return false;
-}
 
 export function resolveToolEngineType(item: ToolVisibilityItem): string {
   return normalize(item.engine_type);
@@ -106,13 +78,8 @@ export function isToolPubliclyVisible(item: ToolVisibilityItem): boolean {
     return true;
   }
 
-  // Explicit removals
+  // Explicit removals only
   if (HARD_HIDDEN_SLUGS.has(slug)) {
-    return false;
-  }
-
-  // Remove weak variants
-  if (isWeakVariant(slug)) {
     return false;
   }
 
