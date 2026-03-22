@@ -15,6 +15,9 @@ type RequestItem = {
   recommended_engine: string | null;
   status: "pending" | "reviewed" | "implemented" | "rejected";
   created_public_slug: string | null;
+  mode?: "request" | "report" | null;
+  ref_slug?: string | null;
+  report_type?: string | null;
 };
 
 export default function AdminRequestsPage() {
@@ -97,6 +100,7 @@ export default function AdminRequestsPage() {
       <h2 className="text-2xl font-semibold text-q-text">User tool requests</h2>
       <p className="mt-3 text-sm leading-7 text-q-muted md:text-base">
         Review requests submitted by users and decide which ones should become live pages.
+        Reports are also shown here so broken or low-value tools can be reviewed quickly.
       </p>
 
       {message ? (
@@ -115,62 +119,113 @@ export default function AdminRequestsPage() {
         </div>
       ) : (
         <div className="mt-6 space-y-4">
-          {items.map((item) => (
-            <div
-              key={item.id}
-              className="rounded-2xl border border-q-border bg-q-bg p-6"
-            >
-              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <h3 className="text-xl font-semibold text-q-text">
-                      {item.requested_name}
-                    </h3>
-                    <span className="rounded-full border border-q-border bg-q-card px-3 py-1 text-xs uppercase tracking-wide text-q-muted">
-                      {item.requested_category}
-                    </span>
-                    <span className="rounded-full border border-q-border bg-q-card px-3 py-1 text-xs uppercase tracking-wide text-q-muted">
-                      {item.ai_verdict}
-                    </span>
-                    <span className="rounded-full border border-q-border bg-q-card px-3 py-1 text-xs uppercase tracking-wide text-q-muted">
-                      {item.status}
-                    </span>
+          {items.map((item) => {
+            const mode = String(item.mode || "request").trim().toLowerCase();
+            const isReport = mode === "report";
+
+            return (
+              <div
+                key={item.id}
+                className="rounded-2xl border border-q-border bg-q-bg p-6"
+              >
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h3 className="text-xl font-semibold text-q-text">
+                        {item.requested_name}
+                      </h3>
+
+                      <span className="rounded-full border border-q-border bg-q-card px-3 py-1 text-xs uppercase tracking-wide text-q-muted">
+                        {item.requested_category}
+                      </span>
+
+                      <span className="rounded-full border border-q-border bg-q-card px-3 py-1 text-xs uppercase tracking-wide text-q-muted">
+                        {item.ai_verdict}
+                      </span>
+
+                      <span className="rounded-full border border-q-border bg-q-card px-3 py-1 text-xs uppercase tracking-wide text-q-muted">
+                        {item.status}
+                      </span>
+
+                      {isReport ? (
+                        <span className="rounded-full border border-red-300 bg-red-50 px-3 py-1 text-xs uppercase tracking-wide text-red-700">
+                          Report
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {item.ref_slug ? (
+                      <p className="mt-3 text-sm text-q-muted">
+                        Reported slug:{" "}
+                        <span className="font-medium text-q-text">{item.ref_slug}</span>
+                      </p>
+                    ) : null}
+
+                    {item.report_type ? (
+                      <p className="mt-2 text-sm text-q-muted">
+                        Report type:{" "}
+                        <span className="font-medium text-q-text">{item.report_type}</span>
+                      </p>
+                    ) : null}
+
+                    <p className="mt-4 text-sm leading-7 text-q-muted">
+                      {item.description}
+                    </p>
+
+                    {item.ai_summary ? (
+                      <p className="mt-4 text-sm leading-7 text-q-muted">
+                        <span className="font-medium text-q-text">AI review:</span>{" "}
+                        {item.ai_summary}
+                      </p>
+                    ) : null}
+
+                    {item.created_public_slug ? (
+                      <p className="mt-3 text-sm text-blue-600">
+                        Created slug: {item.created_public_slug}
+                      </p>
+                    ) : null}
+
+                    {(item.requester_name || item.requester_email) ? (
+                      <div className="mt-4 text-sm text-q-muted">
+                        {item.requester_name ? (
+                          <span>
+                            Requested by:{" "}
+                            <span className="font-medium text-q-text">
+                              {item.requester_name}
+                            </span>
+                          </span>
+                        ) : null}
+                        {item.requester_name && item.requester_email ? " · " : null}
+                        {item.requester_email ? (
+                          <span>
+                            Email:{" "}
+                            <span className="font-medium text-q-text">
+                              {item.requester_email}
+                            </span>
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
 
-                  <p className="mt-4 text-sm leading-7 text-q-muted">
-                    {item.description}
-                  </p>
-
-                  {item.ai_summary ? (
-                    <p className="mt-4 text-sm leading-7 text-q-muted">
-                      <span className="font-medium text-q-text">AI review:</span>{" "}
-                      {item.ai_summary}
-                    </p>
-                  ) : null}
-
-                  {item.created_public_slug ? (
-                    <p className="mt-3 text-sm text-blue-600">
-                      Created slug: {item.created_public_slug}
-                    </p>
-                  ) : null}
-                </div>
-
-                <div className="shrink-0">
-                  {item.status !== "implemented" &&
-                  item.ai_verdict === "build-now" &&
-                  item.recommended_category ? (
-                    <button
-                      onClick={() => createFromRequest(item)}
-                      disabled={creatingId === item.id}
-                      className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
-                    >
-                      {creatingId === item.id ? "Creating..." : "Create From Request"}
-                    </button>
-                  ) : null}
+                  <div className="shrink-0">
+                    {!isReport &&
+                    item.status !== "implemented" &&
+                    item.ai_verdict === "build-now" &&
+                    item.recommended_category ? (
+                      <button
+                        onClick={() => createFromRequest(item)}
+                        disabled={creatingId === item.id}
+                        className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
+                      >
+                        {creatingId === item.id ? "Creating..." : "Create From Request"}
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </section>
