@@ -17,7 +17,7 @@ type InterpretedResult = {
   notes?: string[];
 };
 
-function Card({
+function Workspace({
   title,
   children,
 }: {
@@ -25,62 +25,127 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-q-border bg-q-card p-6">
-      <h2 className="text-xl font-semibold text-q-text">{title}</h2>
-      <div className="mt-4">{children}</div>
+    <section className="rounded-[30px] border border-q-border bg-q-card p-6 shadow-sm md:p-8">
+      <div className="mb-6">
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-500">
+          Calculator Workspace
+        </div>
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-q-text md:text-3xl">
+          {title}
+        </h2>
+      </div>
+      {children}
     </section>
   );
 }
 
-function inputClass() {
-  return "w-full rounded-xl border border-q-border bg-q-bg p-4 text-q-text outline-none placeholder:text-q-muted";
+function CalculatorGrid({
+  left,
+  right,
+}: {
+  left: React.ReactNode;
+  right: React.ReactNode;
+}) {
+  return <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">{left}{right}</div>;
 }
 
-function panelClass() {
-  return "rounded-xl border border-q-border bg-q-bg p-5 text-q-text";
-}
-
-function hintClass() {
-  return "rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-slate-700";
-}
-
-function formatNumber(value: number, decimals = 2) {
-  return value.toFixed(decimals);
-}
-
-function formatCurrency(value: number, decimals = 2) {
-  return Number.isFinite(value) ? value.toFixed(decimals) : "0.00";
-}
-
-function renderInterpretation(result: InterpretedResult) {
+function InputPanel({
+  title = "Inputs",
+  subtitle,
+  children,
+}: {
+  title?: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="grid gap-3">
-      <div>
-        {result.secondary}: <strong>{result.primary}</strong>
+    <div className="rounded-[24px] border border-q-border bg-q-bg p-5 shadow-sm">
+      <div className="mb-4">
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-q-muted">
+          {title}
+        </div>
+        {subtitle ? (
+          <div className="mt-2 text-sm leading-6 text-q-muted">{subtitle}</div>
+        ) : null}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function ResultsStage({
+  title = "Result",
+  result,
+  emptyText,
+}: {
+  title?: string;
+  result: InterpretedResult | null;
+  emptyText: string;
+}) {
+  return (
+    <section className="rounded-[26px] border border-q-border bg-gradient-to-br from-q-card to-q-bg p-5 shadow-sm md:p-6">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-q-muted">
+            Output
+          </div>
+          <div className="mt-2 text-lg font-semibold text-q-text">{title}</div>
+        </div>
+        <span
+          className={
+            result
+              ? "rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800"
+              : "rounded-full border border-q-border bg-q-bg px-3 py-1 text-xs font-medium text-q-muted"
+          }
+        >
+          {result ? "Ready" : "Waiting"}
+        </span>
       </div>
 
-      {result.extra ? (
-        <div className="text-sm text-q-muted">{result.extra}</div>
-      ) : null}
+      {result ? (
+        <ResultInterpretation result={result} />
+      ) : (
+        <div className="rounded-2xl border border-q-border bg-q-card p-5 text-sm leading-7 text-q-muted">
+          {emptyText}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ResultInterpretation({ result }: { result: InterpretedResult }) {
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-q-border bg-q-card p-5 shadow-sm">
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-q-muted">
+          {result.secondary}
+        </div>
+        <div className="mt-3 text-3xl font-bold tracking-tight text-q-text">
+          {result.primary}
+        </div>
+        {result.extra ? (
+          <div className="mt-3 text-sm leading-7 text-q-muted">{result.extra}</div>
+        ) : null}
+      </div>
 
       {result.insight ? (
-        <div className={hintClass()}>
-          <div className="font-medium text-slate-800">What this means</div>
+        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm leading-7 text-slate-800">
+          <div className="font-semibold">What this means</div>
           <div className="mt-1">{result.insight}</div>
         </div>
       ) : null}
 
       {result.recommendation ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-          <div className="font-medium">Recommendation</div>
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-7 text-emerald-900">
+          <div className="font-semibold">Recommendation</div>
           <div className="mt-1">{result.recommendation}</div>
         </div>
       ) : null}
 
       {result.notes && result.notes.length > 0 ? (
-        <div className="rounded-xl border border-q-border bg-white p-4 text-sm text-q-muted">
-          <div className="font-medium text-q-text">Notes</div>
-          <ul className="mt-2 grid gap-1">
+        <div className="rounded-2xl border border-q-border bg-q-card p-4 text-sm text-q-muted">
+          <div className="font-semibold text-q-text">Notes</div>
+          <ul className="mt-2 grid gap-2">
             {result.notes.map((note, index) => (
               <li key={`${note}-${index}`}>• {note}</li>
             ))}
@@ -89,6 +154,22 @@ function renderInterpretation(result: InterpretedResult) {
       ) : null}
     </div>
   );
+}
+
+function fieldClass() {
+  return "w-full rounded-2xl border border-q-border bg-q-card px-4 py-3.5 text-q-text outline-none transition duration-150 placeholder:text-q-muted focus:border-blue-400/60 focus:bg-white";
+}
+
+function selectClass() {
+  return fieldClass();
+}
+
+function formatNumber(value: number, decimals = 2) {
+  return value.toFixed(decimals);
+}
+
+function formatCurrency(value: number, decimals = 2) {
+  return Number.isFinite(value) ? value.toFixed(decimals) : "0.00";
 }
 
 function getBMIInterpretation(bmi: number) {
@@ -105,8 +186,7 @@ function getBMIInterpretation(bmi: number) {
   if (bmi < 25) {
     return {
       category: "Normal",
-      insight:
-        "Your BMI is within the standard healthy range for most adults.",
+      insight: "Your BMI is within the standard healthy range for most adults.",
       recommendation:
         "Maintain current habits with balanced nutrition, sleep, and regular activity.",
     };
@@ -186,8 +266,7 @@ function getPercentageInterpretation(
 ) {
   if (mode === "of") {
     return {
-      insight:
-        "This calculates a percentage portion of a whole value.",
+      insight: "This calculates a percentage portion of a whole value.",
       recommendation:
         "Useful for discounts, commissions, tax portions, and proportional breakdowns.",
     };
@@ -195,8 +274,7 @@ function getPercentageInterpretation(
 
   if (mode === "whatPercent") {
     return {
-      insight:
-        "This tells you how large A is relative to B as a percentage.",
+      insight: "This tells you how large A is relative to B as a percentage.",
       recommendation:
         result > 100
           ? "Since the result is above 100%, A is larger than B."
@@ -225,20 +303,23 @@ function getRateInterpretation(rate: number, label: string) {
   if (rate < 1) {
     return {
       insight: `${label} is below 1 per unit period, which suggests a slow rate of output.`,
-      recommendation: "Try a longer observation period if the value looks too small to interpret easily.",
+      recommendation:
+        "Try a longer observation period if the value looks too small to interpret easily.",
     };
   }
 
   if (rate < 10) {
     return {
       insight: `${label} is moderate and likely realistic for ongoing work or growth activity.`,
-      recommendation: "Compare this against historical averages or team benchmarks for better meaning.",
+      recommendation:
+        "Compare this against historical averages or team benchmarks for better meaning.",
     };
   }
 
   return {
     insight: `${label} is high relative to a single period.`,
-    recommendation: "Double-check that the period unit is correct and that the input volume is realistic.",
+    recommendation:
+      "Double-check that the period unit is correct and that the input volume is realistic.",
   };
 }
 
@@ -287,16 +368,14 @@ function getTimeBudgetInterpretation(free: number, total: number) {
 
   if (free <= total * 0.25) {
     return {
-      insight:
-        "You still have some free time, but your day is heavily scheduled.",
+      insight: "You still have some free time, but your day is heavily scheduled.",
       recommendation:
         "Protect this remaining time for rest, transitions, and unplanned tasks instead of filling it completely.",
     };
   }
 
   return {
-    insight:
-      "Your schedule leaves a healthy amount of unallocated time.",
+    insight: "Your schedule leaves a healthy amount of unallocated time.",
     recommendation:
       "You likely have room for recovery, flexibility, or optional tasks without overcrowding the day.",
   };
@@ -323,8 +402,7 @@ function getRevenueInterpretation(revenue: number) {
 
   if (revenue < 1000) {
     return {
-      insight:
-        "This is a meaningful mid-range revenue estimate.",
+      insight: "This is a meaningful mid-range revenue estimate.",
       recommendation:
         "Use this as a directional forecast and compare it against historical performance or niche benchmarks.",
     };
@@ -372,7 +450,11 @@ function AgeCalculator() {
       months += 12;
     }
 
-    const nextBirthday = new Date(today.getFullYear(), birth.getMonth(), birth.getDate());
+    const nextBirthday = new Date(
+      today.getFullYear(),
+      birth.getMonth(),
+      birth.getDate()
+    );
     if (nextBirthday < today) {
       nextBirthday.setFullYear(today.getFullYear() + 1);
     }
@@ -380,39 +462,42 @@ function AgeCalculator() {
     const daysUntilBirthday = Math.ceil(msUntilBirthday / (1000 * 60 * 60 * 24));
 
     return {
-      years,
-      months,
-      days,
-      daysUntilBirthday,
-    };
+      primary: `${years} years, ${months} months, ${days} days`,
+      secondary: "Calculated age",
+      extra: `Next birthday in approximately ${daysUntilBirthday} day${
+        daysUntilBirthday === 1 ? "" : "s"
+      }.`,
+      insight:
+        "This calculates exact calendar age based on your birth date and today’s date.",
+      recommendation:
+        "Use this for eligibility checks, forms, school admissions, or age-based planning.",
+    } satisfies InterpretedResult;
   }, [birthDate]);
 
   return (
-    <Card title="Age Calculator">
-      <div className="space-y-4">
-        <input
-          type="date"
-          value={birthDate}
-          onChange={(e) => setBirthDate(e.target.value)}
-          className={inputClass()}
-        />
-        <div className={panelClass()}>
-          {result ? (
-            renderInterpretation({
-              primary: `${result.years} years, ${result.months} months, ${result.days} days`,
-              secondary: "Calculated age",
-              extra: `Next birthday in approximately ${result.daysUntilBirthday} day${result.daysUntilBirthday === 1 ? "" : "s"}.`,
-              insight:
-                "This calculates exact calendar age based on your birth date and today’s date.",
-              recommendation:
-                "Use this for eligibility checks, forms, school admissions, or age-based planning.",
-            })
-          ) : (
-            <span className="text-q-muted">Choose a birth date to calculate age.</span>
-          )}
-        </div>
-      </div>
-    </Card>
+    <Workspace title="Age Calculator">
+      <CalculatorGrid
+        left={
+          <InputPanel
+            subtitle="Choose a birth date to calculate current age and next birthday timing."
+          >
+            <input
+              type="date"
+              value={birthDate}
+              onChange={(e) => setBirthDate(e.target.value)}
+              className={fieldClass()}
+            />
+          </InputPanel>
+        }
+        right={
+          <ResultsStage
+            title="Age summary"
+            result={result}
+            emptyText="Choose a birth date to calculate age."
+          />
+        }
+      />
+    </Workspace>
   );
 }
 
@@ -420,7 +505,7 @@ function BMICalculator() {
   const [heightCm, setHeightCm] = useState("");
   const [weightKg, setWeightKg] = useState("");
 
-  const result = useMemo(() => {
+  const result = useMemo<InterpretedResult | null>(() => {
     const height = Number(heightCm);
     const weight = Number(weightKg);
 
@@ -430,48 +515,49 @@ function BMICalculator() {
     const interpretation = getBMIInterpretation(bmi);
 
     return {
-      bmi,
-      category: interpretation.category,
+      primary: `${bmi.toFixed(1)} (${interpretation.category})`,
+      secondary: "BMI",
       insight: interpretation.insight,
       recommendation: interpretation.recommendation,
+      notes: [
+        "BMI is a screening metric, not a full medical diagnosis.",
+        "Very muscular or highly trained individuals may see misleading BMI values.",
+      ],
     };
   }, [heightCm, weightKg]);
 
   return (
-    <Card title="BMI Calculator">
-      <div className="grid gap-4">
-        <input
-          type="number"
-          value={heightCm}
-          onChange={(e) => setHeightCm(e.target.value)}
-          placeholder="Height in cm"
-          className={inputClass()}
-        />
-        <input
-          type="number"
-          value={weightKg}
-          onChange={(e) => setWeightKg(e.target.value)}
-          placeholder="Weight in kg"
-          className={inputClass()}
-        />
-        <div className={panelClass()}>
-          {result ? (
-            renderInterpretation({
-              primary: `${result.bmi.toFixed(1)} (${result.category})`,
-              secondary: "BMI",
-              insight: result.insight,
-              recommendation: result.recommendation,
-              notes: [
-                "BMI is a screening metric, not a full medical diagnosis.",
-                "Very muscular or highly trained individuals may see misleading BMI values.",
-              ],
-            })
-          ) : (
-            <span className="text-q-muted">Enter height and weight to calculate BMI.</span>
-          )}
-        </div>
-      </div>
-    </Card>
+    <Workspace title="BMI Calculator">
+      <CalculatorGrid
+        left={
+          <InputPanel subtitle="Enter height and weight to estimate body mass index.">
+            <div className="grid gap-4">
+              <input
+                type="number"
+                value={heightCm}
+                onChange={(e) => setHeightCm(e.target.value)}
+                placeholder="Height in cm"
+                className={fieldClass()}
+              />
+              <input
+                type="number"
+                value={weightKg}
+                onChange={(e) => setWeightKg(e.target.value)}
+                placeholder="Weight in kg"
+                className={fieldClass()}
+              />
+            </div>
+          </InputPanel>
+        }
+        right={
+          <ResultsStage
+            title="BMI result"
+            result={result}
+            emptyText="Enter height and weight to calculate BMI."
+          />
+        }
+      />
+    </Workspace>
   );
 }
 
@@ -480,7 +566,7 @@ function LoanCalculator() {
   const [annualRate, setAnnualRate] = useState("");
   const [years, setYears] = useState("");
 
-  const result = useMemo(() => {
+  const result = useMemo<InterpretedResult | null>(() => {
     const p = Number(principal);
     const y = Number(years);
     const monthlyRate = Number(annualRate) / 100 / 12;
@@ -493,10 +579,11 @@ function LoanCalculator() {
       const interpretation = getLoanInterpretation(p, 0);
 
       return {
-        monthly,
-        total: monthly * payments,
-        interest: 0,
-        ...interpretation,
+        primary: formatCurrency(monthly),
+        secondary: "Monthly payment",
+        extra: `Total payment: ${formatCurrency(monthly * payments)} · Total interest: ${formatCurrency(0)}`,
+        insight: interpretation.insight,
+        recommendation: interpretation.recommendation,
       };
     }
 
@@ -509,66 +596,53 @@ function LoanCalculator() {
     const interpretation = getLoanInterpretation(p, interest);
 
     return {
-      monthly,
-      total,
-      interest,
-      ...interpretation,
+      primary: formatCurrency(monthly),
+      secondary: "Monthly payment",
+      extra: `Total payment: ${formatCurrency(total)} · Total interest: ${formatCurrency(interest)}`,
+      insight: interpretation.insight,
+      recommendation: interpretation.recommendation,
     };
   }, [principal, annualRate, years]);
 
   return (
-    <Card title="Loan Calculator">
-      <div className="grid gap-4">
-        <input
-          type="number"
-          value={principal}
-          onChange={(e) => setPrincipal(e.target.value)}
-          placeholder="Loan amount"
-          className={inputClass()}
-        />
-        <input
-          type="number"
-          value={annualRate}
-          onChange={(e) => setAnnualRate(e.target.value)}
-          placeholder="Annual interest rate (%)"
-          className={inputClass()}
-        />
-        <input
-          type="number"
-          value={years}
-          onChange={(e) => setYears(e.target.value)}
-          placeholder="Repayment years"
-          className={inputClass()}
-        />
-        <div className={panelClass()}>
-          {result ? (
-            <div className="grid gap-3">
-              <div>
-                Monthly Payment: <strong>{formatCurrency(result.monthly)}</strong>
-              </div>
-              <div>
-                Total Payment: <strong>{formatCurrency(result.total)}</strong>
-              </div>
-              <div>
-                Total Interest: <strong>{formatCurrency(result.interest)}</strong>
-              </div>
-
-              <div className={hintClass()}>
-                <div className="font-medium text-slate-800">What this means</div>
-                <div className="mt-1">{result.insight}</div>
-              </div>
-
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-                <div className="font-medium">Recommendation</div>
-                <div className="mt-1">{result.recommendation}</div>
-              </div>
+    <Workspace title="Loan Calculator">
+      <CalculatorGrid
+        left={
+          <InputPanel subtitle="Estimate monthly repayment and total borrowing cost.">
+            <div className="grid gap-4">
+              <input
+                type="number"
+                value={principal}
+                onChange={(e) => setPrincipal(e.target.value)}
+                placeholder="Loan amount"
+                className={fieldClass()}
+              />
+              <input
+                type="number"
+                value={annualRate}
+                onChange={(e) => setAnnualRate(e.target.value)}
+                placeholder="Annual interest rate (%)"
+                className={fieldClass()}
+              />
+              <input
+                type="number"
+                value={years}
+                onChange={(e) => setYears(e.target.value)}
+                placeholder="Repayment years"
+                className={fieldClass()}
+              />
             </div>
-          ) : (
-            <span className="text-q-muted">Enter loan values to calculate monthly payment.</span>
-          )}
-        </div>
-      </div>
-    </Card>
+          </InputPanel>
+        }
+        right={
+          <ResultsStage
+            title="Loan summary"
+            result={result}
+            emptyText="Enter loan values to calculate monthly payment."
+          />
+        }
+      />
+    </Workspace>
   );
 }
 
@@ -577,7 +651,7 @@ function EMICalculator() {
   const [annualRate, setAnnualRate] = useState("");
   const [months, setMonths] = useState("");
 
-  const result = useMemo(() => {
+  const result = useMemo<InterpretedResult | null>(() => {
     const p = Number(principal);
     const m = Number(months);
     const monthlyRate = Number(annualRate) / 100 / 12;
@@ -587,9 +661,9 @@ function EMICalculator() {
     if (monthlyRate === 0) {
       const emi = p / m;
       return {
-        emi,
-        total: emi * m,
-        interest: 0,
+        primary: formatCurrency(emi),
+        secondary: "Monthly EMI",
+        extra: `Total payment: ${formatCurrency(emi * m)} · Total interest: ${formatCurrency(0)}`,
         insight:
           "With a zero interest rate, your EMI is simply the principal divided by the total months.",
         recommendation:
@@ -606,68 +680,55 @@ function EMICalculator() {
     const loanNotes = getLoanInterpretation(p, interest);
 
     return {
-      emi,
-      total,
-      interest,
-      insight:
-        `This EMI reflects the monthly payment needed to fully repay the loan in ${m} month${m === 1 ? "" : "s"}. ${loanNotes.insight}`,
+      primary: formatCurrency(emi),
+      secondary: "Monthly EMI",
+      extra: `Total payment: ${formatCurrency(total)} · Total interest: ${formatCurrency(interest)}`,
+      insight: `This EMI reflects the monthly payment needed to fully repay the loan in ${m} month${
+        m === 1 ? "" : "s"
+      }. ${loanNotes.insight}`,
       recommendation: loanNotes.recommendation,
     };
   }, [principal, annualRate, months]);
 
   return (
-    <Card title="EMI Calculator">
-      <div className="grid gap-4">
-        <input
-          type="number"
-          value={principal}
-          onChange={(e) => setPrincipal(e.target.value)}
-          placeholder="Loan amount"
-          className={inputClass()}
-        />
-        <input
-          type="number"
-          value={annualRate}
-          onChange={(e) => setAnnualRate(e.target.value)}
-          placeholder="Annual interest rate (%)"
-          className={inputClass()}
-        />
-        <input
-          type="number"
-          value={months}
-          onChange={(e) => setMonths(e.target.value)}
-          placeholder="Loan tenure in months"
-          className={inputClass()}
-        />
-        <div className={panelClass()}>
-          {result ? (
-            <div className="grid gap-3">
-              <div>
-                Monthly EMI: <strong>{formatCurrency(result.emi)}</strong>
-              </div>
-              <div>
-                Total Payment: <strong>{formatCurrency(result.total)}</strong>
-              </div>
-              <div>
-                Total Interest: <strong>{formatCurrency(result.interest)}</strong>
-              </div>
-
-              <div className={hintClass()}>
-                <div className="font-medium text-slate-800">What this means</div>
-                <div className="mt-1">{result.insight}</div>
-              </div>
-
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-                <div className="font-medium">Recommendation</div>
-                <div className="mt-1">{result.recommendation}</div>
-              </div>
+    <Workspace title="EMI Calculator">
+      <CalculatorGrid
+        left={
+          <InputPanel subtitle="Estimate monthly EMI for a loan tenure in months.">
+            <div className="grid gap-4">
+              <input
+                type="number"
+                value={principal}
+                onChange={(e) => setPrincipal(e.target.value)}
+                placeholder="Loan amount"
+                className={fieldClass()}
+              />
+              <input
+                type="number"
+                value={annualRate}
+                onChange={(e) => setAnnualRate(e.target.value)}
+                placeholder="Annual interest rate (%)"
+                className={fieldClass()}
+              />
+              <input
+                type="number"
+                value={months}
+                onChange={(e) => setMonths(e.target.value)}
+                placeholder="Loan tenure in months"
+                className={fieldClass()}
+              />
             </div>
-          ) : (
-            <span className="text-q-muted">Enter EMI values to calculate payment.</span>
-          )}
-        </div>
-      </div>
-    </Card>
+          </InputPanel>
+        }
+        right={
+          <ResultsStage
+            title="EMI summary"
+            result={result}
+            emptyText="Enter EMI values to calculate payment."
+          />
+        }
+      />
+    </Workspace>
   );
 }
 
@@ -680,7 +741,12 @@ function PercentageCalculator() {
     const first = Number(a);
     const second = Number(b);
 
-    if (!Number.isFinite(first) || !Number.isFinite(second) || a === "" || b === "") {
+    if (
+      !Number.isFinite(first) ||
+      !Number.isFinite(second) ||
+      a === "" ||
+      b === ""
+    ) {
       return null;
     }
 
@@ -737,42 +803,49 @@ function PercentageCalculator() {
   }, [mode, a, b]);
 
   return (
-    <Card title="Percentage Calculator">
-      <div className="grid gap-4">
-        <select
-          value={mode}
-          onChange={(e) => setMode(e.target.value as "of" | "whatPercent" | "change")}
-          className={inputClass()}
-        >
-          <option value="of">What is A% of B?</option>
-          <option value="whatPercent">A is what percent of B?</option>
-          <option value="change">Percentage change from B to A</option>
-        </select>
+    <Workspace title="Percentage Calculator">
+      <CalculatorGrid
+        left={
+          <InputPanel subtitle="Compare values as percentages, portions, or relative change.">
+            <div className="grid gap-4">
+              <select
+                value={mode}
+                onChange={(e) =>
+                  setMode(e.target.value as "of" | "whatPercent" | "change")
+                }
+                className={selectClass()}
+              >
+                <option value="of">What is A% of B?</option>
+                <option value="whatPercent">A is what percent of B?</option>
+                <option value="change">Percentage change from B to A</option>
+              </select>
 
-        <input
-          type="number"
-          value={a}
-          onChange={(e) => setA(e.target.value)}
-          placeholder="Value A"
-          className={inputClass()}
-        />
-        <input
-          type="number"
-          value={b}
-          onChange={(e) => setB(e.target.value)}
-          placeholder="Value B"
-          className={inputClass()}
-        />
-
-        <div className={panelClass()}>
-          {result ? (
-            renderInterpretation(result)
-          ) : (
-            <span className="text-q-muted">Enter values to calculate.</span>
-          )}
-        </div>
-      </div>
-    </Card>
+              <input
+                type="number"
+                value={a}
+                onChange={(e) => setA(e.target.value)}
+                placeholder="Value A"
+                className={fieldClass()}
+              />
+              <input
+                type="number"
+                value={b}
+                onChange={(e) => setB(e.target.value)}
+                placeholder="Value B"
+                className={fieldClass()}
+              />
+            </div>
+          </InputPanel>
+        }
+        right={
+          <ResultsStage
+            title="Percentage result"
+            result={result}
+            emptyText="Enter values to calculate."
+          />
+        }
+      />
+    </Workspace>
   );
 }
 
@@ -807,38 +880,44 @@ function SimpleInterestCalculator(config: Record<string, unknown>) {
   }, [principal, rate, time]);
 
   return (
-    <Card title={title}>
-      <div className="grid gap-4">
-        <input
-          type="number"
-          value={principal}
-          onChange={(e) => setPrincipal(e.target.value)}
-          placeholder="Principal amount"
-          className={inputClass()}
-        />
-        <input
-          type="number"
-          value={rate}
-          onChange={(e) => setRate(e.target.value)}
-          placeholder="Rate (%)"
-          className={inputClass()}
-        />
-        <input
-          type="number"
-          value={time}
-          onChange={(e) => setTime(e.target.value)}
-          placeholder="Time (years)"
-          className={inputClass()}
-        />
-        <div className={panelClass()}>
-          {result ? (
-            renderInterpretation(result)
-          ) : (
-            <span className="text-q-muted">Enter values to calculate simple interest.</span>
-          )}
-        </div>
-      </div>
-    </Card>
+    <Workspace title={title}>
+      <CalculatorGrid
+        left={
+          <InputPanel subtitle="Estimate interest earned or owed on a simple-interest basis.">
+            <div className="grid gap-4">
+              <input
+                type="number"
+                value={principal}
+                onChange={(e) => setPrincipal(e.target.value)}
+                placeholder="Principal amount"
+                className={fieldClass()}
+              />
+              <input
+                type="number"
+                value={rate}
+                onChange={(e) => setRate(e.target.value)}
+                placeholder="Rate (%)"
+                className={fieldClass()}
+              />
+              <input
+                type="number"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                placeholder="Time (years)"
+                className={fieldClass()}
+              />
+            </div>
+          </InputPanel>
+        }
+        right={
+          <ResultsStage
+            title="Interest summary"
+            result={result}
+            emptyText="Enter values to calculate simple interest."
+          />
+        }
+      />
+    </Workspace>
   );
 }
 
@@ -883,41 +962,46 @@ function GSTCalculator(config: Record<string, unknown>) {
   }, [amount, rate, mode]);
 
   return (
-    <Card title={title}>
-      <div className="grid gap-4">
-        <select
-          value={mode}
-          onChange={(e) => setMode(e.target.value as "add" | "remove")}
-          className={inputClass()}
-        >
-          <option value="add">Add GST</option>
-          <option value="remove">Remove GST</option>
-        </select>
+    <Workspace title={title}>
+      <CalculatorGrid
+        left={
+          <InputPanel subtitle="Add GST to a base amount or remove GST from a tax-inclusive total.">
+            <div className="grid gap-4">
+              <select
+                value={mode}
+                onChange={(e) => setMode(e.target.value as "add" | "remove")}
+                className={selectClass()}
+              >
+                <option value="add">Add GST</option>
+                <option value="remove">Remove GST</option>
+              </select>
 
-        <input
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="Amount"
-          className={inputClass()}
-        />
-        <input
-          type="number"
-          value={rate}
-          onChange={(e) => setRate(e.target.value)}
-          placeholder="GST rate (%)"
-          className={inputClass()}
-        />
-
-        <div className={panelClass()}>
-          {result ? (
-            renderInterpretation(result)
-          ) : (
-            <span className="text-q-muted">Enter values to calculate GST.</span>
-          )}
-        </div>
-      </div>
-    </Card>
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="Amount"
+                className={fieldClass()}
+              />
+              <input
+                type="number"
+                value={rate}
+                onChange={(e) => setRate(e.target.value)}
+                placeholder="GST rate (%)"
+                className={fieldClass()}
+              />
+            </div>
+          </InputPanel>
+        }
+        right={
+          <ResultsStage
+            title="GST summary"
+            result={result}
+            emptyText="Enter values to calculate GST."
+          />
+        }
+      />
+    </Workspace>
   );
 }
 
@@ -1077,7 +1161,11 @@ function FormulaCalculator({
       const exercise = Number(values.exercise_hours || "");
       const other = Number(values.other_hours || "");
 
-      if ([total, sleep, work, commute, exercise, other].some((v) => !Number.isFinite(v))) {
+      if (
+        [total, sleep, work, commute, exercise, other].some(
+          (v) => !Number.isFinite(v)
+        )
+      ) {
         return null;
       }
 
@@ -1102,7 +1190,11 @@ function FormulaCalculator({
       const requests = Number(values.requests || "");
       const windowSeconds = Number(values.window_seconds || "");
 
-      if (!Number.isFinite(requests) || !Number.isFinite(windowSeconds) || windowSeconds === 0) {
+      if (
+        !Number.isFinite(requests) ||
+        !Number.isFinite(windowSeconds) ||
+        windowSeconds === 0
+      ) {
         return null;
       }
 
@@ -1234,15 +1326,19 @@ function FormulaCalculator({
     const label = String(config.resultLabel || "Result");
 
     if (preset === "metric-ratio") {
-      let insight = "This expresses Value A relative to Value B using the configured multiplier.";
-      let recommendation = "Use this to compare efficiency, completion, utilization, or share of total.";
+      let insight =
+        "This expresses Value A relative to Value B using the configured multiplier.";
+      let recommendation =
+        "Use this to compare efficiency, completion, utilization, or share of total.";
 
       if (resultValue < 25) {
         insight = "The ratio is low relative to the baseline.";
-        recommendation = "Review whether the numerator is underperforming or the denominator is too large for the intended target.";
+        recommendation =
+          "Review whether the numerator is underperforming or the denominator is too large for the intended target.";
       } else if (resultValue > 75) {
         insight = "The ratio is high relative to the baseline.";
-        recommendation = "This may indicate strong performance, but confirm that the baseline and units are appropriate.";
+        recommendation =
+          "This may indicate strong performance, but confirm that the baseline and units are appropriate.";
       }
 
       return {
@@ -1257,91 +1353,98 @@ function FormulaCalculator({
       primary: `${resultValue.toFixed(decimals)}${suffix}`,
       secondary: label,
       insight: "This result is based on the configured formula for this calculator.",
-      recommendation: "Check the units and assumptions behind both values before using the result in decisions.",
+      recommendation:
+        "Check the units and assumptions behind both values before using the result in decisions.",
     };
   }, [config, dateTimeValue, mode, preset, values]);
 
   return (
-    <Card title={name || "Formula Calculator"}>
-      <div className="grid gap-4">
-        {preset === "unix-timestamp" ? (
-          <>
-            <select
-              value={mode}
-              onChange={(e) =>
-                setMode(e.target.value as "timestamp-to-date" | "date-to-timestamp")
-              }
-              className={inputClass()}
-            >
-              <option value="timestamp-to-date">Timestamp → Date</option>
-              <option value="date-to-timestamp">Date → Timestamp</option>
-            </select>
+    <Workspace title={name || "Formula Calculator"}>
+      <CalculatorGrid
+        left={
+          <InputPanel subtitle="Enter the required values for this configured formula calculator.">
+            <div className="grid gap-4">
+              {preset === "unix-timestamp" ? (
+                <>
+                  <select
+                    value={mode}
+                    onChange={(e) =>
+                      setMode(
+                        e.target.value as "timestamp-to-date" | "date-to-timestamp"
+                      )
+                    }
+                    className={selectClass()}
+                  >
+                    <option value="timestamp-to-date">Timestamp → Date</option>
+                    <option value="date-to-timestamp">Date → Timestamp</option>
+                  </select>
 
-            {mode === "timestamp-to-date" ? (
-              <input
-                type="number"
-                value={values.timestamp || ""}
-                onChange={(e) =>
-                  setValues((prev) => ({
-                    ...prev,
-                    timestamp: e.target.value,
-                  }))
-                }
-                placeholder="Unix timestamp"
-                className={inputClass()}
-              />
-            ) : (
-              <input
-                type="datetime-local"
-                value={dateTimeValue}
-                onChange={(e) => setDateTimeValue(e.target.value)}
-                className={inputClass()}
-              />
-            )}
-          </>
-        ) : (
-          fieldDefinitions.map((field) => (
-            <input
-              key={field.key}
-              type="number"
-              value={values[field.key] || ""}
-              onChange={(e) =>
-                setValues((prev) => ({
-                  ...prev,
-                  [field.key]: e.target.value,
-                }))
-              }
-              placeholder={field.placeholder || field.label}
-              className={inputClass()}
-            />
-          ))
-        )}
-
-        <div className={panelClass()}>
-          {result ? (
-            renderInterpretation(result)
-          ) : (
-            <span className="text-q-muted">Enter values to calculate.</span>
-          )}
-        </div>
-      </div>
-    </Card>
+                  {mode === "timestamp-to-date" ? (
+                    <input
+                      type="number"
+                      value={values.timestamp || ""}
+                      onChange={(e) =>
+                        setValues((prev) => ({
+                          ...prev,
+                          timestamp: e.target.value,
+                        }))
+                      }
+                      placeholder="Unix timestamp"
+                      className={fieldClass()}
+                    />
+                  ) : (
+                    <input
+                      type="datetime-local"
+                      value={dateTimeValue}
+                      onChange={(e) => setDateTimeValue(e.target.value)}
+                      className={fieldClass()}
+                    />
+                  )}
+                </>
+              ) : (
+                fieldDefinitions.map((field) => (
+                  <input
+                    key={field.key}
+                    type="number"
+                    value={values[field.key] || ""}
+                    onChange={(e) =>
+                      setValues((prev) => ({
+                        ...prev,
+                        [field.key]: e.target.value,
+                      }))
+                    }
+                    placeholder={field.placeholder || field.label}
+                    className={fieldClass()}
+                  />
+                ))
+              )}
+            </div>
+          </InputPanel>
+        }
+        right={
+          <ResultsStage
+            title="Formula result"
+            result={result}
+            emptyText="Enter values to calculate."
+          />
+        }
+      />
+    </Workspace>
   );
 }
 
 function GenericCalculator({ name }: { name?: string }) {
   return (
-    <Card title={name || "Calculator"}>
+    <Workspace title={name || "Calculator"}>
       <div className="grid gap-4">
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
           <div className="text-lg font-semibold">No direct formula available</div>
-          <div className="mt-2 text-sm">
-            This page represents a real concept, but it does not map cleanly to a single universal
-            formula. The result depends on context, definitions, and how the metric is measured.
+          <div className="mt-2 text-sm leading-7">
+            This page represents a real concept, but it does not map cleanly to a single universal formula. The result depends on context, definitions, and how the metric is measured.
           </div>
         </div>
 
-        <div className="rounded-xl border border-q-border bg-q-bg p-5 text-sm text-q-text">
+        <div className="rounded-2xl border border-q-border bg-q-bg p-5 text-sm text-q-text">
           <div className="font-medium">Why this happens</div>
           <ul className="mt-2 grid gap-2 text-q-muted">
             <li>• Some topics are analytical concepts rather than strict mathematical formulas.</li>
@@ -1350,7 +1453,7 @@ function GenericCalculator({ name }: { name?: string }) {
           </ul>
         </div>
 
-        <div className="rounded-xl border border-blue-200 bg-blue-50 p-5 text-sm text-slate-800">
+        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 text-sm text-slate-800">
           <div className="font-medium">What to do instead</div>
           <ul className="mt-2 grid gap-2">
             <li>• Break the problem into measurable components such as rates, ratios, or time values.</li>
@@ -1359,7 +1462,7 @@ function GenericCalculator({ name }: { name?: string }) {
           </ul>
         </div>
       </div>
-    </Card>
+    </Workspace>
   );
 }
 
