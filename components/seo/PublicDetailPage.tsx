@@ -186,60 +186,36 @@ export default function PublicDetailPage({
                     )}
                   </div>
 
-                  <div className="mt-8 rounded-2xl border border-q-border bg-q-bg/60 p-4 md:p-5">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                      <div>
-                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-q-muted">
-                          Actions
-                        </div>
-                        <p className="mt-2 text-sm leading-6 text-q-muted">
-                          Explore more, request a new item, or report an issue with this page.
-                        </p>
-                      </div>
+                  <div className="mt-8 flex flex-wrap items-center gap-3">
+                    <Link
+                      href={listingHref(table)}
+                      className={`${actionButtonBase()} bg-q-primary text-white shadow-sm hover:bg-q-primary-hover hover:shadow-md`}
+                    >
+                      Browse more {label.toLowerCase()}
+                    </Link>
 
-                      <div className="flex flex-wrap gap-3">
-                        <Link
-                          href={listingHref(table)}
-                          className={`${actionButtonBase()} bg-q-primary text-white shadow-sm hover:bg-q-primary-hover hover:shadow-md`}
-                        >
-                          Browse more {label.toLowerCase()}
-                        </Link>
-
-                        <Link
-                          href={`/request-tool?category=${encodeURIComponent(
-                            section === "ai-tools" ? "ai-tool" : section.slice(0, -1)
-                          )}&ref=${encodeURIComponent(item.slug)}`}
-                          className={`${actionButtonBase()} border border-q-border bg-q-card text-q-text hover:border-blue-300/60 hover:bg-q-card-hover hover:shadow-sm`}
-                        >
-                          Request a tool
-                        </Link>
-
-                        <Link
-                          href={`/request-tool?mode=report&category=${encodeURIComponent(
-                            section === "ai-tools" ? "ai-tool" : section.slice(0, -1)
-                          )}&ref=${encodeURIComponent(item.slug)}&name=${encodeURIComponent(item.name)}`}
-                          className={`${actionButtonBase()} border border-red-300 bg-transparent text-red-600 hover:bg-red-50 hover:shadow-sm`}
-                        >
-                          🚨 Report this tool
-                        </Link>
-                      </div>
-                    </div>
-
-                    <div className="mt-5 border-t border-q-border/80 pt-5">
-                      <div className="mb-3 flex items-center justify-between gap-3">
-                        <div>
-                          <div className="text-sm font-semibold text-q-text">Share this page</div>
-                          <div className="mt-1 text-sm text-q-muted">
-                            Share this tool without distracting from the main actions.
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl border border-q-border bg-q-card p-4">
-                        <ShareMenu title={item.name} url={canonicalUrl} />
-                      </div>
-                    </div>
+                    <Link
+                      href={`/request-tool?mode=report&category=${encodeURIComponent(
+                        section === "ai-tools" ? "ai-tool" : section.slice(0, -1)
+                      )}&ref=${encodeURIComponent(item.slug)}&name=${encodeURIComponent(item.name)}`}
+                      className={`${actionButtonBase()} border border-red-300 bg-transparent text-red-600 hover:bg-red-50 hover:shadow-sm`}
+                    >
+                      🚨 Report this tool
+                    </Link>
                   </div>
+
+                  <details className="mt-5 rounded-2xl border border-q-border bg-q-bg">
+                    <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-q-text transition hover:bg-q-card-hover">
+                      <span className="inline-flex items-center gap-2">
+                        <span>Share this page</span>
+                        <span className="text-q-muted">optional</span>
+                      </span>
+                    </summary>
+
+                    <div className="border-t border-q-border p-4">
+                      <ShareMenu title={item.name} url={canonicalUrl} />
+                    </div>
+                  </details>
                 </section>
 
                 {primaryContent && <div className="max-w-4xl">{primaryContent}</div>}
