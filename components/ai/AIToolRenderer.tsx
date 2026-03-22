@@ -46,19 +46,23 @@ const GENERIC_OUTPUT_VALUES = new Set([
 ]);
 
 function inputClass() {
-  return "w-full rounded-2xl border border-q-border bg-q-bg px-4 py-3 text-q-text outline-none transition placeholder:text-q-muted focus:border-blue-400/60";
+  return "w-full rounded-2xl border border-q-border bg-q-bg px-4 py-3 text-q-text outline-none transition duration-150 placeholder:text-q-muted focus:border-blue-400/60 focus:bg-q-card";
 }
 
 function textareaClass(minHeight = "min-h-[160px]") {
-  return `w-full rounded-2xl border border-q-border bg-q-bg px-4 py-4 text-q-text outline-none transition placeholder:text-q-muted focus:border-blue-400/60 ${minHeight}`;
+  return `w-full rounded-2xl border border-q-border bg-q-bg px-4 py-4 text-q-text outline-none transition duration-150 placeholder:text-q-muted focus:border-blue-400/60 focus:bg-q-card ${minHeight}`;
 }
 
 function cardClass() {
-  return "rounded-3xl border border-q-border bg-q-card p-6 shadow-sm md:p-8";
+  return "rounded-[30px] border border-q-border bg-q-card p-6 shadow-sm md:p-8";
 }
 
 function panelClass() {
   return "rounded-2xl border border-q-border bg-q-bg p-4";
+}
+
+function elevatedPanelClass() {
+  return "rounded-[24px] border border-q-border bg-q-bg p-5 shadow-sm";
 }
 
 function softInfoClass() {
@@ -78,7 +82,7 @@ function labelClass() {
 }
 
 function outputShellClass() {
-  return "rounded-2xl border border-q-border bg-q-bg p-5 md:p-6";
+  return "rounded-[26px] border border-q-border bg-gradient-to-br from-q-card to-q-bg p-5 shadow-sm md:p-6";
 }
 
 function outputInnerClass() {
@@ -86,7 +90,19 @@ function outputInnerClass() {
 }
 
 function copyButtonClass() {
-  return "rounded-xl border border-q-border bg-q-bg px-3 py-2 text-xs font-semibold text-q-text transition hover:bg-q-card-hover";
+  return "rounded-xl border border-q-border bg-q-bg px-3 py-2 text-xs font-semibold text-q-text transition duration-150 hover:-translate-y-0.5 hover:bg-q-card-hover hover:shadow-sm";
+}
+
+function primaryButtonClass() {
+  return "rounded-2xl bg-q-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition duration-150 hover:-translate-y-0.5 hover:bg-q-primary-hover hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60";
+}
+
+function secondaryButtonClass() {
+  return "rounded-2xl border border-q-border bg-q-bg px-5 py-3 text-sm font-semibold text-q-text transition duration-150 hover:-translate-y-0.5 hover:bg-q-card-hover hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60";
+}
+
+function sectionTitleClass() {
+  return "text-xs font-semibold uppercase tracking-[0.18em] text-q-muted";
 }
 
 function normalize(value: unknown) {
@@ -127,14 +143,22 @@ function inferTaskFromItem(item: PublicContentItem, config: AIToolConfig) {
     return "rewrite";
   }
 
-  if (slug.includes("summary") || slug.includes("summarize") || name.includes("summary")) {
+  if (
+    slug.includes("summary") ||
+    slug.includes("summarize") ||
+    name.includes("summary")
+  ) {
     return "summarization";
   }
 
   return "text-generation";
 }
 
-function inferOutputTypeFromItem(item: PublicContentItem, config: AIToolConfig, task: string) {
+function inferOutputTypeFromItem(
+  item: PublicContentItem,
+  config: AIToolConfig,
+  task: string
+) {
   const configuredOutputType = normalize(config.outputType);
 
   if (configuredOutputType && !GENERIC_OUTPUT_VALUES.has(configuredOutputType)) {
@@ -282,37 +306,58 @@ function buildPromptQualityHint(
   secondarySignals: string[]
 ) {
   const length = primaryText.trim().length;
-  const filledSignals = secondarySignals.filter((value) => value.trim().length > 0).length;
+  const filledSignals = secondarySignals.filter(
+    (value) => value.trim().length > 0
+  ).length;
 
   if (task === "email") {
-    if (length < 20) return "Add more purpose and context for a stronger draft.";
-    if (filledSignals < 2) return "Adding recipient, subject, or CTA will make the email more useful.";
+    if (length < 20) {
+      return "Add more purpose and context for a stronger draft.";
+    }
+    if (filledSignals < 2) {
+      return "Adding recipient, subject, or CTA will make the email more useful.";
+    }
     return "This should generate a more tailored email draft.";
   }
 
   if (task === "outline") {
-    if (length < 15) return "Use a more specific topic so the outline is not too broad.";
-    if (filledSignals < 2) return "Adding audience, goal, or depth will improve the outline.";
+    if (length < 15) {
+      return "Use a more specific topic so the outline is not too broad.";
+    }
+    if (filledSignals < 2) {
+      return "Adding audience, goal, or depth will improve the outline.";
+    }
     return "This should generate a more targeted outline.";
   }
 
   if (task === "prompt-generator") {
-    if (length < 15) return "Describe the end goal more clearly for a stronger prompt.";
-    if (filledSignals < 2) return "Adding context, constraints, or output format will improve the prompt.";
+    if (length < 15) {
+      return "Describe the end goal more clearly for a stronger prompt.";
+    }
+    if (filledSignals < 2) {
+      return "Adding context, constraints, or output format will improve the prompt.";
+    }
     return "This should generate a stronger, more usable prompt.";
   }
 
   if (task === "summarization") {
-    if (length < 120) return "Summaries work better with more source text.";
+    if (length < 120) {
+      return "Summaries work better with more source text.";
+    }
     return "This looks like enough source material for a meaningful summary.";
   }
 
   if (task === "rewrite") {
-    if (length < 40) return "Rewrite tasks work better when you provide the full original text.";
+    if (length < 40) {
+      return "Rewrite tasks work better when you provide the full original text.";
+    }
     return "You’ve provided enough text for a stronger rewrite.";
   }
 
-  if (length < 30) return "More specific inputs usually give better output.";
+  if (length < 30) {
+    return "More specific inputs usually give better output.";
+  }
+
   return "Your input has enough detail for a more useful response.";
 }
 
@@ -409,35 +454,83 @@ function renderOutlineLines(output: string) {
 function OutputHeader({
   label,
   ready,
+  loading,
+  hasError,
 }: {
   label: string;
   ready: boolean;
+  loading?: boolean;
+  hasError?: boolean;
 }) {
+  const badgeClassName = loading
+    ? "rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700"
+    : hasError
+    ? "rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700"
+    : ready
+    ? "rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800"
+    : "rounded-full border border-q-border bg-q-card px-3 py-1 text-xs font-medium text-q-muted";
+
+  const badgeLabel = loading
+    ? "Generating"
+    : hasError
+    ? "Needs attention"
+    : ready
+    ? "Ready"
+    : "Waiting for input";
+
   return (
-    <div className="mb-3 flex items-center justify-between gap-3">
-      <div className="text-sm font-semibold text-q-text">{label}</div>
-      {ready ? (
-        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
-          Ready
-        </span>
-      ) : (
-        <span className="rounded-full border border-q-border bg-q-card px-3 py-1 text-xs font-medium text-q-muted">
-          Waiting for input
-        </span>
-      )}
+    <div className="mb-4 flex items-center justify-between gap-3">
+      <div>
+        <div className={sectionTitleClass()}>Result stage</div>
+        <div className="mt-2 text-lg font-semibold text-q-text">{label}</div>
+      </div>
+      <span className={badgeClassName}>{badgeLabel}</span>
     </div>
   );
 }
 
-function EmailOutputView({ output }: { output: string }) {
+function EmailOutputView({
+  output,
+  loading,
+  error,
+}: {
+  output: string;
+  loading?: boolean;
+  error?: string;
+}) {
   const parsed = parseEmailOutput(output);
 
-  if (!output) {
+  if (!output && !loading && !error) {
     return (
       <div className={outputShellClass()}>
         <OutputHeader label="Generated email" ready={false} />
         <div className={`min-h-[220px] ${outputInnerClass()}`}>
           Your generated result will appear here.
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className={outputShellClass()}>
+        <OutputHeader label="Generated email" ready={false} loading />
+        <div className={`${outputInnerClass()} space-y-3`}>
+          <div className="h-4 w-40 animate-pulse rounded bg-q-border" />
+          <div className="h-4 w-full animate-pulse rounded bg-q-border" />
+          <div className="h-4 w-[92%] animate-pulse rounded bg-q-border" />
+          <div className="h-4 w-[85%] animate-pulse rounded bg-q-border" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={outputShellClass()}>
+        <OutputHeader label="Generated email" ready={false} hasError />
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-7 text-red-700">
+          {error}
         </div>
       </div>
     );
@@ -459,7 +552,7 @@ function EmailOutputView({ output }: { output: string }) {
       <OutputHeader label="Generated email" ready />
 
       <div className="grid gap-4">
-        <div className="rounded-2xl border border-q-border bg-q-card p-4">
+        <div className="rounded-2xl border border-q-border bg-q-card p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div className="text-xs font-semibold uppercase tracking-wide text-q-muted">
               Subject
@@ -476,7 +569,7 @@ function EmailOutputView({ output }: { output: string }) {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-q-border bg-q-card p-4">
+        <div className="rounded-2xl border border-q-border bg-q-card p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div className="text-xs font-semibold uppercase tracking-wide text-q-muted">
               Body
@@ -497,10 +590,18 @@ function EmailOutputView({ output }: { output: string }) {
   );
 }
 
-function OutlineOutputView({ output }: { output: string }) {
+function OutlineOutputView({
+  output,
+  loading,
+  error,
+}: {
+  output: string;
+  loading?: boolean;
+  error?: string;
+}) {
   const lines = renderOutlineLines(output);
 
-  if (!output) {
+  if (!output && !loading && !error) {
     return (
       <div className={outputShellClass()}>
         <OutputHeader label="Generated outline" ready={false} />
@@ -511,19 +612,41 @@ function OutlineOutputView({ output }: { output: string }) {
     );
   }
 
+  if (loading) {
+    return (
+      <div className={outputShellClass()}>
+        <OutputHeader label="Generated outline" ready={false} loading />
+        <div className={`${outputInnerClass()} space-y-3`}>
+          <div className="h-4 w-48 animate-pulse rounded bg-q-border" />
+          <div className="h-4 w-full animate-pulse rounded bg-q-border" />
+          <div className="h-4 w-[90%] animate-pulse rounded bg-q-border" />
+          <div className="h-4 w-[82%] animate-pulse rounded bg-q-border" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={outputShellClass()}>
+        <OutputHeader label="Generated outline" ready={false} hasError />
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-7 text-red-700">
+          {error}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={outputShellClass()}>
       <OutputHeader label="Generated outline" ready />
 
-      <div className="rounded-2xl border border-q-border bg-q-card p-4">
+      <div className="rounded-2xl border border-q-border bg-q-card p-4 shadow-sm">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div className="text-xs font-semibold uppercase tracking-wide text-q-muted">
             Outline
           </div>
-          <button
-            onClick={() => copyText(output)}
-            className={copyButtonClass()}
-          >
+          <button onClick={() => copyText(output)} className={copyButtonClass()}>
             Copy Outline
           </button>
         </div>
@@ -562,28 +685,50 @@ function OutlineOutputView({ output }: { output: string }) {
   );
 }
 
-function PromptOutputView({ output }: { output: string }) {
+function PromptOutputView({
+  output,
+  loading,
+  error,
+}: {
+  output: string;
+  loading?: boolean;
+  error?: string;
+}) {
   return (
     <div className={outputShellClass()}>
-      <OutputHeader label="Generated prompt" ready={Boolean(output)} />
-      <div className="rounded-2xl border border-q-border bg-q-card p-4">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="text-xs font-semibold uppercase tracking-wide text-q-muted">
-            Prompt
-          </div>
-          <button
-            onClick={() => copyText(output)}
-            disabled={!output}
-            className={`${copyButtonClass()} disabled:cursor-not-allowed disabled:opacity-60`}
-          >
-            Copy Prompt
-          </button>
-        </div>
+      <OutputHeader
+        label="Generated prompt"
+        ready={Boolean(output)}
+        loading={loading}
+        hasError={Boolean(error)}
+      />
 
-        <div className="min-h-[220px] whitespace-pre-wrap rounded-2xl border border-q-border bg-q-bg p-4 text-sm leading-7 text-q-text">
-          {output || "Your generated result will appear here."}
+      {error ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-7 text-red-700">
+          {error}
         </div>
-      </div>
+      ) : (
+        <div className="rounded-2xl border border-q-border bg-q-card p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="text-xs font-semibold uppercase tracking-wide text-q-muted">
+              Prompt
+            </div>
+            <button
+              onClick={() => copyText(output)}
+              disabled={!output}
+              className={`${copyButtonClass()} disabled:cursor-not-allowed disabled:opacity-60`}
+            >
+              Copy Prompt
+            </button>
+          </div>
+
+          <div className="min-h-[220px] whitespace-pre-wrap rounded-2xl border border-q-border bg-q-bg p-4 text-sm leading-7 text-q-text">
+            {loading
+              ? "Generating..."
+              : output || "Your generated result will appear here."}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -591,21 +736,43 @@ function PromptOutputView({ output }: { output: string }) {
 function GenericOutputView({
   output,
   label,
+  loading,
+  error,
 }: {
   output: string;
   label: string;
+  loading?: boolean;
+  error?: string;
 }) {
   return (
     <div className={outputShellClass()}>
-      <OutputHeader label={label} ready={Boolean(output)} />
-      <div className={`min-h-[220px] whitespace-pre-wrap ${outputInnerClass()}`}>
-        {output || "Your generated result will appear here."}
-      </div>
+      <OutputHeader
+        label={label}
+        ready={Boolean(output)}
+        loading={loading}
+        hasError={Boolean(error)}
+      />
+
+      {error ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-7 text-red-700">
+          {error}
+        </div>
+      ) : (
+        <div className={`min-h-[220px] whitespace-pre-wrap ${outputInnerClass()}`}>
+          {loading
+            ? "Generating..."
+            : output || "Your generated result will appear here."}
+        </div>
+      )}
     </div>
   );
 }
 
-export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
+export default function AIToolRenderer({
+  item,
+}: {
+  item: PublicContentItem;
+}) {
   const config = toConfig(item.engine_config);
   const task = inferTaskFromItem(item, config);
   const outputType = inferOutputTypeFromItem(item, config, task);
@@ -613,7 +780,9 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
 
   const toneOptions = useMemo(() => {
     const fromConfig = Array.isArray(config.toneOptions)
-      ? config.toneOptions.map((entry) => String(entry || "").trim()).filter(Boolean)
+      ? config.toneOptions
+          .map((entry) => String(entry || "").trim())
+          .filter(Boolean)
       : [];
 
     if (fromConfig.length > 0) {
@@ -627,7 +796,9 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
     return ["professional", "friendly", "clear", "persuasive", "casual"];
   }, [config.toneOptions, task]);
 
-  const [tone, setTone] = useState(String(config.tone || toneOptions[0] || "professional"));
+  const [tone, setTone] = useState(
+    String(config.tone || toneOptions[0] || "professional")
+  );
   const [length, setLength] = useState("medium");
   const [audience, setAudience] = useState("");
   const [extraInstructions, setExtraInstructions] = useState("");
@@ -669,11 +840,26 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
   const promptHint = useMemo(() => {
     const secondarySignals =
       task === "email"
-        ? [emailForm.subject, emailForm.recipient, emailForm.cta, extraInstructions]
+        ? [
+            emailForm.subject,
+            emailForm.recipient,
+            emailForm.cta,
+            extraInstructions,
+          ]
         : task === "outline"
-        ? [outlineForm.audience, outlineForm.goal, outlineForm.depth, extraInstructions]
+        ? [
+            outlineForm.audience,
+            outlineForm.goal,
+            outlineForm.depth,
+            extraInstructions,
+          ]
         : task === "prompt-generator"
-        ? [promptForm.context, promptForm.constraints, promptForm.outputFormat, extraInstructions]
+        ? [
+            promptForm.context,
+            promptForm.constraints,
+            promptForm.outputFormat,
+            extraInstructions,
+          ]
         : [audience, extraInstructions, length];
 
     return buildPromptQualityHint(task, primaryInput, secondarySignals);
@@ -700,7 +886,10 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
     setOutput("");
 
     try {
-      const composedInput = [primaryInput, extraInstructions ? `Extra instructions: ${extraInstructions}` : ""]
+      const composedInput = [
+        primaryInput,
+        extraInstructions ? `Extra instructions: ${extraInstructions}` : "",
+      ]
         .filter(Boolean)
         .join("\n\n");
 
@@ -776,7 +965,7 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
             <span className={badgeClass()}>{outputType.replace(/-/g, " ")}</span>
           </div>
 
-          <h2 className="mt-4 text-2xl font-semibold text-q-text md:text-3xl">
+          <h2 className="mt-4 text-2xl font-semibold tracking-tight text-q-text md:text-3xl">
             {meta.title}
           </h2>
 
@@ -786,15 +975,15 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
         </div>
 
         <div className="grid min-w-[240px] gap-3 sm:grid-cols-2 lg:grid-cols-1">
-          <div className={panelClass()}>
-            <div className="text-xs uppercase tracking-wide text-q-muted">Task</div>
+          <div className={elevatedPanelClass()}>
+            <div className={sectionTitleClass()}>Task</div>
             <div className="mt-2 text-sm font-semibold capitalize text-q-text">
               {task.replace(/-/g, " ")}
             </div>
           </div>
 
-          <div className={panelClass()}>
-            <div className="text-xs uppercase tracking-wide text-q-muted">Output type</div>
+          <div className={elevatedPanelClass()}>
+            <div className={sectionTitleClass()}>Output type</div>
             <div className="mt-2 text-sm font-semibold capitalize text-q-text">
               {outputType.replace(/-/g, " ")}
             </div>
@@ -810,12 +999,17 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
           </div>
 
           {task === "email" ? (
-            <div className="grid gap-4">
-              <div className={panelClass()}>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className={`${panelClass()} md:col-span-2`}>
                 <label className={labelClass()}>Email subject</label>
                 <input
                   value={emailForm.subject}
-                  onChange={(e) => setEmailForm((prev) => ({ ...prev, subject: e.target.value }))}
+                  onChange={(e) =>
+                    setEmailForm((prev) => ({
+                      ...prev,
+                      subject: e.target.value,
+                    }))
+                  }
                   placeholder="Follow-up after product demo"
                   className={inputClass()}
                 />
@@ -825,29 +1019,14 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
                 <label className={labelClass()}>Recipient</label>
                 <input
                   value={emailForm.recipient}
-                  onChange={(e) => setEmailForm((prev) => ({ ...prev, recipient: e.target.value }))}
+                  onChange={(e) =>
+                    setEmailForm((prev) => ({
+                      ...prev,
+                      recipient: e.target.value,
+                    }))
+                  }
                   placeholder="Client, hiring manager, support lead"
                   className={inputClass()}
-                />
-              </div>
-
-              <div className={panelClass()}>
-                <label className={labelClass()}>Purpose</label>
-                <textarea
-                  value={emailForm.purpose}
-                  onChange={(e) => setEmailForm((prev) => ({ ...prev, purpose: e.target.value }))}
-                  placeholder="Explain why you are sending this email."
-                  className={textareaClass("min-h-[120px]")}
-                />
-              </div>
-
-              <div className={panelClass()}>
-                <label className={labelClass()}>Context</label>
-                <textarea
-                  value={emailForm.context}
-                  onChange={(e) => setEmailForm((prev) => ({ ...prev, context: e.target.value }))}
-                  placeholder="Add relevant background, product, timing, or previous conversation details."
-                  className={textareaClass("min-h-[120px]")}
                 />
               </div>
 
@@ -855,66 +1034,122 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
                 <label className={labelClass()}>Call to action</label>
                 <input
                   value={emailForm.cta}
-                  onChange={(e) => setEmailForm((prev) => ({ ...prev, cta: e.target.value }))}
-                  placeholder="Suggest a call next week, ask for feedback, confirm next steps"
+                  onChange={(e) =>
+                    setEmailForm((prev) => ({
+                      ...prev,
+                      cta: e.target.value,
+                    }))
+                  }
+                  placeholder="Suggest a call next week"
                   className={inputClass()}
+                />
+              </div>
+
+              <div className={`${panelClass()} md:col-span-2`}>
+                <label className={labelClass()}>Purpose</label>
+                <textarea
+                  value={emailForm.purpose}
+                  onChange={(e) =>
+                    setEmailForm((prev) => ({
+                      ...prev,
+                      purpose: e.target.value,
+                    }))
+                  }
+                  placeholder="Explain why you are sending this email."
+                  className={textareaClass("min-h-[120px]")}
+                />
+              </div>
+
+              <div className={`${panelClass()} md:col-span-2`}>
+                <label className={labelClass()}>Context</label>
+                <textarea
+                  value={emailForm.context}
+                  onChange={(e) =>
+                    setEmailForm((prev) => ({
+                      ...prev,
+                      context: e.target.value,
+                    }))
+                  }
+                  placeholder="Add relevant background, timing, or previous conversation details."
+                  className={textareaClass("min-h-[120px]")}
                 />
               </div>
             </div>
           ) : task === "outline" ? (
-            <div className="grid gap-4">
-              <div className={panelClass()}>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className={`${panelClass()} md:col-span-2`}>
                 <label className={labelClass()}>Topic</label>
                 <input
                   value={outlineForm.topic}
-                  onChange={(e) => setOutlineForm((prev) => ({ ...prev, topic: e.target.value }))}
+                  onChange={(e) =>
+                    setOutlineForm((prev) => ({
+                      ...prev,
+                      topic: e.target.value,
+                    }))
+                  }
                   placeholder="How to launch a SaaS in 2026"
                   className={inputClass()}
                 />
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className={panelClass()}>
-                  <label className={labelClass()}>Audience</label>
-                  <input
-                    value={outlineForm.audience}
-                    onChange={(e) =>
-                      setOutlineForm((prev) => ({ ...prev, audience: e.target.value }))
-                    }
-                    placeholder="Founders, marketers, beginners"
-                    className={inputClass()}
-                  />
-                </div>
-
-                <div className={panelClass()}>
-                  <label className={labelClass()}>Depth</label>
-                  <select
-                    value={outlineForm.depth}
-                    onChange={(e) => setOutlineForm((prev) => ({ ...prev, depth: e.target.value }))}
-                    className={inputClass()}
-                  >
-                    <option value="short">Short</option>
-                    <option value="medium">Medium</option>
-                    <option value="detailed">Detailed</option>
-                  </select>
-                </div>
-              </div>
-
               <div className={panelClass()}>
-                <label className={labelClass()}>Goal</label>
+                <label className={labelClass()}>Audience</label>
                 <input
-                  value={outlineForm.goal}
-                  onChange={(e) => setOutlineForm((prev) => ({ ...prev, goal: e.target.value }))}
-                  placeholder="SEO article, lesson plan, landing page, video script"
+                  value={outlineForm.audience}
+                  onChange={(e) =>
+                    setOutlineForm((prev) => ({
+                      ...prev,
+                      audience: e.target.value,
+                    }))
+                  }
+                  placeholder="Founders, marketers, beginners"
                   className={inputClass()}
                 />
               </div>
 
               <div className={panelClass()}>
+                <label className={labelClass()}>Depth</label>
+                <select
+                  value={outlineForm.depth}
+                  onChange={(e) =>
+                    setOutlineForm((prev) => ({
+                      ...prev,
+                      depth: e.target.value,
+                    }))
+                  }
+                  className={inputClass()}
+                >
+                  <option value="short">Short</option>
+                  <option value="medium">Medium</option>
+                  <option value="detailed">Detailed</option>
+                </select>
+              </div>
+
+              <div className={`${panelClass()} md:col-span-2`}>
+                <label className={labelClass()}>Goal</label>
+                <input
+                  value={outlineForm.goal}
+                  onChange={(e) =>
+                    setOutlineForm((prev) => ({
+                      ...prev,
+                      goal: e.target.value,
+                    }))
+                  }
+                  placeholder="SEO article, lesson plan, landing page, video script"
+                  className={inputClass()}
+                />
+              </div>
+
+              <div className={`${panelClass()} md:col-span-2`}>
                 <label className={labelClass()}>Notes or required sections</label>
                 <textarea
                   value={outlineForm.notes}
-                  onChange={(e) => setOutlineForm((prev) => ({ ...prev, notes: e.target.value }))}
+                  onChange={(e) =>
+                    setOutlineForm((prev) => ({
+                      ...prev,
+                      notes: e.target.value,
+                    }))
+                  }
                   placeholder="Mention sections, angles, keywords, or structure requirements."
                   className={textareaClass("min-h-[140px]")}
                 />
@@ -926,7 +1161,12 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
                 <label className={labelClass()}>Goal</label>
                 <textarea
                   value={promptForm.goal}
-                  onChange={(e) => setPromptForm((prev) => ({ ...prev, goal: e.target.value }))}
+                  onChange={(e) =>
+                    setPromptForm((prev) => ({
+                      ...prev,
+                      goal: e.target.value,
+                    }))
+                  }
                   placeholder="Describe exactly what you want the prompt to help produce."
                   className={textareaClass("min-h-[120px]")}
                 />
@@ -936,7 +1176,12 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
                 <label className={labelClass()}>Context</label>
                 <textarea
                   value={promptForm.context}
-                  onChange={(e) => setPromptForm((prev) => ({ ...prev, context: e.target.value }))}
+                  onChange={(e) =>
+                    setPromptForm((prev) => ({
+                      ...prev,
+                      context: e.target.value,
+                    }))
+                  }
                   placeholder="Add brand, audience, niche, domain knowledge, or use-case context."
                   className={textareaClass("min-h-[120px]")}
                 />
@@ -947,7 +1192,10 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
                 <textarea
                   value={promptForm.constraints}
                   onChange={(e) =>
-                    setPromptForm((prev) => ({ ...prev, constraints: e.target.value }))
+                    setPromptForm((prev) => ({
+                      ...prev,
+                      constraints: e.target.value,
+                    }))
                   }
                   placeholder="Tone, banned words, style, length, formatting, or factual constraints."
                   className={textareaClass("min-h-[120px]")}
@@ -959,7 +1207,10 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
                 <input
                   value={promptForm.outputFormat}
                   onChange={(e) =>
-                    setPromptForm((prev) => ({ ...prev, outputFormat: e.target.value }))
+                    setPromptForm((prev) => ({
+                      ...prev,
+                      outputFormat: e.target.value,
+                    }))
                   }
                   placeholder="Bullets, table, JSON, paragraph, headings"
                   className={inputClass()}
@@ -1004,7 +1255,7 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
             <button
               onClick={handleRun}
               disabled={loading || !canRun}
-              className="rounded-2xl bg-q-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-q-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+              className={primaryButtonClass()}
             >
               {loading ? "Generating..." : meta.actionLabel}
             </button>
@@ -1012,91 +1263,96 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
             <button
               onClick={() => copyText(output)}
               disabled={!output}
-              className="rounded-2xl border border-q-border bg-q-bg px-5 py-3 text-sm font-semibold text-q-text transition hover:bg-q-card-hover disabled:cursor-not-allowed disabled:opacity-60"
+              className={secondaryButtonClass()}
             >
               Copy Output
             </button>
 
-            <button
-              onClick={resetAll}
-              className="rounded-2xl border border-q-border bg-q-bg px-5 py-3 text-sm font-semibold text-q-text transition hover:bg-q-card-hover"
-            >
+            <button onClick={resetAll} className={secondaryButtonClass()}>
               Reset
             </button>
           </div>
-
-          {error ? (
-            <div className="rounded-2xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">
-              {error}
-            </div>
-          ) : null}
 
           {output ? (
             <div className={successHintClass()}>
               <div className="font-medium">How to use this result</div>
               <div className="mt-1">
-                Review the output, refine the fields if needed, and rerun with stronger constraints if you want a tighter result.
+                Review the output, refine the fields if needed, and rerun with
+                stronger constraints if you want a tighter result.
               </div>
             </div>
           ) : null}
 
           {task === "email" ? (
-            <EmailOutputView output={output} />
+            <EmailOutputView output={output} loading={loading} error={error} />
           ) : task === "outline" ? (
-            <OutlineOutputView output={output} />
+            <OutlineOutputView output={output} loading={loading} error={error} />
           ) : task === "prompt-generator" ? (
-            <PromptOutputView output={output} />
+            <PromptOutputView output={output} loading={loading} error={error} />
           ) : (
-            <GenericOutputView output={output} label={meta.outputLabel} />
+            <GenericOutputView
+              output={output}
+              label={meta.outputLabel}
+              loading={loading}
+              error={error}
+            />
           )}
         </div>
 
         <aside className="space-y-4">
-          <div className={panelClass()}>
-            <div className="mb-2 text-sm font-medium text-q-text">Tone</div>
-            <select
-              value={tone}
-              onChange={(e) => setTone(e.target.value)}
-              className={inputClass()}
-            >
-              {toneOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option.charAt(0).toUpperCase() + option.slice(1)}
-                </option>
-              ))}
-            </select>
+          <div className={elevatedPanelClass()}>
+            <div className={sectionTitleClass()}>Tone</div>
+            <div className="mt-3">
+              <select
+                value={tone}
+                onChange={(e) => setTone(e.target.value)}
+                className={inputClass()}
+              >
+                {toneOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option.charAt(0).toUpperCase() + option.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          {task !== "outline" && task !== "email" && task !== "prompt-generator" ? (
-            <div className={panelClass()}>
-              <div className="mb-2 text-sm font-medium text-q-text">Audience</div>
-              <input
-                value={audience}
-                onChange={(e) => setAudience(e.target.value)}
-                placeholder="General audience"
-                className={inputClass()}
-              />
+          {task !== "outline" &&
+          task !== "email" &&
+          task !== "prompt-generator" ? (
+            <div className={elevatedPanelClass()}>
+              <div className={sectionTitleClass()}>Audience</div>
+              <div className="mt-3">
+                <input
+                  value={audience}
+                  onChange={(e) => setAudience(e.target.value)}
+                  placeholder="General audience"
+                  className={inputClass()}
+                />
+              </div>
             </div>
           ) : null}
 
           {task !== "outline" ? (
-            <div className={panelClass()}>
-              <div className="mb-2 text-sm font-medium text-q-text">Length</div>
-              <select
-                value={length}
-                onChange={(e) => setLength(e.target.value)}
-                className={inputClass()}
-              >
-                <option value="short">Short</option>
-                <option value="medium">Medium</option>
-                <option value="long">Long</option>
-                <option value="detailed">Detailed</option>
-              </select>
+            <div className={elevatedPanelClass()}>
+              <div className={sectionTitleClass()}>Length</div>
+              <div className="mt-3">
+                <select
+                  value={length}
+                  onChange={(e) => setLength(e.target.value)}
+                  className={inputClass()}
+                >
+                  <option value="short">Short</option>
+                  <option value="medium">Medium</option>
+                  <option value="long">Long</option>
+                  <option value="detailed">Detailed</option>
+                </select>
+              </div>
             </div>
           ) : null}
 
-          <div className={panelClass()}>
-            <div className="text-xs uppercase tracking-wide text-q-muted">Examples</div>
+          <div className={elevatedPanelClass()}>
+            <div className={sectionTitleClass()}>Examples</div>
             <ul className="mt-3 space-y-2 text-sm leading-6 text-q-muted">
               {meta.examples.map((example, index) => (
                 <li key={`${example}-${index}`}>• {example}</li>
@@ -1104,8 +1360,8 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
             </ul>
           </div>
 
-          <div className={panelClass()}>
-            <div className="text-xs uppercase tracking-wide text-q-muted">Better results checklist</div>
+          <div className={elevatedPanelClass()}>
+            <div className={sectionTitleClass()}>Better results checklist</div>
             <ul className="mt-3 space-y-2 text-sm leading-6 text-q-muted">
               {meta.checklist.map((entry, index) => (
                 <li key={`${entry}-${index}`}>• {entry}</li>
@@ -1113,12 +1369,15 @@ export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
             </ul>
           </div>
 
-          <div className={panelClass()}>
-            <div className="text-xs uppercase tracking-wide text-q-muted">Tips</div>
+          <div className={elevatedPanelClass()}>
+            <div className={sectionTitleClass()}>Tips</div>
             <ul className="mt-3 space-y-2 text-sm leading-6 text-q-muted">
               <li>• Stronger context usually improves output quality.</li>
               <li>• Use extra instructions to shape structure or tone.</li>
-              <li>• Structured inputs usually produce better drafts than one vague prompt.</li>
+              <li>
+                • Structured inputs usually produce better drafts than one vague
+                prompt.
+              </li>
             </ul>
           </div>
         </aside>
