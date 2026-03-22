@@ -175,17 +175,6 @@ export default function PublicDetailPage({
                     {pageDescription}
                   </p>
 
-                  <div className="mt-6 flex flex-wrap gap-3">
-                    <div className="rounded-full border border-q-border bg-q-bg px-4 py-2 text-sm text-q-text">
-                      Slug: {item.slug}
-                    </div>
-                    {item.engine_type && (
-                      <div className="rounded-full border border-q-border bg-q-bg px-4 py-2 text-sm text-q-text">
-                        Engine: {item.engine_type}
-                      </div>
-                    )}
-                  </div>
-
                   <div className="mt-8 flex flex-wrap items-center gap-3">
                     <Link
                       href={listingHref(table)}
@@ -204,18 +193,10 @@ export default function PublicDetailPage({
                     </Link>
                   </div>
 
-                  <details className="mt-5 rounded-2xl border border-q-border bg-q-bg">
-                    <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-q-text transition hover:bg-q-card-hover">
-                      <span className="inline-flex items-center gap-2">
-                        <span>Share this page</span>
-                        <span className="text-q-muted">optional</span>
-                      </span>
-                    </summary>
-
-                    <div className="border-t border-q-border p-4">
-                      <ShareMenu title={item.name} url={canonicalUrl} />
-                    </div>
-                  </details>
+                  <div className="mt-5 flex items-center gap-3">
+                    <span className="text-sm font-medium text-q-muted">Share</span>
+                    <ShareMenu title={item.name} url={canonicalUrl} />
+                  </div>
                 </section>
 
                 {primaryContent && <div className="max-w-4xl">{primaryContent}</div>}
