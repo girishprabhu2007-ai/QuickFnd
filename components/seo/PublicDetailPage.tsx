@@ -106,9 +106,7 @@ function dedupeRelatedItems(
   for (const item of items) {
     const slug = String(item.slug || "").trim().toLowerCase();
 
-    if (!slug || seen.has(slug)) {
-      continue;
-    }
+    if (!slug || seen.has(slug)) continue;
 
     seen.add(slug);
     output.push(item);
@@ -150,14 +148,11 @@ export default function PublicDetailPage({
           <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
             <div className="min-w-0">
               <div className="max-w-4xl space-y-8">
+
                 <nav className="text-sm text-q-muted">
-                  <Link href="/" className="hover:text-q-text">
-                    Home
-                  </Link>
+                  <Link href="/" className="hover:text-q-text">Home</Link>
                   <span className="mx-2">/</span>
-                  <Link href={listingHref(table)} className="hover:text-q-text">
-                    {label}
-                  </Link>
+                  <Link href={listingHref(table)} className="hover:text-q-text">{label}</Link>
                   <span className="mx-2">/</span>
                   <span className="text-q-text">{item.name}</span>
                 </nav>
@@ -177,20 +172,23 @@ export default function PublicDetailPage({
                     <div className="rounded-full border border-q-border bg-q-bg px-4 py-2 text-sm text-q-text">
                       Slug: {item.slug}
                     </div>
-                    {item.engine_type ? (
+                    {item.engine_type && (
                       <div className="rounded-full border border-q-border bg-q-bg px-4 py-2 text-sm text-q-text">
                         Engine: {item.engine_type}
                       </div>
-                    ) : null}
+                    )}
                   </div>
 
+                  {/* 🔥 UPDATED BUTTON ROW */}
                   <div className="mt-6 flex flex-wrap gap-3">
+
                     <Link
                       href={listingHref(table)}
                       className="rounded-xl bg-q-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-q-primary-hover"
                     >
                       Browse more {label.toLowerCase()}
                     </Link>
+
                     <Link
                       href={`/request-tool?category=${encodeURIComponent(
                         section === "ai-tools" ? "ai-tool" : section.slice(0, -1)
@@ -199,105 +197,42 @@ export default function PublicDetailPage({
                     >
                       Request a tool
                     </Link>
+
+                    {/* 🚨 REPORT BUTTON */}
+                    <Link
+                      href={`/request-tool?mode=report&category=${encodeURIComponent(
+                        section === "ai-tools" ? "ai-tool" : section.slice(0, -1)
+                      )}&ref=${encodeURIComponent(item.slug)}&name=${encodeURIComponent(item.name)}`}
+                      className="rounded-xl border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+                    >
+                      🚨 Report this tool
+                    </Link>
+
                   </div>
 
                   <ShareMenu title={item.name} url={canonicalUrl} />
                 </section>
 
-                {primaryContent ? <div className="max-w-4xl">{primaryContent}</div> : null}
+                {primaryContent && <div className="max-w-4xl">{primaryContent}</div>}
 
-                {steps.length > 0 ? (
+                {steps.length > 0 && (
                   <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
                     <h2 className="text-2xl font-semibold text-q-text">How to use</h2>
                     <ol className="mt-5 space-y-3">
                       {steps.map((step, index) => (
-                        <li
-                          key={`${item.slug}-step-${index}`}
-                          className="rounded-xl border border-q-border bg-q-bg p-4 text-sm leading-7 text-q-muted"
-                        >
-                          <span className="font-semibold text-q-text">
-                            Step {index + 1}:
-                          </span>{" "}
-                          {step}
+                        <li key={index} className="rounded-xl border border-q-border bg-q-bg p-4 text-sm leading-7 text-q-muted">
+                          <span className="font-semibold text-q-text">Step {index + 1}:</span> {step}
                         </li>
                       ))}
                     </ol>
                   </section>
-                ) : null}
+                )}
 
-                {benefits.length > 0 ? (
-                  <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
-                    <h2 className="text-2xl font-semibold text-q-text">
-                      Why use this {single}?
-                    </h2>
-                    <div className="mt-5 grid gap-4 md:grid-cols-2">
-                      {benefits.map((benefit, index) => (
-                        <div
-                          key={`${item.slug}-benefit-${index}`}
-                          className="rounded-xl border border-q-border bg-q-bg p-4 text-sm leading-7 text-q-muted"
-                        >
-                          {benefit}
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                ) : null}
-
-                {faqs.length > 0 ? (
-                  <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
-                    <h2 className="text-2xl font-semibold text-q-text">
-                      Frequently asked questions
-                    </h2>
-                    <div className="mt-5 space-y-4">
-                      {faqs.map((faq, index) => (
-                        <div
-                          key={`${item.slug}-faq-${index}`}
-                          className="rounded-xl border border-q-border bg-q-bg p-5"
-                        >
-                          <h3 className="text-lg font-semibold text-q-text">
-                            {faq.question}
-                          </h3>
-                          <p className="mt-2 text-sm leading-7 text-q-muted">
-                            {faq.answer}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                ) : null}
-
-                {!hasCustomContentSections ? (
+                {!hasCustomContentSections && (
                   <PageSEOSections table={table} item={item} />
-                ) : null}
+                )}
 
-                {showRelatedItemsSection && dedupedRelatedItems.length > 0 ? (
-                  <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
-                    <h2 className="text-2xl font-semibold text-q-text">
-                      Related {label}
-                    </h2>
-                    <div className="mt-5 grid gap-4 md:grid-cols-2">
-                      {dedupedRelatedItems.map((related) => (
-                        <Link
-                          key={related.slug}
-                          href={detailHref(table, related.slug)}
-                          className="rounded-2xl border border-q-border bg-q-bg p-5 transition hover:-translate-y-0.5 hover:border-blue-400/50"
-                        >
-                          <div className="text-lg font-semibold text-q-text">
-                            {related.name}
-                          </div>
-                          <p className="mt-3 text-sm leading-6 text-q-muted">
-                            {getDisplayDescription(table, related, "card")}
-                          </p>
-                          <div className="mt-4 text-sm font-medium text-blue-500">
-                            Open →
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  </section>
-                ) : null}
-
-                {secondaryContent ? secondaryContent : null}
+                {secondaryContent}
               </div>
             </div>
 
