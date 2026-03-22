@@ -115,6 +115,10 @@ function dedupeRelatedItems(
   return output;
 }
 
+function actionButtonBase() {
+  return "inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition duration-150 ease-out hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-400/40";
+}
+
 export default function PublicDetailPage({
   table,
   item,
@@ -138,8 +142,8 @@ export default function PublicDetailPage({
     table === "tools"
       ? `${siteUrl}/tools/${item.slug}`
       : table === "calculators"
-        ? `${siteUrl}/calculators/${item.slug}`
-        : `${siteUrl}/ai-tools/${item.slug}`;
+      ? `${siteUrl}/calculators/${item.slug}`
+      : `${siteUrl}/ai-tools/${item.slug}`;
 
   return (
     <main className="min-h-screen bg-q-bg text-q-text">
@@ -148,16 +152,19 @@ export default function PublicDetailPage({
           <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
             <div className="min-w-0">
               <div className="max-w-4xl space-y-8">
-
                 <nav className="text-sm text-q-muted">
-                  <Link href="/" className="hover:text-q-text">Home</Link>
+                  <Link href="/" className="transition hover:text-q-text">
+                    Home
+                  </Link>
                   <span className="mx-2">/</span>
-                  <Link href={listingHref(table)} className="hover:text-q-text">{label}</Link>
+                  <Link href={listingHref(table)} className="transition hover:text-q-text">
+                    {label}
+                  </Link>
                   <span className="mx-2">/</span>
                   <span className="text-q-text">{item.name}</span>
                 </nav>
 
-                <section className="rounded-3xl border border-q-border bg-q-card p-6 md:p-8 lg:p-10">
+                <section className="rounded-3xl border border-q-border bg-q-card p-6 shadow-sm md:p-8 lg:p-10">
                   <p className="text-sm uppercase tracking-[0.2em] text-blue-500">
                     QuickFnd {label.slice(0, -1)}
                   </p>
@@ -179,57 +186,151 @@ export default function PublicDetailPage({
                     )}
                   </div>
 
-                  {/* 🔥 UPDATED BUTTON ROW */}
-                  <div className="mt-6 flex flex-wrap gap-3">
+                  <div className="mt-8 rounded-2xl border border-q-border bg-q-bg/60 p-4 md:p-5">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-q-muted">
+                          Actions
+                        </div>
+                        <p className="mt-2 text-sm leading-6 text-q-muted">
+                          Explore more, request a new item, or report an issue with this page.
+                        </p>
+                      </div>
 
-                    <Link
-                      href={listingHref(table)}
-                      className="rounded-xl bg-q-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-q-primary-hover"
-                    >
-                      Browse more {label.toLowerCase()}
-                    </Link>
+                      <div className="flex flex-wrap gap-3">
+                        <Link
+                          href={listingHref(table)}
+                          className={`${actionButtonBase()} bg-q-primary text-white shadow-sm hover:bg-q-primary-hover hover:shadow-md`}
+                        >
+                          Browse more {label.toLowerCase()}
+                        </Link>
 
-                    <Link
-                      href={`/request-tool?category=${encodeURIComponent(
-                        section === "ai-tools" ? "ai-tool" : section.slice(0, -1)
-                      )}&ref=${encodeURIComponent(item.slug)}`}
-                      className="rounded-xl border border-q-border bg-q-bg px-4 py-2 text-sm font-semibold text-q-text transition hover:bg-q-card-hover"
-                    >
-                      Request a tool
-                    </Link>
+                        <Link
+                          href={`/request-tool?category=${encodeURIComponent(
+                            section === "ai-tools" ? "ai-tool" : section.slice(0, -1)
+                          )}&ref=${encodeURIComponent(item.slug)}`}
+                          className={`${actionButtonBase()} border border-q-border bg-q-card text-q-text hover:border-blue-300/60 hover:bg-q-card-hover hover:shadow-sm`}
+                        >
+                          Request a tool
+                        </Link>
 
-                    {/* 🚨 REPORT BUTTON */}
-                    <Link
-                      href={`/request-tool?mode=report&category=${encodeURIComponent(
-                        section === "ai-tools" ? "ai-tool" : section.slice(0, -1)
-                      )}&ref=${encodeURIComponent(item.slug)}&name=${encodeURIComponent(item.name)}`}
-                      className="rounded-xl border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100"
-                    >
-                      🚨 Report this tool
-                    </Link>
+                        <Link
+                          href={`/request-tool?mode=report&category=${encodeURIComponent(
+                            section === "ai-tools" ? "ai-tool" : section.slice(0, -1)
+                          )}&ref=${encodeURIComponent(item.slug)}&name=${encodeURIComponent(item.name)}`}
+                          className={`${actionButtonBase()} border border-red-300 bg-transparent text-red-600 hover:bg-red-50 hover:shadow-sm`}
+                        >
+                          🚨 Report this tool
+                        </Link>
+                      </div>
+                    </div>
 
+                    <div className="mt-5 border-t border-q-border/80 pt-5">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <div>
+                          <div className="text-sm font-semibold text-q-text">Share this page</div>
+                          <div className="mt-1 text-sm text-q-muted">
+                            Share this tool without distracting from the main actions.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl border border-q-border bg-q-card p-4">
+                        <ShareMenu title={item.name} url={canonicalUrl} />
+                      </div>
+                    </div>
                   </div>
-
-                  <ShareMenu title={item.name} url={canonicalUrl} />
                 </section>
 
                 {primaryContent && <div className="max-w-4xl">{primaryContent}</div>}
 
                 {steps.length > 0 && (
-                  <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
+                  <section className="rounded-2xl border border-q-border bg-q-card p-6 shadow-sm md:p-8">
                     <h2 className="text-2xl font-semibold text-q-text">How to use</h2>
                     <ol className="mt-5 space-y-3">
                       {steps.map((step, index) => (
-                        <li key={index} className="rounded-xl border border-q-border bg-q-bg p-4 text-sm leading-7 text-q-muted">
-                          <span className="font-semibold text-q-text">Step {index + 1}:</span> {step}
+                        <li
+                          key={index}
+                          className="rounded-xl border border-q-border bg-q-bg p-4 text-sm leading-7 text-q-muted"
+                        >
+                          <span className="font-semibold text-q-text">Step {index + 1}:</span>{" "}
+                          {step}
                         </li>
                       ))}
                     </ol>
                   </section>
                 )}
 
+                {benefits.length > 0 && (
+                  <section className="rounded-2xl border border-q-border bg-q-card p-6 shadow-sm md:p-8">
+                    <h2 className="text-2xl font-semibold text-q-text">
+                      Why use this {single}?
+                    </h2>
+                    <div className="mt-5 grid gap-4 md:grid-cols-2">
+                      {benefits.map((benefit, index) => (
+                        <div
+                          key={`${item.slug}-benefit-${index}`}
+                          className="rounded-xl border border-q-border bg-q-bg p-4 text-sm leading-7 text-q-muted"
+                        >
+                          {benefit}
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {faqs.length > 0 && (
+                  <section className="rounded-2xl border border-q-border bg-q-card p-6 shadow-sm md:p-8">
+                    <h2 className="text-2xl font-semibold text-q-text">
+                      Frequently asked questions
+                    </h2>
+                    <div className="mt-5 space-y-4">
+                      {faqs.map((faq, index) => (
+                        <div
+                          key={`${item.slug}-faq-${index}`}
+                          className="rounded-xl border border-q-border bg-q-bg p-5"
+                        >
+                          <h3 className="text-lg font-semibold text-q-text">
+                            {faq.question}
+                          </h3>
+                          <p className="mt-2 text-sm leading-7 text-q-muted">
+                            {faq.answer}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
                 {!hasCustomContentSections && (
                   <PageSEOSections table={table} item={item} />
+                )}
+
+                {showRelatedItemsSection && dedupedRelatedItems.length > 0 && (
+                  <section className="rounded-2xl border border-q-border bg-q-card p-6 shadow-sm md:p-8">
+                    <h2 className="text-2xl font-semibold text-q-text">
+                      Related {label}
+                    </h2>
+                    <div className="mt-5 grid gap-4 md:grid-cols-2">
+                      {dedupedRelatedItems.map((related) => (
+                        <Link
+                          key={related.slug}
+                          href={detailHref(table, related.slug)}
+                          className="rounded-2xl border border-q-border bg-q-bg p-5 transition duration-150 ease-out hover:-translate-y-0.5 hover:border-blue-400/50 hover:shadow-sm"
+                        >
+                          <div className="text-lg font-semibold text-q-text">
+                            {related.name}
+                          </div>
+                          <p className="mt-3 text-sm leading-6 text-q-muted">
+                            {getDisplayDescription(table, related, "card")}
+                          </p>
+                          <div className="mt-4 text-sm font-medium text-blue-500">
+                            Open →
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </section>
                 )}
 
                 {secondaryContent}
