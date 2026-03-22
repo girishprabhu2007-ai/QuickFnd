@@ -29,31 +29,206 @@ type SchemaResult = {
 type SchemaStateValue = string | number | boolean;
 type SchemaState = Record<string, SchemaStateValue>;
 
-function Card({
+function Workspace({
   title,
+  description,
   children,
 }: {
   title: string;
+  description?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-q-border bg-q-card p-6">
-      <h2 className="text-xl font-semibold text-q-text">{title}</h2>
-      <div className="mt-4">{children}</div>
+    <section className="rounded-[30px] border border-q-border bg-q-card p-6 shadow-sm md:p-8">
+      <div className="mb-6">
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-500">
+          Tool Workspace
+        </div>
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-q-text md:text-3xl">
+          {title}
+        </h2>
+        {description ? (
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-q-muted md:text-base">
+            {description}
+          </p>
+        ) : null}
+      </div>
+      {children}
     </section>
   );
 }
 
+function ToolGrid({
+  left,
+  right,
+}: {
+  left: React.ReactNode;
+  right: React.ReactNode;
+}) {
+  return (
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div>{left}</div>
+      <div>{right}</div>
+    </div>
+  );
+}
+
+function InputStage({
+  title = "Inputs",
+  subtitle,
+  children,
+}: {
+  title?: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-[24px] border border-q-border bg-q-bg p-5 shadow-sm">
+      <div className="mb-4">
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-q-muted">
+          {title}
+        </div>
+        {subtitle ? (
+          <div className="mt-2 text-sm leading-6 text-q-muted">{subtitle}</div>
+        ) : null}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function ResultStage({
+  title = "Result",
+  output,
+  error,
+  previewColor,
+  placeholder = "No output yet.",
+}: {
+  title?: string;
+  output: string;
+  error?: string;
+  previewColor?: string;
+  placeholder?: string;
+}) {
+  return (
+    <section className="rounded-[26px] border border-q-border bg-gradient-to-br from-q-card to-q-bg p-5 shadow-sm md:p-6">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-q-muted">
+            Output
+          </div>
+          <div className="mt-2 text-lg font-semibold text-q-text">{title}</div>
+        </div>
+        <span
+          className={
+            output
+              ? "rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800"
+              : error
+              ? "rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700"
+              : "rounded-full border border-q-border bg-q-bg px-3 py-1 text-xs font-medium text-q-muted"
+          }
+        >
+          {output ? "Ready" : error ? "Needs attention" : "Waiting"}
+        </span>
+      </div>
+
+      {error ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-7 text-red-700">
+          {error}
+        </div>
+      ) : null}
+
+      {previewColor ? (
+        <div className="mb-4 rounded-2xl border border-q-border bg-q-card p-4 shadow-sm">
+          <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-q-muted">
+            Preview
+          </div>
+          <div
+            className="h-20 rounded-xl border border-q-border"
+            style={{ backgroundColor: previewColor }}
+          />
+        </div>
+      ) : null}
+
+      <div className="rounded-2xl border border-q-border bg-q-card p-5 shadow-sm">
+        <textarea
+          readOnly
+          value={output}
+          placeholder={placeholder}
+          className={textareaClass("min-h-[180px]")}
+        />
+      </div>
+    </section>
+  );
+}
+
+function StatsGrid({ children }: { children: React.ReactNode }) {
+  return <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{children}</div>;
+}
+
+function StatCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-q-border bg-q-card p-4 shadow-sm">
+      <div className="text-xs font-semibold uppercase tracking-[0.18em] text-q-muted">
+        {label}
+      </div>
+      <div className="mt-2 text-2xl font-semibold tracking-tight text-q-text">
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function InsightCard({
+  title,
+  children,
+  tone = "neutral",
+}: {
+  title: string;
+  children: React.ReactNode;
+  tone?: "neutral" | "blue" | "green" | "amber" | "red";
+}) {
+  const toneClass =
+    tone === "blue"
+      ? "border-blue-200 bg-blue-50 text-slate-800"
+      : tone === "green"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+      : tone === "amber"
+      ? "border-amber-200 bg-amber-50 text-amber-900"
+      : tone === "red"
+      ? "border-red-200 bg-red-50 text-red-800"
+      : "border-q-border bg-q-card text-q-text";
+
+  return (
+    <div className={`rounded-2xl border p-4 text-sm leading-7 ${toneClass}`}>
+      <div className="font-semibold">{title}</div>
+      <div className="mt-1">{children}</div>
+    </div>
+  );
+}
+
+function actionButtonClass(primary = false) {
+  return primary
+    ? "rounded-2xl bg-q-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition duration-150 hover:-translate-y-0.5 hover:bg-q-primary-hover hover:shadow-md"
+    : "rounded-2xl border border-q-border bg-q-card px-5 py-3 text-sm font-semibold text-q-text transition duration-150 hover:-translate-y-0.5 hover:bg-q-card-hover hover:shadow-sm disabled:opacity-50";
+}
+
 function inputClass() {
-  return "w-full rounded-xl border border-q-border bg-q-bg p-4 text-q-text outline-none placeholder:text-q-muted";
+  return "w-full rounded-2xl border border-q-border bg-q-card p-4 text-q-text outline-none transition duration-150 placeholder:text-q-muted focus:border-blue-400/60 focus:bg-white";
 }
 
 function textareaClass(minHeight: string) {
-  return `w-full rounded-xl border border-q-border bg-q-bg p-4 text-q-text outline-none placeholder:text-q-muted ${minHeight}`;
+  return `w-full rounded-2xl border border-q-border bg-q-card p-4 text-q-text outline-none transition duration-150 placeholder:text-q-muted focus:border-blue-400/60 focus:bg-white ${minHeight}`;
 }
 
 function softPanelClass() {
-  return "rounded-xl border border-q-border bg-q-bg p-4";
+  return "rounded-2xl border border-q-border bg-q-card p-4 shadow-sm";
 }
 
 async function copyText(value: string) {
@@ -215,17 +390,15 @@ function renderSchemaField(
   state: SchemaState,
   setState: React.Dispatch<React.SetStateAction<SchemaState>>
 ) {
-  const value = state[field.key];
-
   if (field.type === "checkbox") {
     return (
       <label
         key={field.key}
-        className="flex items-center gap-2 rounded-xl border border-q-border bg-q-bg px-4 py-3 text-sm text-q-text"
+        className="flex items-center gap-2 rounded-2xl border border-q-border bg-q-card px-4 py-3 text-sm text-q-text shadow-sm"
       >
         <input
           type="checkbox"
-          checked={Boolean(value)}
+          checked={Boolean(valueOr(state[field.key], false))}
           onChange={(e) =>
             setState((prev) => ({
               ...prev,
@@ -243,7 +416,7 @@ function renderSchemaField(
       <div key={field.key}>
         <label className="mb-2 block text-sm font-medium text-q-text">{field.label}</label>
         <textarea
-          value={String(value ?? "")}
+          value={String(valueOr(state[field.key], ""))}
           onChange={(e) =>
             setState((prev) => ({
               ...prev,
@@ -262,14 +435,14 @@ function renderSchemaField(
     return (
       <div key={field.key}>
         <label className="mb-2 block text-sm font-medium text-q-text">
-          {field.label}: {String(value ?? "")}
+          {field.label}: {String(valueOr(state[field.key], ""))}
         </label>
         <input
           type="range"
           min={field.min}
           max={field.max}
           step={field.step ?? 1}
-          value={Number(value ?? field.min ?? 0)}
+          value={Number(valueOr(state[field.key], field.min ?? 0))}
           onChange={(e) =>
             setState((prev) => ({
               ...prev,
@@ -287,7 +460,7 @@ function renderSchemaField(
       <div key={field.key}>
         <label className="mb-2 block text-sm font-medium text-q-text">{field.label}</label>
         <select
-          value={String(value ?? "")}
+          value={String(valueOr(state[field.key], ""))}
           onChange={(e) =>
             setState((prev) => ({
               ...prev,
@@ -311,12 +484,11 @@ function renderSchemaField(
       <label className="mb-2 block text-sm font-medium text-q-text">{field.label}</label>
       <input
         type={field.type}
-        value={String(value ?? "")}
+        value={String(valueOr(state[field.key], ""))}
         onChange={(e) =>
           setState((prev) => ({
             ...prev,
-            [field.key]:
-              field.type === "number" ? e.target.value : e.target.value,
+            [field.key]: e.target.value,
           }))
         }
         placeholder={field.placeholder}
@@ -327,6 +499,10 @@ function renderSchemaField(
       />
     </div>
   );
+}
+
+function valueOr<T>(value: T | undefined, fallback: T) {
+  return value === undefined ? fallback : value;
 }
 
 function runSchemaEngine(
@@ -402,9 +578,7 @@ function runSchemaEngine(
       const random = Math.random() * (maxNum - minNum) + minNum;
 
       return {
-        output: allowDecimal
-          ? random.toFixed(decimalPlaces)
-          : String(Math.floor(random)),
+        output: allowDecimal ? random.toFixed(decimalPlaces) : String(Math.floor(random)),
       };
     }
 
@@ -502,62 +676,53 @@ function SchemaDrivenToolCard({
   const nonCheckboxFields = schema.fields.filter((field) => field.type !== "checkbox");
 
   return (
-    <Card title={title}>
-      <div className="space-y-4">
-        {family === "unit-converter" ? (
-          <div className="text-sm text-q-muted">
-            Convert {String(config.fromUnit || "unit")} to {String(config.toUnit || "unit")}
-          </div>
-        ) : null}
-
-        {nonCheckboxFields.map((field) => renderSchemaField(field, state, setState))}
-
-        {checkboxFields.length > 0 ? (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {checkboxFields.map((field) => renderSchemaField(field, state, setState))}
-          </div>
-        ) : null}
-
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={run}
-            className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover"
+    <Workspace title={title}>
+      <ToolGrid
+        left={
+          <InputStage
+            subtitle={
+              family === "unit-converter"
+                ? `Convert ${String(config.fromUnit || "unit")} to ${String(
+                    config.toUnit || "unit"
+                  )}.`
+                : "Adjust the inputs and run the tool."
+            }
           >
-            {schema.action.label}
-          </button>
-          <button
-            onClick={() => copyText(result.output)}
-            disabled={!result.output}
-            className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover disabled:opacity-50"
-          >
-            {schema.action.copyLabel || "Copy"}
-          </button>
-        </div>
+            <div className="space-y-4">
+              {nonCheckboxFields.map((field) => renderSchemaField(field, state, setState))}
 
-        {result.error ? (
-          <div className="rounded-xl border border-q-danger bg-q-danger-soft p-3 text-sm text-q-danger">
-            {result.error}
-          </div>
-        ) : null}
+              {checkboxFields.length > 0 ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {checkboxFields.map((field) => renderSchemaField(field, state, setState))}
+                </div>
+              ) : null}
 
-        {result.previewColor ? (
-          <div className={softPanelClass()}>
-            <div className="mb-3 text-sm text-q-muted">Preview</div>
-            <div
-              className="h-20 rounded-xl border border-q-border"
-              style={{ backgroundColor: result.previewColor }}
-            />
-          </div>
-        ) : null}
-
-        <textarea
-          readOnly
-          value={result.output}
-          placeholder={schema.outputPlaceholder || "Output"}
-          className={textareaClass("min-h-[120px]")}
-        />
-      </div>
-    </Card>
+              <div className="flex flex-wrap gap-3">
+                <button onClick={run} className={actionButtonClass(true)}>
+                  {schema.action.label}
+                </button>
+                <button
+                  onClick={() => copyText(result.output)}
+                  disabled={!result.output}
+                  className={actionButtonClass(false)}
+                >
+                  {schema.action.copyLabel || "Copy"}
+                </button>
+              </div>
+            </div>
+          </InputStage>
+        }
+        right={
+          <ResultStage
+            title="Tool output"
+            output={result.output}
+            error={result.error}
+            previewColor={result.previewColor}
+            placeholder={schema.outputPlaceholder || "Output"}
+          />
+        }
+      />
+    </Workspace>
   );
 }
 
@@ -603,58 +768,51 @@ function StrengthChecker({
   }, [input, minLength, rules]);
 
   return (
-    <Card title={title}>
-      <div className="space-y-4">
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Type or paste a password to check"
-          className={textareaClass("min-h-[120px]")}
-        />
+    <Workspace title={title}>
+      <ToolGrid
+        left={
+          <InputStage subtitle="Paste or type a password to evaluate its strength.">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type or paste a password to check"
+              className={textareaClass("min-h-[120px]")}
+            />
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <div className={softPanelClass()}>
-            <div className="text-sm text-q-muted">Strength</div>
-            <div className="mt-2 text-2xl font-semibold text-q-text">{result.label}</div>
-          </div>
-          <div className={softPanelClass()}>
-            <div className="text-sm text-q-muted">Score</div>
-            <div className="mt-2 text-2xl font-semibold text-q-text">{result.score}%</div>
-          </div>
-          <div className={softPanelClass()}>
-            <div className="text-sm text-q-muted">Rules Passed</div>
-            <div className="mt-2 text-2xl font-semibold text-q-text">
-              {result.passed}/{result.total}
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {rules.map((rule) => {
+                const passed = result.checks[rule as keyof typeof result.checks] ?? false;
+                return (
+                  <div key={rule} className={softPanelClass()}>
+                    <div className="text-sm capitalize text-q-muted">{rule}</div>
+                    <div className="mt-2 text-base font-medium text-q-text">
+                      {passed ? "Passed" : "Missing"}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </div>
-        </div>
+          </InputStage>
+        }
+        right={
+          <section className="space-y-4">
+            <StatsGrid>
+              <StatCard label="Strength" value={result.label} />
+              <StatCard label="Score" value={`${result.score}%`} />
+              <StatCard label="Rules Passed" value={`${result.passed}/${result.total}`} />
+            </StatsGrid>
 
-        <div className="grid gap-3 md:grid-cols-2">
-          <div className={softPanelClass()}>
-            <div className="text-sm text-q-muted">Minimum Length</div>
-            <div className="mt-2 text-lg font-semibold text-q-text">{minLength}</div>
-          </div>
-          <div className={softPanelClass()}>
-            <div className="text-sm text-q-muted">Current Length</div>
-            <div className="mt-2 text-lg font-semibold text-q-text">{input.length}</div>
-          </div>
-        </div>
+            <InsightCard title="Minimum Length" tone="neutral">
+              {minLength}
+            </InsightCard>
 
-        <div className="grid gap-3 md:grid-cols-2">
-          {rules.map((rule) => {
-            const passed = result.checks[rule as keyof typeof result.checks] ?? false;
-            return (
-              <div key={rule} className={softPanelClass()}>
-                <div className="text-sm capitalize text-q-muted">{rule}</div>
-                <div className="mt-2 text-base font-medium text-q-text">
-                  {passed ? "Passed" : "Missing"}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </Card>
+            <InsightCard title="Current Length" tone="blue">
+              {input.length}
+            </InsightCard>
+          </section>
+        }
+      />
+    </Workspace>
   );
 }
 
@@ -705,57 +863,52 @@ function TextFormatter({
   }
 
   return (
-    <Card title={title}>
-      <div className="space-y-4">
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={
-            mode === "json"
-              ? 'Paste JSON here, for example: {"name":"QuickFnd"}'
-              : "Paste code or JSON here"
-          }
-          className={textareaClass("min-h-[180px]")}
-        />
+    <Workspace title={title}>
+      <ToolGrid
+        left={
+          <InputStage subtitle="Paste content, then format or minify it.">
+            <div className="space-y-4">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={
+                  mode === "json"
+                    ? 'Paste JSON here, for example: {"name":"QuickFnd"}'
+                    : "Paste code or JSON here"
+                }
+                className={textareaClass("min-h-[220px]")}
+              />
 
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => formatValue(true)}
-            className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover"
-          >
-            Format
-          </button>
-          {allowMinify ? (
-            <button
-              onClick={() => formatValue(false)}
-              className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover"
-            >
-              Minify
-            </button>
-          ) : null}
-          <button
-            onClick={() => copyText(output)}
-            disabled={!output}
-            className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover disabled:opacity-50"
-          >
-            Copy Output
-          </button>
-        </div>
-
-        {error ? (
-          <div className="rounded-xl border border-q-danger bg-q-danger-soft p-3 text-sm text-q-danger">
-            {error}
-          </div>
-        ) : null}
-
-        <textarea
-          readOnly
-          value={output}
-          placeholder="Formatted output"
-          className={textareaClass("min-h-[200px]")}
-        />
-      </div>
-    </Card>
+              <div className="flex flex-wrap gap-3">
+                <button onClick={() => formatValue(true)} className={actionButtonClass(true)}>
+                  Format
+                </button>
+                {allowMinify ? (
+                  <button onClick={() => formatValue(false)} className={actionButtonClass(false)}>
+                    Minify
+                  </button>
+                ) : null}
+                <button
+                  onClick={() => copyText(output)}
+                  disabled={!output}
+                  className={actionButtonClass(false)}
+                >
+                  Copy Output
+                </button>
+              </div>
+            </div>
+          </InputStage>
+        }
+        right={
+          <ResultStage
+            title="Formatted output"
+            output={output}
+            error={error}
+            placeholder="Formatted output"
+          />
+        }
+      />
+    </Workspace>
   );
 }
 
@@ -781,43 +934,31 @@ function TextAnalyzer({
   }, [text, wordsPerMinute]);
 
   return (
-    <Card title={title}>
-      <div className="space-y-4">
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Paste or type text here"
-          className={textareaClass("min-h-[220px]")}
-        />
-
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          <div className={softPanelClass()}>
-            <div className="text-sm text-q-muted">Words</div>
-            <div className="mt-2 text-2xl font-semibold text-q-text">{stats.words}</div>
-          </div>
-          <div className={softPanelClass()}>
-            <div className="text-sm text-q-muted">Characters</div>
-            <div className="mt-2 text-2xl font-semibold text-q-text">{stats.characters}</div>
-          </div>
-          <div className={softPanelClass()}>
-            <div className="text-sm text-q-muted">No Spaces</div>
-            <div className="mt-2 text-2xl font-semibold text-q-text">
-              {stats.charactersNoSpaces}
-            </div>
-          </div>
-          <div className={softPanelClass()}>
-            <div className="text-sm text-q-muted">Paragraphs</div>
-            <div className="mt-2 text-2xl font-semibold text-q-text">{stats.paragraphs}</div>
-          </div>
-          <div className={softPanelClass()}>
-            <div className="text-sm text-q-muted">Read Time</div>
-            <div className="mt-2 text-2xl font-semibold text-q-text">
-              {stats.readingMinutes} min
-            </div>
-          </div>
-        </div>
-      </div>
-    </Card>
+    <Workspace title={title}>
+      <ToolGrid
+        left={
+          <InputStage subtitle="Paste or write text to analyze its length and reading stats.">
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Paste or type text here"
+              className={textareaClass("min-h-[260px]")}
+            />
+          </InputStage>
+        }
+        right={
+          <section className="space-y-4">
+            <StatsGrid>
+              <StatCard label="Words" value={stats.words} />
+              <StatCard label="Characters" value={stats.characters} />
+              <StatCard label="No Spaces" value={stats.charactersNoSpaces} />
+              <StatCard label="Paragraphs" value={stats.paragraphs} />
+              <StatCard label="Read Time" value={`${stats.readingMinutes} min`} />
+            </StatsGrid>
+          </section>
+        }
+      />
+    </Workspace>
   );
 }
 
@@ -846,34 +987,44 @@ function TextTransformer({
   }
 
   return (
-    <Card title={title}>
-      <div className="space-y-4">
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Enter text to transform"
-          className={textareaClass("min-h-[160px]")}
-        />
+    <Workspace title={title}>
+      <ToolGrid
+        left={
+          <InputStage subtitle="Transform the same text into multiple formats with one click.">
+            <div className="space-y-4">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Enter text to transform"
+                className={textareaClass("min-h-[180px]")}
+              />
 
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={runTransform}
-            className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover"
-          >
-            Transform Text
-          </button>
-        </div>
-
-        <div className="grid gap-4">
-          {Object.entries(output).map(([key, value]) => (
-            <div key={key} className={softPanelClass()}>
-              <div className="mb-2 text-sm text-q-muted">{key}</div>
-              <div className="break-words text-sm text-q-text">{value}</div>
+              <div className="flex flex-wrap gap-3">
+                <button onClick={runTransform} className={actionButtonClass(true)}>
+                  Transform Text
+                </button>
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
-    </Card>
+          </InputStage>
+        }
+        right={
+          <section className="space-y-4">
+            {Object.entries(output).length === 0 ? (
+              <InsightCard title="Result" tone="neutral">
+                Run the transformer to see output variations.
+              </InsightCard>
+            ) : (
+              Object.entries(output).map(([key, value]) => (
+                <div key={key} className={softPanelClass()}>
+                  <div className="mb-2 text-sm text-q-muted">{key}</div>
+                  <div className="break-words text-sm text-q-text">{value}</div>
+                </div>
+              ))
+            )}
+          </section>
+        }
+      />
+    </Workspace>
   );
 }
 
@@ -925,61 +1076,65 @@ function SnippetManager({ title }: { title: string }) {
   }
 
   return (
-    <Card title={title}>
-      <div className="space-y-4">
-        <input
-          value={snippetTitle}
-          onChange={(e) => setSnippetTitle(e.target.value)}
-          placeholder="Snippet title"
-          className={inputClass()}
-        />
-        <textarea
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          placeholder="Paste snippet code"
-          className="min-h-[160px] w-full rounded-xl border border-q-border bg-q-bg p-4 font-mono text-q-text outline-none placeholder:text-q-muted"
-        />
-        <button
-          onClick={saveSnippet}
-          className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover"
-        >
-          Save Snippet
-        </button>
-
-        <div className="space-y-3">
-          {snippets.length === 0 ? (
-            <div className={`${softPanelClass()} text-sm text-q-muted`}>
-              No snippets saved yet.
+    <Workspace title={title}>
+      <ToolGrid
+        left={
+          <InputStage subtitle="Save reusable snippets in local storage for quick access.">
+            <div className="space-y-4">
+              <input
+                value={snippetTitle}
+                onChange={(e) => setSnippetTitle(e.target.value)}
+                placeholder="Snippet title"
+                className={inputClass()}
+              />
+              <textarea
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="Paste snippet code"
+                className="min-h-[180px] w-full rounded-2xl border border-q-border bg-q-card p-4 font-mono text-q-text outline-none transition duration-150 placeholder:text-q-muted focus:border-blue-400/60 focus:bg-white"
+              />
+              <button onClick={saveSnippet} className={actionButtonClass(true)}>
+                Save Snippet
+              </button>
             </div>
-          ) : (
-            snippets.map((snippet) => (
-              <div key={snippet.id} className={softPanelClass()}>
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="font-medium text-q-text">{snippet.title}</h3>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => copyText(snippet.code)}
-                      className="rounded-lg border border-q-border bg-q-card px-3 py-1 text-sm text-q-text hover:bg-q-card-hover"
-                    >
-                      Copy
-                    </button>
-                    <button
-                      onClick={() => deleteSnippet(snippet.id)}
-                      className="rounded-lg border border-q-danger bg-q-danger-soft px-3 py-1 text-sm text-q-danger hover:opacity-90"
-                    >
-                      Delete
-                    </button>
+          </InputStage>
+        }
+        right={
+          <section className="space-y-3">
+            {snippets.length === 0 ? (
+              <InsightCard title="Saved snippets" tone="neutral">
+                No snippets saved yet.
+              </InsightCard>
+            ) : (
+              snippets.map((snippet) => (
+                <div key={snippet.id} className={softPanelClass()}>
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="font-medium text-q-text">{snippet.title}</h3>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => copyText(snippet.code)}
+                        className="rounded-lg border border-q-border bg-q-card px-3 py-1 text-sm text-q-text hover:bg-q-card-hover"
+                      >
+                        Copy
+                      </button>
+                      <button
+                        onClick={() => deleteSnippet(snippet.id)}
+                        className="rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-sm text-red-700 hover:opacity-90"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
+                  <pre className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-xl border border-q-border bg-white p-3 text-sm text-q-text">
+                    {snippet.code}
+                  </pre>
                 </div>
-                <pre className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-lg border border-q-border bg-q-card p-3 text-sm text-q-text">
-                  {snippet.code}
-                </pre>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    </Card>
+              ))
+            )}
+          </section>
+        }
+      />
+    </Workspace>
   );
 }
 
@@ -1029,70 +1184,77 @@ function RegexTools({
   }
 
   return (
-    <Card title={title}>
-      <div className="space-y-4">
-        <input
-          value={pattern}
-          onChange={(e) => setPattern(e.target.value)}
-          placeholder="Regex pattern, for example: \\b\\w+@\\w+\\.\\w+\\b"
-          className={inputClass()}
-        />
+    <Workspace title={title}>
+      <ToolGrid
+        left={
+          <InputStage subtitle="Test a pattern against input text or extract matches.">
+            <div className="space-y-4">
+              <input
+                value={pattern}
+                onChange={(e) => setPattern(e.target.value)}
+                placeholder="Regex pattern, for example: \\b\\w+@\\w+\\.\\w+\\b"
+                className={inputClass()}
+              />
 
-        <input
-          value={flags}
-          onChange={(e) => setFlags(e.target.value)}
-          placeholder="Flags, for example: gmi"
-          className={inputClass()}
-        />
+              <input
+                value={flags}
+                onChange={(e) => setFlags(e.target.value)}
+                placeholder="Flags, for example: gmi"
+                className={inputClass()}
+              />
 
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Paste text to test against the regex"
-          className={textareaClass("min-h-[180px]")}
-        />
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="Paste text to test against the regex"
+                className={textareaClass("min-h-[200px]")}
+              />
 
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={runRegex}
-            className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover"
-          >
-            {mode === "extract" ? "Extract Matches" : "Test Regex"}
-          </button>
-          <button
-            onClick={() => copyText(matches.join("\n"))}
-            disabled={matches.length === 0}
-            className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover disabled:opacity-50"
-          >
-            Copy Matches
-          </button>
-        </div>
+              <div className="flex flex-wrap gap-3">
+                <button onClick={runRegex} className={actionButtonClass(true)}>
+                  {mode === "extract" ? "Extract Matches" : "Test Regex"}
+                </button>
+                <button
+                  onClick={() => copyText(matches.join("\n"))}
+                  disabled={matches.length === 0}
+                  className={actionButtonClass(false)}
+                >
+                  Copy Matches
+                </button>
+              </div>
+            </div>
+          </InputStage>
+        }
+        right={
+          <section className="space-y-4">
+            {error ? (
+              <InsightCard title="Regex error" tone="red">
+                {error}
+              </InsightCard>
+            ) : null}
 
-        {error ? (
-          <div className="rounded-xl border border-q-danger bg-q-danger-soft p-3 text-sm text-q-danger">
-            {error}
-          </div>
-        ) : null}
+            {summary ? (
+              <InsightCard title="Summary" tone="blue">
+                {summary}
+              </InsightCard>
+            ) : (
+              <InsightCard title="Summary" tone="neutral">
+                Run the regex tool to see matching results.
+              </InsightCard>
+            )}
 
-        {summary ? (
-          <div className={softPanelClass()}>
-            <div className="text-sm text-q-muted">Result</div>
-            <div className="mt-2 text-base font-medium text-q-text">{summary}</div>
-          </div>
-        ) : null}
-
-        <div className="grid gap-3">
-          {matches.length > 0
-            ? matches.map((match, index) => (
-                <div key={`${match}-${index}`} className={softPanelClass()}>
-                  <div className="text-sm text-q-muted">Match {index + 1}</div>
-                  <div className="mt-2 break-words text-q-text">{match}</div>
-                </div>
-              ))
-            : null}
-        </div>
-      </div>
-    </Card>
+            {matches.length > 0
+              ? matches.map((match, index) => (
+                  <div key={`${match}-${index}`} className={softPanelClass()}>
+                    <div className="text-sm text-q-muted">Match {index + 1}</div>
+                    <div className="mt-2 break-words text-q-text">{match}</div>
+                  </div>
+                ))
+              : null}
+          </section>
+        }
+      />
+    </Workspace>
   );
 }
 
@@ -1135,46 +1297,47 @@ function HashTools({
   }
 
   return (
-    <Card title={title}>
-      <div className="space-y-4">
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Enter text to hash"
-          className={textareaClass("min-h-[160px]")}
-        />
+    <Workspace title={title}>
+      <ToolGrid
+        left={
+          <InputStage subtitle="Generate a hash from the provided text input.">
+            <div className="space-y-4">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Enter text to hash"
+                className={textareaClass("min-h-[180px]")}
+              />
 
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={generateHash}
-            disabled={working}
-            className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover disabled:opacity-60"
-          >
-            {working ? "Generating..." : "Generate Hash"}
-          </button>
-          <button
-            onClick={() => copyText(output)}
-            disabled={!output}
-            className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover disabled:opacity-50"
-          >
-            Copy Hash
-          </button>
-        </div>
-
-        {error ? (
-          <div className="rounded-xl border border-q-danger bg-q-danger-soft p-3 text-sm text-q-danger">
-            {error}
-          </div>
-        ) : null}
-
-        <textarea
-          readOnly
-          value={output}
-          placeholder="Hash output"
-          className={textareaClass("min-h-[140px]")}
-        />
-      </div>
-    </Card>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={generateHash}
+                  disabled={working}
+                  className={actionButtonClass(true)}
+                >
+                  {working ? "Generating..." : "Generate Hash"}
+                </button>
+                <button
+                  onClick={() => copyText(output)}
+                  disabled={!output}
+                  className={actionButtonClass(false)}
+                >
+                  Copy Hash
+                </button>
+              </div>
+            </div>
+          </InputStage>
+        }
+        right={
+          <ResultStage
+            title="Hash output"
+            output={output}
+            error={error}
+            placeholder="Hash output"
+          />
+        }
+      />
+    </Workspace>
   );
 }
 
@@ -1231,10 +1394,9 @@ function TimestampTools({ title }: { title: string }) {
   }
 
   return (
-    <Card title={title}>
-      <div className="space-y-6">
-        <div className={softPanelClass()}>
-          <div className="mb-3 text-sm font-medium text-q-text">Unix Timestamp To Date</div>
+    <Workspace title={title}>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <InputStage title="Unix Timestamp To Date" subtitle="Convert Unix timestamps into ISO dates.">
           <div className="space-y-3">
             <input
               value={unixInput}
@@ -1243,16 +1405,13 @@ function TimestampTools({ title }: { title: string }) {
               className={inputClass()}
             />
             <div className="flex flex-wrap gap-3">
-              <button
-                onClick={fromUnix}
-                className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover"
-              >
+              <button onClick={fromUnix} className={actionButtonClass(true)}>
                 Convert To Date
               </button>
               <button
                 onClick={() => copyText(dateOutput)}
                 disabled={!dateOutput}
-                className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover disabled:opacity-50"
+                className={actionButtonClass(false)}
               >
                 Copy Date
               </button>
@@ -1264,10 +1423,9 @@ function TimestampTools({ title }: { title: string }) {
               className={textareaClass("min-h-[100px]")}
             />
           </div>
-        </div>
+        </InputStage>
 
-        <div className={softPanelClass()}>
-          <div className="mb-3 text-sm font-medium text-q-text">Date To Unix Timestamp</div>
+        <InputStage title="Date To Unix Timestamp" subtitle="Convert a selected date and time into Unix seconds.">
           <div className="space-y-3">
             <input
               type="datetime-local"
@@ -1276,22 +1434,16 @@ function TimestampTools({ title }: { title: string }) {
               className={inputClass()}
             />
             <div className="flex flex-wrap gap-3">
-              <button
-                onClick={toUnix}
-                className="rounded-xl bg-q-primary px-4 py-2 font-medium text-white hover:bg-q-primary-hover"
-              >
+              <button onClick={toUnix} className={actionButtonClass(true)}>
                 Convert To Unix
               </button>
-              <button
-                onClick={useNow}
-                className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover"
-              >
+              <button onClick={useNow} className={actionButtonClass(false)}>
                 Use Current Time
               </button>
               <button
                 onClick={() => copyText(unixOutput)}
                 disabled={!unixOutput}
-                className="rounded-xl border border-q-border bg-q-card px-4 py-2 font-medium text-q-text hover:bg-q-card-hover disabled:opacity-50"
+                className={actionButtonClass(false)}
               >
                 Copy Unix
               </button>
@@ -1303,15 +1455,17 @@ function TimestampTools({ title }: { title: string }) {
               className={textareaClass("min-h-[100px]")}
             />
           </div>
-        </div>
+        </InputStage>
 
         {error ? (
-          <div className="rounded-xl border border-q-danger bg-q-danger-soft p-3 text-sm text-q-danger">
-            {error}
+          <div className="xl:col-span-2">
+            <InsightCard title="Timestamp error" tone="red">
+              {error}
+            </InsightCard>
           </div>
         ) : null}
       </div>
-    </Card>
+    </Workspace>
   );
 }
 
@@ -1323,11 +1477,11 @@ function GenericTool({
   description: string;
 }) {
   return (
-    <Card title={title}>
-      <div className="rounded-xl border border-q-border bg-q-bg p-5 text-q-muted">
-        {description}
-      </div>
-    </Card>
+    <Workspace title={title} description={description}>
+      <InsightCard title="Tool ready" tone="neutral">
+        This utility is available as an indexable QuickFnd tool entry.
+      </InsightCard>
+    </Workspace>
   );
 }
 
