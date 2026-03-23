@@ -1485,6 +1485,500 @@ function GenericTool({
   );
 }
 
+
+// ─── QR Code Generator ────────────────────────────────────────────────────────
+function QRGenerator({ title }: { title: string }) {
+  const [input, setInput] = useState("");
+  const [qrSrc, setQrSrc] = useState("");
+  const [size, setSize] = useState("256");
+  const [copied, setCopied] = useState(false);
+
+  function generate() {
+    if (!input.trim()) return;
+    const encoded = encodeURIComponent(input.trim());
+    const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encoded}&format=png&margin=10`;
+    setQrSrc(url);
+  }
+
+  async function downloadQR() {
+    if (!qrSrc) return;
+    const a = document.createElement("a");
+    a.href = qrSrc;
+    a.download = "qrcode.png";
+    a.click();
+  }
+
+  async function copyLink() {
+    await copyText(input);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <Workspace title={title}>
+      <ToolGrid
+        left={
+          <InputStage subtitle="Enter a URL, text, phone number, or any content to encode into a QR code.">
+            <div className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-q-text">Content to encode</label>
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="https://example.com or any text..."
+                  rows={4}
+                  className={textareaClass("min-h-[120px]")}
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-q-text">Size</label>
+                <select
+                  value={size}
+                  onChange={(e) => setSize(e.target.value)}
+                  className={inputClass()}
+                >
+                  <option value="128">128×128 — Small</option>
+                  <option value="256">256×256 — Medium</option>
+                  <option value="512">512×512 — Large</option>
+                  <option value="1024">1024×1024 — High Resolution</option>
+                </select>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <button onClick={generate} disabled={!input.trim()} className={actionButtonClass(true)}>
+                  Generate QR Code
+                </button>
+                {qrSrc && (
+                  <button onClick={downloadQR} className={actionButtonClass(false)}>
+                    Download PNG
+                  </button>
+                )}
+                <button onClick={copyLink} disabled={!input.trim()} className={actionButtonClass(false)}>
+                  {copied ? "Copied!" : "Copy Link"}
+                </button>
+              </div>
+            </div>
+          </InputStage>
+        }
+        right={
+          <section className="rounded-[26px] border border-q-border bg-q-card p-5 shadow-sm">
+            <div className="mb-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-q-muted">Output</div>
+              <div className="mt-2 text-lg font-semibold text-q-text">QR Code</div>
+            </div>
+            {qrSrc ? (
+              <div className="flex flex-col items-center gap-4">
+                <img
+                  src={qrSrc}
+                  alt="Generated QR code"
+                  className="rounded-2xl border border-q-border bg-white p-3"
+                  style={{ width: "200px", height: "200px", imageRendering: "pixelated" }}
+                />
+                <p className="text-center text-xs text-q-muted break-all">{input.slice(0, 60)}{input.length > 60 ? "..." : ""}</p>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-q-border bg-q-bg p-8 text-center text-sm text-q-muted">
+                Enter content and click Generate to create your QR code
+              </div>
+            )}
+          </section>
+        }
+      />
+    </Workspace>
+  );
+}
+
+// ─── Color Picker ─────────────────────────────────────────────────────────────
+function ColorPicker({ title }: { title: string }) {
+  const [hex, setHex] = useState("#3b82f6");
+  const [pickerHex, setPickerHex] = useState("#3b82f6");
+
+  const rgb = useMemo(() => {
+    try {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return { r, g, b };
+    } catch { return null; }
+  }, [hex]);
+
+  const hsl = useMemo(() => {
+    if (!rgb) return null;
+    const r = rgb.r / 255, g = rgb.g / 255, b = rgb.b / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0, s = 0;
+    const l = (max + min) / 2;
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+        case g: h = ((b - r) / d + 2) / 6; break;
+        case b: h = ((r - g) / d + 4) / 6; break;
+      }
+    }
+    return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+  }, [rgb]);
+
+  function handlePickerChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setPickerHex(e.target.value);
+    setHex(e.target.value.toUpperCase());
+  }
+
+  function handleHexInput(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = e.target.value;
+    setHex(val);
+    if (/^#[0-9A-Fa-f]{6}$/.test(val)) setPickerHex(val);
+  }
+
+  const textColor = rgb && (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000 > 128 ? "#000" : "#fff";
+
+  return (
+    <Workspace title={title}>
+      <ToolGrid
+        left={
+          <InputStage subtitle="Pick a color visually or enter a HEX value to get all color formats.">
+            <div className="space-y-4">
+              {/* Visual picker */}
+              <div
+                className="flex h-32 w-full items-center justify-center rounded-2xl border border-q-border transition-colors"
+                style={{ backgroundColor: pickerHex }}
+              >
+                <span className="text-2xl font-bold" style={{ color: textColor }}>{hex.toUpperCase()}</span>
+              </div>
+
+              <div className="flex gap-3">
+                <input
+                  type="color"
+                  value={pickerHex}
+                  onChange={handlePickerChange}
+                  className="h-12 w-16 cursor-pointer rounded-xl border border-q-border bg-q-card"
+                  title="Click to open color picker"
+                />
+                <input
+                  type="text"
+                  value={hex}
+                  onChange={handleHexInput}
+                  placeholder="#3b82f6"
+                  className={`flex-1 ${inputClass()} font-mono`}
+                />
+              </div>
+
+              <div className="grid grid-cols-6 gap-2">
+                {["#ef4444","#f97316","#eab308","#22c55e","#3b82f6","#8b5cf6","#ec4899","#06b6d4","#000000","#6b7280","#d1d5db","#ffffff"].map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => { setHex(c.toUpperCase()); setPickerHex(c); }}
+                    className="h-8 rounded-lg border border-q-border transition hover:scale-110"
+                    style={{ backgroundColor: c }}
+                    title={c}
+                  />
+                ))}
+              </div>
+            </div>
+          </InputStage>
+        }
+        right={
+          <section className="space-y-4">
+            {[
+              { label: "HEX", value: hex.toUpperCase(), copyVal: hex.toUpperCase() },
+              { label: "RGB", value: rgb ? `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})` : "—", copyVal: rgb ? `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})` : "" },
+              { label: "RGB Values", value: rgb ? `${rgb.r}, ${rgb.g}, ${rgb.b}` : "—", copyVal: rgb ? `${rgb.r}, ${rgb.g}, ${rgb.b}` : "" },
+              { label: "HSL", value: hsl ? `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)` : "—", copyVal: hsl ? `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)` : "" },
+              { label: "CSS Variable", value: rgb ? `--color: ${hex.toUpperCase()};` : "—", copyVal: rgb ? `--color: ${hex.toUpperCase()};` : "" },
+              { label: "Tailwind-style", value: rgb ? `rgba(${rgb.r},${rgb.g},${rgb.b},1)` : "—", copyVal: rgb ? `rgba(${rgb.r},${rgb.g},${rgb.b},1)` : "" },
+            ].map(({ label, value, copyVal }) => (
+              <div key={label} className={softPanelClass() + " flex items-center justify-between gap-3"}>
+                <div>
+                  <div className="text-xs text-q-muted">{label}</div>
+                  <div className="mt-1 font-mono text-sm text-q-text">{value}</div>
+                </div>
+                <button
+                  onClick={() => copyText(copyVal)}
+                  disabled={!copyVal}
+                  className="shrink-0 rounded-lg border border-q-border bg-q-bg px-3 py-1 text-xs text-q-muted transition hover:bg-q-card-hover disabled:opacity-40"
+                >
+                  Copy
+                </button>
+              </div>
+            ))}
+          </section>
+        }
+      />
+    </Workspace>
+  );
+}
+
+// ─── Markdown Editor ──────────────────────────────────────────────────────────
+function MarkdownEditor({ title }: { title: string }) {
+  const [markdown, setMarkdown] = useState(`# Hello World
+
+Welcome to the **QuickFnd Markdown Editor**.
+
+## Features
+- Real-time preview
+- Copy HTML output
+- Supports standard Markdown
+
+### Code Example
+\`\`\`
+const hello = "world";
+\`\`\`
+
+> Blockquotes work too.
+
+---
+
+Write your markdown on the left, see the preview on the right.
+`);
+
+  const html = useMemo(() => {
+    // Simple markdown to HTML converter
+    let result = markdown
+      .replace(/^#{6}\s(.+)$/gm, "<h6>$1</h6>")
+      .replace(/^#{5}\s(.+)$/gm, "<h5>$1</h5>")
+      .replace(/^#{4}\s(.+)$/gm, "<h4>$1</h4>")
+      .replace(/^#{3}\s(.+)$/gm, "<h3>$1</h3>")
+      .replace(/^#{2}\s(.+)$/gm, "<h2>$1</h2>")
+      .replace(/^#{1}\s(.+)$/gm, "<h1>$1</h1>")
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.+?)\*/g, "<em>$1</em>")
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/```[\s\S]*?```/g, (match) => `<pre><code>${match.slice(3, -3).trim()}</code></pre>`)
+      .replace(/^>\s(.+)$/gm, "<blockquote>$1</blockquote>")
+      .replace(/^---$/gm, "<hr/>")
+      .replace(/^\*\s(.+)$/gm, "<li>$1</li>")
+      .replace(/^-\s(.+)$/gm, "<li>$1</li>")
+      .replace(/(<li>[\s\S]*?<\/li>)/g, "<ul>$1</ul>")
+      .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+            .split("\n\n").join("</p><p>")
+      .replace(/^(?!<[h1-6|ul|li|blockquote|pre|hr])(.+)$/gm, "$1");
+    return `<p>${result}</p>`;
+  }, [markdown]);
+
+  const wordCount = markdown.trim() ? markdown.trim().split(/\s+/).length : 0;
+
+  return (
+    <Workspace title={title}>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <div>
+          <InputStage title="Markdown Input" subtitle="Write or paste your Markdown here.">
+            <div className="space-y-3">
+              <textarea
+                value={markdown}
+                onChange={(e) => setMarkdown(e.target.value)}
+                className="h-96 w-full rounded-2xl border border-q-border bg-q-card p-4 font-mono text-sm text-q-text outline-none transition placeholder:text-q-muted focus:border-blue-400/60"
+                spellCheck={false}
+              />
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-q-muted">{wordCount} words · {markdown.length} chars</span>
+                <div className="flex gap-2">
+                  <button onClick={() => setMarkdown("")} className={actionButtonClass(false)}>Clear</button>
+                  <button onClick={() => copyText(html)} className={actionButtonClass(true)}>Copy HTML</button>
+                </div>
+              </div>
+            </div>
+          </InputStage>
+        </div>
+
+        <div>
+          <div className="rounded-[24px] border border-q-border bg-q-bg p-5 shadow-sm h-full">
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-q-muted mb-4">Preview</div>
+            <div
+              className="prose prose-sm max-w-none text-q-text"
+              style={{
+                lineHeight: "1.7",
+              }}
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+          </div>
+        </div>
+      </div>
+    </Workspace>
+  );
+}
+
+// ─── CSV to JSON ──────────────────────────────────────────────────────────────
+function CSVtoJSON({ title }: { title: string }) {
+  const [csv, setCsv] = useState(`name,age,city,email
+Alice,28,Mumbai,alice@example.com
+Bob,34,Delhi,bob@example.com
+Charlie,25,Bangalore,charlie@example.com`);
+  const [delimiter, setDelimiter] = useState(",");
+  const [output, setOutput] = useState("");
+  const [error, setError] = useState("");
+  const [stats, setStats] = useState<{ rows: number; cols: number } | null>(null);
+
+  function convert() {
+    try {
+      const lines = csv.trim().split("\n").filter(Boolean);
+      if (lines.length < 2) throw new Error("Need at least a header row and one data row.");
+
+      const headers = lines[0].split(delimiter).map(h => h.trim().replace(/^"|"$/g, ""));
+      const rows = lines.slice(1).map(line => {
+        const values = line.split(delimiter).map(v => v.trim().replace(/^"|"$/g, ""));
+        const obj: Record<string, string | number> = {};
+        headers.forEach((h, i) => {
+          const val = values[i] ?? "";
+          obj[h] = isNaN(Number(val)) || val === "" ? val : Number(val);
+        });
+        return obj;
+      });
+
+      setOutput(JSON.stringify(rows, null, 2));
+      setStats({ rows: rows.length, cols: headers.length });
+      setError("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Conversion failed.");
+      setOutput("");
+      setStats(null);
+    }
+  }
+
+  return (
+    <Workspace title={title}>
+      <ToolGrid
+        left={
+          <InputStage subtitle="Paste CSV data. The first row is treated as column headers.">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-medium text-q-text shrink-0">Delimiter:</label>
+                <select value={delimiter} onChange={(e) => setDelimiter(e.target.value)} className={`w-40 ${inputClass()}`}>
+                  <option value=",">Comma (,)</option>
+                  <option value=";">Semicolon (;)</option>
+                  <option value="\t">Tab</option>
+                  <option value="|">Pipe (|)</option>
+                </select>
+              </div>
+              <textarea
+                value={csv}
+                onChange={(e) => setCsv(e.target.value)}
+                placeholder="name,age,city&#10;Alice,28,Mumbai&#10;Bob,34,Delhi"
+                rows={10}
+                className={textareaClass("min-h-[200px]") + " font-mono text-sm"}
+              />
+              <div className="flex gap-3">
+                <button onClick={convert} className={actionButtonClass(true)}>Convert to JSON</button>
+                <button onClick={() => copyText(output)} disabled={!output} className={actionButtonClass(false)}>Copy JSON</button>
+              </div>
+              {stats && (
+                <div className="flex gap-3 text-xs text-q-muted">
+                  <span>✓ {stats.rows} rows</span>
+                  <span>✓ {stats.cols} columns</span>
+                </div>
+              )}
+            </div>
+          </InputStage>
+        }
+        right={
+          <ResultStage
+            title="JSON output"
+            output={output}
+            error={error}
+            placeholder="JSON output will appear here after conversion"
+          />
+        }
+      />
+    </Workspace>
+  );
+}
+
+// ─── IP Address Lookup ────────────────────────────────────────────────────────
+function IPLookup({ title }: { title: string }) {
+  const [ip, setIp] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<Record<string, string> | null>(null);
+  const [error, setError] = useState("");
+
+  async function lookup() {
+    const target = ip.trim() || "";
+    setLoading(true);
+    setError("");
+    setResult(null);
+
+    try {
+      const url = target ? `https://ipapi.co/${target}/json/` : "https://ipapi.co/json/";
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Lookup failed. Check the IP address and try again.");
+      const data = await res.json();
+
+      if (data.error) throw new Error(data.reason || "IP not found.");
+
+      setResult({
+        "IP Address": data.ip || "—",
+        "Country": data.country_name || "—",
+        "Region": data.region || "—",
+        "City": data.city || "—",
+        "Postal Code": data.postal || "—",
+        "Timezone": data.timezone || "—",
+        "ISP / Organisation": data.org || "—",
+        "Latitude": String(data.latitude || "—"),
+        "Longitude": String(data.longitude || "—"),
+        "Currency": data.currency_name ? `${data.currency_name} (${data.currency})` : "—",
+        "Languages": data.languages || "—",
+        "Calling Code": data.country_calling_code || "—",
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Lookup failed.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Workspace title={title}>
+      <ToolGrid
+        left={
+          <InputStage subtitle="Enter an IP address to look it up, or leave blank to check your own IP.">
+            <div className="space-y-4">
+              <input
+                type="text"
+                value={ip}
+                onChange={(e) => setIp(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && lookup()}
+                placeholder="e.g. 8.8.8.8 (leave blank for your own IP)"
+                className={inputClass()}
+              />
+              <div className="flex gap-3">
+                <button onClick={lookup} disabled={loading} className={actionButtonClass(true)}>
+                  {loading ? "Looking up..." : "Lookup IP"}
+                </button>
+                <button onClick={() => { setIp(""); setResult(null); setError(""); }} className={actionButtonClass(false)}>
+                  My IP
+                </button>
+              </div>
+              {error && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+            </div>
+          </InputStage>
+        }
+        right={
+          <section className="space-y-3">
+            {result ? (
+              Object.entries(result).map(([key, value]) => (
+                <div key={key} className={softPanelClass() + " flex items-center justify-between gap-3"}>
+                  <div>
+                    <div className="text-xs text-q-muted">{key}</div>
+                    <div className="mt-0.5 text-sm font-medium text-q-text">{value}</div>
+                  </div>
+                  <button
+                    onClick={() => copyText(value)}
+                    className="shrink-0 rounded-lg border border-q-border bg-q-bg px-2.5 py-1 text-xs text-q-muted hover:bg-q-card-hover"
+                  >
+                    Copy
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-2xl border border-q-border bg-q-card p-6 text-center text-sm text-q-muted">
+                {loading ? "Looking up IP address..." : "Enter an IP address and click Lookup"}
+              </div>
+            )}
+          </section>
+        }
+      />
+    </Workspace>
+  );
+}
+
 type FamilyRendererProps = {
   title: string;
   description: string;
@@ -1546,6 +2040,26 @@ function renderByFamily({
 
   if (family === "timestamp-tools") {
     return <TimestampTools title={title} />;
+  }
+
+  if (family === "qr-generator") {
+    return <QRGenerator title={title} />;
+  }
+
+  if (family === "color-picker") {
+    return <ColorPicker title={title} />;
+  }
+
+  if (family === "markdown-editor") {
+    return <MarkdownEditor title={title} />;
+  }
+
+  if (family === "csv-to-json") {
+    return <CSVtoJSON title={title} />;
+  }
+
+  if (family === "ip-lookup") {
+    return <IPLookup title={title} />;
   }
 
   return <GenericTool title={title} description={description} />;

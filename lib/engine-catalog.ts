@@ -29,6 +29,11 @@ export type ToolEngineType =
   | "text-to-binary"
   | "binary-to-text"
   | "json-escape"
+  | "qr-generator"
+  | "color-picker"
+  | "markdown-editor"
+  | "csv-to-json"
+  | "ip-lookup"
   | "json-unescape"
   | "generic-directory";
 
@@ -408,6 +413,51 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
       mode: "binary-to-text",
     },
   }),
+  "qr-generator": createDefinition({
+    type: "qr-generator",
+    category: "tool",
+    family: "qr-generator",
+    title: "QR Code Generator",
+    description: "Generate QR codes from URLs, text, or any content.",
+    keywords: ["qr-code-generator", "qr generator", "qr code"],
+    defaultConfig: {},
+  }),
+  "color-picker": createDefinition({
+    type: "color-picker",
+    category: "tool",
+    family: "color-picker",
+    title: "Color Picker",
+    description: "Pick colors and get HEX, RGB, HSL values instantly.",
+    keywords: ["color-picker", "colour picker", "hex color picker"],
+    defaultConfig: {},
+  }),
+  "markdown-editor": createDefinition({
+    type: "markdown-editor",
+    category: "tool",
+    family: "markdown-editor",
+    title: "Markdown Editor",
+    description: "Write Markdown with live HTML preview and export.",
+    keywords: ["markdown-editor", "markdown preview", "markdown converter"],
+    defaultConfig: {},
+  }),
+  "csv-to-json": createDefinition({
+    type: "csv-to-json",
+    category: "tool",
+    family: "csv-to-json",
+    title: "CSV to JSON Converter",
+    description: "Convert CSV data to JSON format instantly.",
+    keywords: ["csv-to-json", "csv converter", "csv json"],
+    defaultConfig: {},
+  }),
+  "ip-lookup": createDefinition({
+    type: "ip-lookup",
+    category: "tool",
+    family: "ip-lookup",
+    title: "IP Address Lookup",
+    description: "Look up location, ISP, and details for any IP address.",
+    keywords: ["ip-lookup", "ip address lookup", "ip checker"],
+    defaultConfig: {},
+  }),
   "json-escape": createDefinition({
     type: "json-escape",
     category: "tool",
@@ -654,6 +704,11 @@ export function inferEngineType(category: EngineCategory, slug: string): EngineT
   }
 
   if (category === "tool") {
+    if (value === "qr-code-generator" || value.includes("qr-code") || (value.includes("qr") && value.includes("generator"))) return "qr-generator";
+    if (value === "color-picker" || value.includes("color-picker") || value === "colour-picker") return "color-picker";
+    if (value === "markdown-editor" || value.includes("markdown-editor") || value.includes("markdown-preview")) return "markdown-editor";
+    if (value === "csv-to-json" || value.includes("csv-to-json") || value.includes("csv-json")) return "csv-to-json";
+    if (value === "ip-lookup" || value.includes("ip-lookup") || value.includes("ip-address-lookup") || value === "ip-checker") return "ip-lookup";
     if (value.includes("password-strength")) return "password-strength-checker";
     if (value === "password-generator" || includesAll(value, ["password", "generator"])) {
       return "password-generator";

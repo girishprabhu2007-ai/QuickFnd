@@ -1467,7 +1467,13 @@ function GenericCalculator({ name }: { name?: string }) {
 }
 
 export default function BuiltInCalculatorClient({ item }: Props) {
-  const engine = String(item.engine_type || inferEngineType("calculator", item.slug) || "");
+  // Always run slug-based inference first — DB may store stale/wrong engine_type
+  // (e.g. "generic-directory") that would prevent correct rendering.
+  // inferEngineType is the authoritative source for calculators.
+  const inferred = inferEngineType("calculator", item.slug);
+  const engine = (inferred && inferred !== "generic-directory")
+    ? inferred
+    : String(item.engine_type || "");
   const config = item.engine_config || {};
 
   if (engine === "age-calculator") return <AgeCalculator />;
