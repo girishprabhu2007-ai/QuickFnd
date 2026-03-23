@@ -14,7 +14,7 @@ import {
 import { getTopicCollections } from "@/lib/programmatic-seo";
 import { getSiteUrl } from "@/lib/site-url";
 
-export const revalidate = 300;
+export const revalidate = 60;
 
 const siteUrl = getSiteUrl();
 
