@@ -26,7 +26,7 @@ function getInitialTheme(): Theme {
     return "light";
   }
 
-  const stored = window.localStorage.getItem("theme");
+  const stored = window.localStorage.getItem("quickfnd-theme");
 
   if (stored === "light" || stored === "dark") {
     return stored;
@@ -39,6 +39,8 @@ function getInitialTheme(): Theme {
 
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
+
+  root.setAttribute("data-theme", theme);
 
   if (theme === "dark") {
     root.classList.add("dark");
@@ -74,7 +76,7 @@ export default function ThemeProvider({
 
   useEffect(() => {
     applyTheme(theme);
-    window.localStorage.setItem("theme", theme);
+    window.localStorage.setItem("quickfnd-theme", theme);
   }, [theme]);
 
   const setTheme = useCallback((value: Theme) => {
