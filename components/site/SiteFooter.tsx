@@ -2,135 +2,134 @@ import Link from "next/link";
 import AdSlot from "@/components/ads/AdSlot";
 
 export default function SiteFooter() {
+  const year = new Date().getFullYear();
+
   return (
     <footer className="mt-16 border-t border-q-border bg-q-card">
-      {/* Footer leaderboard ad — above footer links */}
+
+      {/* Footer leaderboard ad */}
       <div className="border-b border-q-border py-4">
         <div className="mx-auto flex max-w-7xl justify-center px-4 sm:px-6 lg:px-8">
           <AdSlot type="leaderboard" label={true} />
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-10 text-sm text-q-muted sm:px-6 lg:px-8">
-        <div className="grid gap-8 md:grid-cols-4">
-          <div>
-            <h3 className="text-base font-semibold text-q-text">QuickFnd</h3>
-            <p className="mt-3 leading-7">
-              Free browser-based tools, calculators, and AI utilities for
-              developers, writers, and everyday productivity.
+      <div className="mx-auto max-w-7xl px-4 py-12 text-sm text-q-muted sm:px-6 lg:px-8">
+
+        {/* Main footer grid */}
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
+
+          {/* Brand */}
+          <div className="lg:col-span-2">
+            <Link href="/" className="flex items-center gap-2.5">
+              <div
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-sm font-black text-white"
+                style={{ background: "var(--q-gradient-blue)" }}
+              >
+                Q
+              </div>
+              <span className="text-lg font-bold text-q-text">
+                Quick<span style={{ color: "var(--q-primary)" }}>Fnd</span>
+              </span>
+            </Link>
+            <p className="mt-3 max-w-xs leading-7 text-q-muted">
+              Free browser-based tools, calculators, and AI utilities. No account, no install —
+              just open and use.
             </p>
-          </div>
-
-          <div>
-            <h3 className="text-base font-semibold text-q-text">Tools</h3>
-            <div className="mt-3 space-y-2">
-              <div>
-                <Link href="/tools" className="hover:text-blue-500">
-                  All Tools
-                </Link>
-              </div>
-              <div>
-                <Link href="/calculators" className="hover:text-blue-500">
-                  Calculators
-                </Link>
-              </div>
-              <div>
-                <Link href="/ai-tools" className="hover:text-blue-500">
-                  AI Tools
-                </Link>
-              </div>
-              <div>
-                <Link href="/topics" className="hover:text-blue-500">
-                  Topics
-                </Link>
-              </div>
+            <div className="mt-4 flex flex-wrap gap-2 text-xs text-q-muted">
+              <span className="rounded-full border border-q-border bg-q-bg px-2.5 py-1">
+                ⚙️ {" "}Tools
+              </span>
+              <span className="rounded-full border border-q-border bg-q-bg px-2.5 py-1">
+                🧮 Calculators
+              </span>
+              <span className="rounded-full border border-q-border bg-q-bg px-2.5 py-1">
+                ✨ AI Tools
+              </span>
             </div>
           </div>
 
+          {/* Directory */}
           <div>
-            <h3 className="text-base font-semibold text-q-text">Popular</h3>
+            <h3 className="font-semibold text-q-text">Directory</h3>
             <div className="mt-3 space-y-2">
-              <div>
-                <Link
-                  href="/tools/password-generator"
-                  className="hover:text-blue-500"
-                >
-                  Password Generator
-                </Link>
-              </div>
-              <div>
-                <Link
-                  href="/tools/json-formatter"
-                  className="hover:text-blue-500"
-                >
-                  JSON Formatter
-                </Link>
-              </div>
-              <div>
-                <Link
-                  href="/calculators/bmi-calculator"
-                  className="hover:text-blue-500"
-                >
-                  BMI Calculator
-                </Link>
-              </div>
-              <div>
-                <Link
-                  href="/calculators/emi-calculator"
-                  className="hover:text-blue-500"
-                >
-                  EMI Calculator
-                </Link>
-              </div>
-              <div>
-                <Link
-                  href="/ai-tools/ai-email-writer"
-                  className="hover:text-blue-500"
-                >
-                  AI Email Writer
-                </Link>
-              </div>
+              {[
+                { href: "/tools", label: "All Tools" },
+                { href: "/calculators", label: "Calculators" },
+                { href: "/ai-tools", label: "AI Tools" },
+                { href: "/topics", label: "Topic Clusters" },
+                { href: "/request-tool", label: "Request a Tool" },
+              ].map((link) => (
+                <div key={link.href}>
+                  <Link href={link.href} className="transition hover:text-blue-500">{link.label}</Link>
+                </div>
+              ))}
             </div>
           </div>
 
+          {/* Popular */}
           <div>
-            <h3 className="text-base font-semibold text-q-text">Company</h3>
+            <h3 className="font-semibold text-q-text">Popular Tools</h3>
             <div className="mt-3 space-y-2">
-              <div>
-                <Link href="/privacy" className="hover:text-blue-500">
-                  Privacy Policy
-                </Link>
-              </div>
-              <div>
-                <Link href="/terms" className="hover:text-blue-500">
-                  Terms of Use
-                </Link>
-              </div>
-              <div>
-                <Link href="/contact" className="hover:text-blue-500">
-                  Contact
-                </Link>
-              </div>
-              <div>
-                <Link href="/request-tool" className="hover:text-blue-500">
-                  Request a Tool
-                </Link>
-              </div>
+              {[
+                { href: "/tools/password-generator", label: "Password Generator" },
+                { href: "/tools/json-formatter", label: "JSON Formatter" },
+                { href: "/tools/word-counter", label: "Word Counter" },
+                { href: "/calculators/bmi-calculator", label: "BMI Calculator" },
+                { href: "/calculators/emi-calculator", label: "EMI Calculator" },
+                { href: "/ai-tools/ai-email-writer", label: "AI Email Writer" },
+              ].map((link) => (
+                <div key={link.href}>
+                  <Link href={link.href} className="transition hover:text-blue-500">{link.label}</Link>
+                </div>
+              ))}
             </div>
           </div>
+
+          {/* Company */}
+          <div>
+            <h3 className="font-semibold text-q-text">Company</h3>
+            <div className="mt-3 space-y-2">
+              {[
+                { href: "/about", label: "About QuickFnd" },
+                { href: "/contact", label: "Contact" },
+                { href: "/privacy", label: "Privacy Policy" },
+                { href: "/terms", label: "Terms of Use" },
+                { href: "/disclaimer", label: "Disclaimer" },
+                { href: "/cookie-policy", label: "Cookie Policy" },
+              ].map((link) => (
+                <div key={link.href}>
+                  <Link href={link.href} className="transition hover:text-blue-500">{link.label}</Link>
+                </div>
+              ))}
+            </div>
+          </div>
+
         </div>
 
-        <div className="mt-8 border-t border-q-border pt-6">
-          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <p>© {new Date().getFullYear()} QuickFnd. All rights reserved.</p>
-            <p className="text-xs text-q-muted opacity-60">
+        {/* Bottom bar */}
+        <div className="mt-10 border-t border-q-border pt-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-q-muted">
+              <span>© {year} QuickFnd. All rights reserved.</span>
+              <span className="hidden sm:inline text-q-border">|</span>
+              <Link href="/privacy" className="hover:text-blue-500">Privacy</Link>
+              <Link href="/terms" className="hover:text-blue-500">Terms</Link>
+              <Link href="/disclaimer" className="hover:text-blue-500">Disclaimer</Link>
+              <Link href="/cookie-policy" className="hover:text-blue-500">Cookies</Link>
+            </div>
+
+            <p className="text-xs text-q-muted opacity-70">
               This site may display advertisements.{" "}
-              <Link href="/privacy" className="hover:text-blue-500">
-                Privacy Policy
+              <Link href="/privacy#advertising" className="hover:text-blue-500">
+                Ad Policy
               </Link>
             </p>
+
           </div>
         </div>
+
       </div>
     </footer>
   );
