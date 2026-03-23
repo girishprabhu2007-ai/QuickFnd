@@ -1,20 +1,24 @@
-import type { PublicContentItem } from "@/lib/content-pages";
-
 /**
- * Generic visibility check for ANY content type
+ * lib/public-content-visibility.ts
+ * ─────────────────────────────────────────────────────────────────────────────
+ * COMPATIBILITY SHIM — re-exports from the unified lib/visibility.ts
+ *
+ * All new code should import directly from @/lib/visibility.
  */
+
+import type { PublicContentItem } from "@/lib/content-pages";
+import { filterVisibleByType, type ContentType } from "@/lib/visibility";
+
 export function isContentPubliclyVisible(item: PublicContentItem): boolean {
   if (!item.engine_type) return false;
-
-  // hide generic-directory (non-runtime)
   if (item.engine_type === "generic-directory") return false;
-
   return true;
 }
 
-/**
- * Generic filter
- */
-export function filterVisibleContent(items: PublicContentItem[]) {
+export function filterVisibleContent(
+  items: PublicContentItem[],
+  type?: ContentType
+): PublicContentItem[] {
+  if (type) return filterVisibleByType(type, items);
   return items.filter(isContentPubliclyVisible);
 }

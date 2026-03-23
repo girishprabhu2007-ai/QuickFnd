@@ -1,95 +1,38 @@
+/**
+ * lib/public-tool-visibility.ts
+ * COMPATIBILITY SHIM — re-exports from the unified lib/visibility.ts
+ * All new code should import directly from @/lib/visibility.
+ */
+
 import type { PublicContentItem } from "@/lib/content-pages";
+import { isToolVisible, filterVisibleTools } from "@/lib/visibility";
 
 export type ToolVisibilityItem = {
-  slug: string | null | undefined;
+  slug?: string | null | undefined;
   engine_type?: string | null | undefined;
   name?: string | null | undefined;
   description?: string | null | undefined;
   engine_config?: unknown;
 };
 
-function normalize(value: string | null | undefined) {
-  return String(value || "").trim().toLowerCase();
-}
-
-/**
- * Placeholder engines are not valid public tools
- */
-const PLACEHOLDER_ENGINE_TYPES = new Set<string>(["", "auto", "generic-directory"]);
-
-/**
- * Canonical tools (trusted core set)
- */
-const CANONICAL_TOOL_SLUGS = new Set<string>([
-  "password-generator",
-  "json-formatter",
-  "word-counter",
-  "uuid-generator",
-  "slug-generator",
-  "random-string-generator",
-  "base64-encoder",
-  "url-encoder",
-  "text-case-converter",
-  "random-number-generator",
-  "meters-to-feet-converter",
-  "timestamp-converter",
-]);
-
-/**
- * Explicit hard removals (verified duplicates / low-value)
- */
-const HARD_HIDDEN_SLUGS = new Set<string>([
-  // Phase 1
-  "base64-decoder",
-  "url-decoder",
-  "text-transformer",
-
-  // Phase 3.3 (explicit cleanup)
-  "lowercase-text-converter",
-  "uppercase-text-converter",
-  "url-encoding-and-decoding-tool",
-  "timestamp-to-date-converter",
-  "tweet-timestamp-converter",
-  "unix-timestamp-converter",
-]);
-
 export function resolveToolEngineType(item: ToolVisibilityItem): string {
-  return normalize(item.engine_type);
+  return String(item.engine_type ?? "").trim().toLowerCase();
 }
 
 export function isToolPlaceholder(item: ToolVisibilityItem): boolean {
-  const slug = normalize(item.slug);
-
-  if (!slug) return true;
-
-  if (HARD_HIDDEN_SLUGS.has(slug)) return false;
-
-  const engineType = resolveToolEngineType(item);
-  return PLACEHOLDER_ENGINE_TYPES.has(engineType);
+  const PLACEHOLDER = new Set(["", "auto", "generic-directory"]);
+  return PLACEHOLDER.has(resolveToolEngineType(item));
 }
 
+// Accepts both ToolVisibilityItem (loose) and PublicContentItem (strict)
 export function isToolPubliclyVisible(item: ToolVisibilityItem): boolean {
-  const slug = normalize(item.slug);
-
-  if (!slug) return false;
-
-  // Always allow canonical tools
-  if (CANONICAL_TOOL_SLUGS.has(slug)) {
-    return true;
-  }
-
-  // Explicit removals only
-  if (HARD_HIDDEN_SLUGS.has(slug)) {
-    return false;
-  }
-
-  return true;
+  return isToolVisible({
+    slug: item.slug ?? "",
+    engine_type: item.engine_type as PublicContentItem["engine_type"],
+    name: String(item.name ?? ""),
+    description: String(item.description ?? ""),
+    related_slugs: [],
+  });
 }
 
-export function filterVisibleTools<T extends ToolVisibilityItem>(items: T[]): T[] {
-  return items.filter((item) => isToolPubliclyVisible(item));
-}
-
-export function filterVisiblePublicTools(items: PublicContentItem[]): PublicContentItem[] {
-  return items.filter((item) => isToolPubliclyVisible(item));
-}
+export { filterVisibleTools };

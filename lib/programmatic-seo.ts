@@ -1,5 +1,4 @@
 import { buildHomepageTaxonomy } from "@/lib/admin-taxonomy";
-import { filterVisibleTools } from "@/lib/public-tool-visibility";
 
 type ContentItem = {
   name: string;
@@ -64,10 +63,8 @@ export function getTopicCollections(input: {
   calculators: ContentItem[];
   aiTools: ContentItem[];
 }) {
-  const visibleTools = filterVisibleTools(input.tools);
-
   const taxonomy = buildHomepageTaxonomy({
-    tools: visibleTools,
+    tools: input.tools,
     calculators: input.calculators,
     aiTools: input.aiTools,
   });

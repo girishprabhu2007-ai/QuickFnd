@@ -3,21 +3,22 @@ import Link from "next/link";
 import SiteFooter from "@/components/site/SiteFooter";
 import ToolIcon from "@/components/ui/ToolIcon";
 import ListingSidebar from "@/components/layout/ListingSidebar";
+import AdSlot from "@/components/ads/AdSlot";
 import { getTools } from "@/lib/db";
 import { getDisplayDescription } from "@/lib/display-content";
+import { filterVisibleTools } from "@/lib/visibility";
 import {
   buildHomepageTaxonomy,
   filterItemsByGroup,
 } from "@/lib/admin-taxonomy";
 import type { PublicContentItem } from "@/lib/content-pages";
-import { filterVisibleTools } from "@/lib/public-tool-visibility";
 
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "Tools | QuickFnd",
+  title: "Free Online Tools | QuickFnd",
   description:
-    "Explore browser-based utility tools on QuickFnd for text, code, formatting, generation, conversion, and productivity workflows.",
+    "Explore free browser-based tools on QuickFnd for text, code, formatting, encoding, generation, and productivity. No install needed.",
 };
 
 const PAGE_SIZE = 24;
@@ -27,7 +28,9 @@ type Props = {
 };
 
 export default async function ToolsPage({ searchParams }: Props) {
-  const allTools: PublicContentItem[] = filterVisibleTools(await getTools());
+  const rawTools = await getTools();
+  // Apply unified visibility filter
+  const allTools: PublicContentItem[] = filterVisibleTools(rawTools);
 
   const params = (await searchParams) || {};
   const activeGroup = params.group || "";
@@ -72,16 +75,21 @@ export default async function ToolsPage({ searchParams }: Props) {
               <h1 className="mt-4 text-3xl font-bold md:text-5xl">Tools</h1>
 
               <p className="mt-4 max-w-3xl text-base leading-7 text-q-muted md:text-lg md:leading-8">
-                Explore browser-based utility tools for developers, writers,
-                marketers, students, and everyday productivity workflows.
+                Free browser-based utility tools for developers, writers, marketers,
+                students, and everyday productivity workflows. No install required.
               </p>
 
+              <div className="mt-4 flex items-center gap-3">
+                <span className="rounded-full border border-q-border bg-q-bg px-3 py-1 text-xs text-q-muted">
+                  {allTools.length} tools
+                </span>
+              </div>
+
               {activeLabel ? (
-                <div className="mt-6 flex items-center gap-3">
+                <div className="mt-4 flex items-center gap-3">
                   <span className="rounded-full border border-q-border bg-q-bg px-4 py-2 text-sm text-q-text">
                     Filter: {activeLabel}
                   </span>
-
                   <Link
                     href="/tools"
                     className="text-sm text-blue-500 hover:text-blue-400"
@@ -90,6 +98,11 @@ export default async function ToolsPage({ searchParams }: Props) {
                   </Link>
                 </div>
               ) : null}
+            </div>
+
+            {/* Ad slot — top of listing */}
+            <div className="mb-6 flex justify-center">
+              <AdSlot type="leaderboard" />
             </div>
 
             {visibleTools.length === 0 ? (
@@ -107,16 +120,10 @@ export default async function ToolsPage({ searchParams }: Props) {
                     >
                       <div className="flex items-start gap-4">
                         <ToolIcon type={tool.engine_type} />
-
                         <div className="min-w-0">
                           <div className="text-lg font-semibold text-q-text group-hover:text-blue-500">
                             {tool.name}
                           </div>
-
-                          <div className="mt-1 text-sm text-q-muted">
-                            /{tool.slug}
-                          </div>
-
                           <p className="mt-2 text-sm leading-6 text-q-muted">
                             {getDisplayDescription("tools", tool, "card")}
                           </p>
@@ -135,11 +142,9 @@ export default async function ToolsPage({ searchParams }: Props) {
                       ←
                     </Link>
                   ) : null}
-
                   <span className="rounded-lg border border-q-border bg-q-card px-3 py-1 text-sm">
                     {safePage} / {totalPages}
                   </span>
-
                   {safePage < totalPages ? (
                     <Link
                       href={buildPageHref(safePage + 1)}
@@ -154,7 +159,13 @@ export default async function ToolsPage({ searchParams }: Props) {
           </div>
 
           <div className="self-start xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto">
-            <ListingSidebar activeSection="tools" />
+            <div className="space-y-6">
+              {/* Sidebar ad */}
+              <div className="flex justify-center">
+                <AdSlot type="rectangle" />
+              </div>
+              <ListingSidebar activeSection="tools" />
+            </div>
           </div>
         </div>
       </section>

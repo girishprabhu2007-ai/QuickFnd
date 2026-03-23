@@ -1,5 +1,5 @@
 import { buildHomepageTaxonomy } from "@/lib/admin-taxonomy";
-import { filterVisibleTools } from "@/lib/public-tool-visibility";
+import { filterVisibleTools } from "@/lib/visibility";
 import { filterVisibleContent } from "@/lib/public-content-visibility";
 import { getTopicCollections, type TopicPageData } from "@/lib/programmatic-seo";
 import type { PublicContentItem } from "@/lib/content-pages";

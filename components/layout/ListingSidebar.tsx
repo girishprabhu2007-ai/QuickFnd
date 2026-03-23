@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { buildHomepageTaxonomy } from "@/lib/admin-taxonomy";
 import { getTools, getCalculators, getAITools } from "@/lib/db";
-import { filterVisibleTools } from "@/lib/public-tool-visibility";
+import {
+  filterVisibleTools,
+  filterVisibleCalculators,
+  filterVisibleAITools,
+} from "@/lib/visibility";
 
 type Props = {
   activeSection: "tools" | "calculators" | "ai-tools";
@@ -30,13 +34,16 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 export default async function ListingSidebar({ activeSection }: Props) {
-  const [allTools, calculators, aiTools] = await Promise.all([
+  const [rawTools, rawCalculators, rawAITools] = await Promise.all([
     getTools(),
     getCalculators(),
     getAITools(),
   ]);
 
-  const tools = filterVisibleTools(allTools);
+  // Apply unified visibility filter to ALL three types before counting
+  const tools = filterVisibleTools(rawTools);
+  const calculators = filterVisibleCalculators(rawCalculators);
+  const aiTools = filterVisibleAITools(rawAITools);
 
   const taxonomy = buildHomepageTaxonomy({
     tools,

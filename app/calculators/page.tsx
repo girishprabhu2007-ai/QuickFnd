@@ -3,31 +3,34 @@ import Link from "next/link";
 import SiteFooter from "@/components/site/SiteFooter";
 import ToolIcon from "@/components/ui/ToolIcon";
 import ListingSidebar from "@/components/layout/ListingSidebar";
+import AdSlot from "@/components/ads/AdSlot";
 import { getCalculators } from "@/lib/db";
 import { getDisplayDescription } from "@/lib/display-content";
+import { filterVisibleCalculators } from "@/lib/visibility";
 import {
   buildHomepageTaxonomy,
   filterItemsByGroup,
 } from "@/lib/admin-taxonomy";
+import type { PublicContentItem } from "@/lib/content-pages";
 
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "Calculators | QuickFnd",
+  title: "Free Online Calculators | QuickFnd",
   description:
-    "Explore online calculators on QuickFnd for finance, math, health, percentages, GST, EMI, and more.",
+    "Explore free online calculators on QuickFnd for finance, math, health, percentages, GST, EMI, loan, and more. Instant browser-based results.",
 };
 
 const PAGE_SIZE = 18;
-
-type CalculatorItem = Awaited<ReturnType<typeof getCalculators>>[number];
 
 type Props = {
   searchParams?: Promise<{ group?: string; page?: string }>;
 };
 
 export default async function CalculatorsPage({ searchParams }: Props) {
-  const allCalculators = await getCalculators();
+  const rawCalculators = await getCalculators();
+  // Apply visibility filter — counts now match sidebar
+  const allCalculators: PublicContentItem[] = filterVisibleCalculators(rawCalculators);
 
   const params = (await searchParams) || {};
   const activeGroup = params.group || "";
@@ -42,7 +45,7 @@ export default async function CalculatorsPage({ searchParams }: Props) {
   const activeLabel =
     taxonomy.calculators.find((group) => group.key === activeGroup)?.label || "";
 
-  const filteredCalculators: CalculatorItem[] = activeGroup
+  const filteredCalculators: PublicContentItem[] = activeGroup
     ? filterItemsByGroup("calculators", allCalculators, activeGroup)
     : allCalculators;
 
@@ -72,16 +75,21 @@ export default async function CalculatorsPage({ searchParams }: Props) {
               <h1 className="mt-4 text-3xl font-bold md:text-5xl">Calculators</h1>
 
               <p className="mt-4 max-w-3xl text-base leading-7 text-q-muted md:text-lg md:leading-8">
-                Explore QuickFnd calculators for finance, math, percentages,
-                health, tax, and everyday planning.
+                Free online calculators for finance, math, percentages, health,
+                tax, EMI, and everyday planning. Instant results in your browser.
               </p>
 
+              <div className="mt-4 flex items-center gap-3">
+                <span className="rounded-full border border-q-border bg-q-bg px-3 py-1 text-xs text-q-muted">
+                  {allCalculators.length} calculators
+                </span>
+              </div>
+
               {activeLabel ? (
-                <div className="mt-6 flex items-center gap-3">
+                <div className="mt-4 flex items-center gap-3">
                   <span className="rounded-full border border-q-border bg-q-bg px-4 py-2 text-sm text-q-text">
                     Filter: {activeLabel}
                   </span>
-
                   <Link
                     href="/calculators"
                     className="text-sm text-blue-500 hover:text-blue-400"
@@ -92,6 +100,11 @@ export default async function CalculatorsPage({ searchParams }: Props) {
               ) : null}
             </div>
 
+            {/* Ad slot — top of listing */}
+            <div className="mb-6 flex justify-center">
+              <AdSlot type="leaderboard" />
+            </div>
+
             {visibleCalculators.length === 0 ? (
               <div className="rounded-2xl border border-q-border bg-q-card p-6 text-q-muted">
                 No calculators found for this category yet.
@@ -99,26 +112,20 @@ export default async function CalculatorsPage({ searchParams }: Props) {
             ) : (
               <>
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {visibleCalculators.map((tool) => (
+                  {visibleCalculators.map((item) => (
                     <Link
-                      key={tool.slug}
-                      href={`/calculators/${tool.slug}`}
-                      className="group rounded-2xl border border-q-border bg-q-card p-4 transition hover:-translate-y-0.5 hover:shadow-md"
+                      key={item.slug}
+                      href={`/calculators/${item.slug}`}
+                      className="group rounded-2xl border border-q-border bg-q-card p-5 transition hover:-translate-y-1 hover:shadow-lg"
                     >
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-4">
                         <ToolIcon type="calculator" />
-
                         <div className="min-w-0">
-                          <div className="text-base font-semibold text-q-text group-hover:text-blue-500">
-                            {tool.name}
+                          <div className="text-lg font-semibold text-q-text group-hover:text-blue-500">
+                            {item.name}
                           </div>
-
-                          <div className="mt-1 text-sm text-q-muted">
-                            /{tool.slug}
-                          </div>
-
                           <p className="mt-2 text-sm leading-6 text-q-muted">
-                            {getDisplayDescription("calculators", tool, "card")}
+                            {getDisplayDescription("calculators", item, "card")}
                           </p>
                         </div>
                       </div>
@@ -135,11 +142,9 @@ export default async function CalculatorsPage({ searchParams }: Props) {
                       ←
                     </Link>
                   ) : null}
-
                   <span className="rounded-lg border border-q-border bg-q-card px-3 py-1 text-sm">
                     {safePage} / {totalPages}
                   </span>
-
                   {safePage < totalPages ? (
                     <Link
                       href={buildPageHref(safePage + 1)}
@@ -154,7 +159,13 @@ export default async function CalculatorsPage({ searchParams }: Props) {
           </div>
 
           <div className="self-start xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto">
-            <ListingSidebar activeSection="calculators" />
+            <div className="space-y-6">
+              {/* Sidebar ad */}
+              <div className="flex justify-center">
+                <AdSlot type="rectangle" />
+              </div>
+              <ListingSidebar activeSection="calculators" />
+            </div>
           </div>
         </div>
       </section>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { buildHomepageTaxonomy } from "@/lib/admin-taxonomy";
 import { getTools, getCalculators, getAITools } from "@/lib/db";
-import { filterVisibleTools } from "@/lib/public-tool-visibility";
+import { filterVisibleTools } from "@/lib/visibility";
 
 function Icon() {
   return (

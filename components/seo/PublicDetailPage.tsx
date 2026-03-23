@@ -3,6 +3,7 @@ import SiteFooter from "@/components/site/SiteFooter";
 import DetailSidebar from "@/components/layout/DetailSidebar";
 import PageSEOSections from "@/components/seo/PageSEOSections";
 import ShareMenu from "@/components/seo/ShareMenu";
+import AdSlot from "@/components/ads/AdSlot";
 import type { ReactNode } from "react";
 import type { PublicContentItem } from "@/lib/content-pages";
 import { getDisplayDescription } from "@/lib/display-content";
@@ -63,25 +64,20 @@ function asStringArray(value: unknown): string[] {
 
 function asFaqArray(value: unknown): FaqItem[] {
   if (!Array.isArray(value)) return [];
-
   return value
     .map((item) => {
       if (!item || typeof item !== "object") return null;
-
       const record = item as Record<string, unknown>;
       const question = String(record.question || "").trim();
       const answer = String(record.answer || "").trim();
-
       if (!question || !answer) return null;
-
       return { question, answer };
     })
     .filter((item): item is FaqItem => Boolean(item));
 }
 
 function getItemFaqs(item: PublicContentItem): FaqItem[] {
-  const source = (item as Record<string, unknown>).faqs;
-  return asFaqArray(source);
+  return asFaqArray((item as Record<string, unknown>).faqs);
 }
 
 function getItemHowToSteps(item: PublicContentItem): string[] {
@@ -92,8 +88,7 @@ function getItemHowToSteps(item: PublicContentItem): string[] {
 }
 
 function getItemBenefits(item: PublicContentItem): string[] {
-  const source = (item as Record<string, unknown>).benefits;
-  return asStringArray(source);
+  return asStringArray((item as Record<string, unknown>).benefits);
 }
 
 function dedupeRelatedItems(
@@ -102,16 +97,12 @@ function dedupeRelatedItems(
 ): PublicContentItem[] {
   const seen = new Set<string>([String(currentSlug || "").trim().toLowerCase()]);
   const output: PublicContentItem[] = [];
-
   for (const item of items) {
     const slug = String(item.slug || "").trim().toLowerCase();
-
     if (!slug || seen.has(slug)) continue;
-
     seen.add(slug);
     output.push(item);
   }
-
   return output;
 }
 
@@ -152,24 +143,32 @@ export default function PublicDetailPage({
           <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
             <div className="min-w-0">
               <div className="max-w-4xl space-y-8">
+
+                {/* Breadcrumb */}
                 <nav className="text-sm text-q-muted">
                   <Link href="/" className="transition hover:text-q-text">
                     Home
                   </Link>
                   <span className="mx-2">/</span>
-                  <Link href={listingHref(table)} className="transition hover:text-q-text">
+                  <Link
+                    href={listingHref(table)}
+                    className="transition hover:text-q-text"
+                  >
                     {label}
                   </Link>
                   <span className="mx-2">/</span>
                   <span className="text-q-text">{item.name}</span>
                 </nav>
 
+                {/* Hero section */}
                 <section className="rounded-3xl border border-q-border bg-q-card p-6 shadow-sm md:p-8 lg:p-10">
                   <p className="text-sm uppercase tracking-[0.2em] text-blue-500">
                     QuickFnd {label.slice(0, -1)}
                   </p>
 
-                  <h1 className="mt-4 text-3xl font-bold md:text-5xl">{item.name}</h1>
+                  <h1 className="mt-4 text-3xl font-bold md:text-5xl">
+                    {item.name}
+                  </h1>
 
                   <p className="mt-4 max-w-3xl text-base leading-7 text-q-muted md:text-lg md:leading-8">
                     {pageDescription}
@@ -189,28 +188,50 @@ export default function PublicDetailPage({
                       )}&ref=${encodeURIComponent(item.slug)}&name=${encodeURIComponent(item.name)}`}
                       className={`${actionButtonBase()} border border-red-300 bg-transparent text-red-600 hover:bg-red-50 hover:shadow-sm`}
                     >
-                      🚨 Report this tool
+                      🚨 Report this {single}
                     </Link>
                   </div>
 
                   <div className="mt-5 flex items-center gap-3">
-                    <span className="text-sm font-medium text-q-muted">Share</span>
+                    <span className="text-sm font-medium text-q-muted">
+                      Share
+                    </span>
                     <ShareMenu title={item.name} url={canonicalUrl} />
                   </div>
                 </section>
 
-                {primaryContent && <div className="max-w-4xl">{primaryContent}</div>}
+                {/* ── AD SLOT 1: Below hero, above tool workspace ─────────── */}
+                <div className="flex justify-center">
+                  <AdSlot type="leaderboard" />
+                </div>
 
+                {/* Tool workspace (primaryContent) */}
+                {primaryContent && (
+                  <div className="max-w-4xl">{primaryContent}</div>
+                )}
+
+                {/* ── AD SLOT 2: Below tool workspace, before content ──────── */}
+                {primaryContent && (
+                  <div className="flex justify-center">
+                    <AdSlot type="in-article" />
+                  </div>
+                )}
+
+                {/* How to use */}
                 {steps.length > 0 && (
                   <section className="rounded-2xl border border-q-border bg-q-card p-6 shadow-sm md:p-8">
-                    <h2 className="text-2xl font-semibold text-q-text">How to use</h2>
+                    <h2 className="text-2xl font-semibold text-q-text">
+                      How to use
+                    </h2>
                     <ol className="mt-5 space-y-3">
                       {steps.map((step, index) => (
                         <li
                           key={index}
                           className="rounded-xl border border-q-border bg-q-bg p-4 text-sm leading-7 text-q-muted"
                         >
-                          <span className="font-semibold text-q-text">Step {index + 1}:</span>{" "}
+                          <span className="font-semibold text-q-text">
+                            Step {index + 1}:
+                          </span>{" "}
                           {step}
                         </li>
                       ))}
@@ -218,6 +239,7 @@ export default function PublicDetailPage({
                   </section>
                 )}
 
+                {/* Benefits */}
                 {benefits.length > 0 && (
                   <section className="rounded-2xl border border-q-border bg-q-card p-6 shadow-sm md:p-8">
                     <h2 className="text-2xl font-semibold text-q-text">
@@ -236,33 +258,50 @@ export default function PublicDetailPage({
                   </section>
                 )}
 
+                {/* FAQs */}
                 {faqs.length > 0 && (
-                  <section className="rounded-2xl border border-q-border bg-q-card p-6 shadow-sm md:p-8">
-                    <h2 className="text-2xl font-semibold text-q-text">
-                      Frequently asked questions
-                    </h2>
-                    <div className="mt-5 space-y-4">
-                      {faqs.map((faq, index) => (
-                        <div
-                          key={`${item.slug}-faq-${index}`}
-                          className="rounded-xl border border-q-border bg-q-bg p-5"
-                        >
-                          <h3 className="text-lg font-semibold text-q-text">
-                            {faq.question}
-                          </h3>
-                          <p className="mt-2 text-sm leading-7 text-q-muted">
-                            {faq.answer}
-                          </p>
-                        </div>
-                      ))}
+                  <>
+                    {/* ── AD SLOT 3: Before FAQ section ───────────────────── */}
+                    <div className="flex justify-center">
+                      <AdSlot type="in-article" />
                     </div>
-                  </section>
+
+                    <section className="rounded-2xl border border-q-border bg-q-card p-6 shadow-sm md:p-8">
+                      <h2 className="text-2xl font-semibold text-q-text">
+                        Frequently asked questions
+                      </h2>
+                      <div className="mt-5 space-y-4">
+                        {faqs.map((faq, index) => (
+                          <div
+                            key={`${item.slug}-faq-${index}`}
+                            className="rounded-xl border border-q-border bg-q-bg p-5"
+                          >
+                            <h3 className="text-lg font-semibold text-q-text">
+                              {faq.question}
+                            </h3>
+                            <p className="mt-2 text-sm leading-7 text-q-muted">
+                              {faq.answer}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  </>
                 )}
 
+                {/* Auto SEO sections for items without custom content */}
                 {!hasCustomContentSections && (
                   <PageSEOSections table={table} item={item} />
                 )}
 
+                {/* ── AD SLOT 4: Before related items ─────────────────────── */}
+                {showRelatedItemsSection && dedupedRelatedItems.length > 0 && (
+                  <div className="flex justify-center">
+                    <AdSlot type="in-article" />
+                  </div>
+                )}
+
+                {/* Related items */}
                 {showRelatedItemsSection && dedupedRelatedItems.length > 0 && (
                   <section className="rounded-2xl border border-q-border bg-q-card p-6 shadow-sm md:p-8">
                     <h2 className="text-2xl font-semibold text-q-text">
@@ -294,8 +333,15 @@ export default function PublicDetailPage({
               </div>
             </div>
 
+            {/* Sidebar */}
             <div className="self-start xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto">
-              <DetailSidebar section={section} item={item} />
+              <div className="space-y-6">
+                {/* ── AD SLOT: Sidebar rectangle ───────────────────────────── */}
+                <div className="flex justify-center">
+                  <AdSlot type="rectangle" />
+                </div>
+                <DetailSidebar section={section} item={item} />
+              </div>
             </div>
           </div>
         </div>

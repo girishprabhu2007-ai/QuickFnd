@@ -1,6 +1,6 @@
 import { getSupabaseAdmin } from "@/lib/admin-publishing";
 import { buildHomepageTaxonomy } from "@/lib/admin-taxonomy";
-import { filterVisibleTools } from "@/lib/public-tool-visibility";
+import { filterVisibleTools } from "@/lib/visibility";
 import { getSupportedToolEngineTypes } from "@/lib/tool-bulk-generator";
 
 type ToolRow = {
@@ -146,7 +146,7 @@ export async function getTopicExpansionIntelligence() {
   if (usageRes.error) throw new Error(usageRes.error.message);
   if (requestsRes.error) throw new Error(requestsRes.error.message);
 
-  const tools = filterVisibleTools((toolsRes.data || []) as ToolRow[]);
+  const tools = filterVisibleTools((toolsRes.data || []) as unknown as import("@/lib/content-pages").PublicContentItem[]);
   const calculators = (calculatorsRes.data || []) as CalculatorRow[];
   const aiTools = (aiToolsRes.data || []) as AIToolRow[];
   const usage = (usageRes.data || []) as UsageRow[];
