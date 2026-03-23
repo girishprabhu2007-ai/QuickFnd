@@ -1,460 +1,429 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
-type TopicOpportunity = {
-  key: string;
-  label: string;
-  live_tool_count: number;
-  total_usage: number;
-  request_mentions: number;
-  opportunity_score: number;
-  recommended_engine_types: string[];
-  example_ideas: string[];
-};
-
-type SuggestedItem = {
-  name: string;
-  slug: string;
+type RequestItem = {
+  id: number;
+  requested_name: string;
+  requested_category: "tool" | "calculator" | "ai-tool";
   description: string;
-  related_slugs: string[];
-  engine_type: string;
-  engine_config: Record<string, unknown>;
+  requester_name: string | null;
+  requester_email: string | null;
+  ai_summary: string | null;
+  ai_verdict: "build-now" | "needs-engine" | "not-recommended" | "pending";
+  recommended_category: "tool" | "calculator" | "ai-tool" | null;
+  recommended_engine: string | null;
+  status: "pending" | "reviewed" | "implemented" | "rejected";
+  created_public_slug: string | null;
+  mode: "request" | "report" | null;
+  ref_slug: string | null;
+  report_type: string | null;
+  admin_note?: string | null;
+  created_at?: string | null;
 };
 
-type CreatedItem = {
-  name: string;
-  slug: string;
-  engine_type: string;
+type Tab = "all" | "requests" | "reports" | "pending" | "implemented" | "rejected";
+
+const STATUS_COLORS: Record<string, string> = {
+  pending: "border-amber-300 bg-amber-50 text-amber-700",
+  reviewed: "border-blue-300 bg-blue-50 text-blue-700",
+  implemented: "border-green-300 bg-green-50 text-green-700",
+  rejected: "border-red-300 bg-red-50 text-red-700",
 };
 
-type SkippedItem = {
-  slug: string;
-  reason: string;
+const VERDICT_COLORS: Record<string, string> = {
+  "build-now": "border-green-300 bg-green-50 text-green-700",
+  "needs-engine": "border-amber-300 bg-amber-50 text-amber-700",
+  "not-recommended": "border-red-300 bg-red-50 text-red-700",
+  pending: "border-q-border bg-q-bg text-q-muted",
 };
 
-export default function AdminTopicsPage() {
-  const [items, setItems] = useState<TopicOpportunity[]>([]);
+function Badge({ text, color }: { text: string; color: string }) {
+  return (
+    <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${color}`}>
+      {text}
+    </span>
+  );
+}
+
+export default function AdminRequestsPage() {
+  const [items, setItems] = useState<RequestItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const [busyTopic, setBusyTopic] = useState("");
-  const [createBusy, setCreateBusy] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>("pending");
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [adminNote, setAdminNote] = useState<Record<number, string>>({});
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [creatingId, setCreatingId] = useState<number | null>(null);
   const [message, setMessage] = useState("");
 
-  const [previewTopicKey, setPreviewTopicKey] = useState("");
-  const [previewTopicLabel, setPreviewTopicLabel] = useState("");
-  const [suggestedItems, setSuggestedItems] = useState<SuggestedItem[]>([]);
-  const [selectedMap, setSelectedMap] = useState<Record<string, boolean>>({});
-
-  const [createdItems, setCreatedItems] = useState<CreatedItem[]>([]);
-  const [skippedItems, setSkippedItems] = useState<SkippedItem[]>([]);
-
-  async function loadTopics() {
+  async function load() {
     setLoading(true);
-    setError("");
-
     try {
-      const response = await fetch("/api/admin/topic-expansion", {
-        cache: "no-store",
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.error || "Failed to load topic intelligence.");
-      }
-
-      setItems(Array.isArray(data.opportunities) ? data.opportunities : []);
-    } catch (err) {
-      setItems([]);
-      setError(
-        err instanceof Error ? err.message : "Failed to load topic intelligence."
-      );
+      const res = await fetch("/api/admin/tool-requests", { cache: "no-store" });
+      const data = await res.json();
+      setItems(Array.isArray(data.items) ? data.items : []);
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Failed to load.");
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => {
-    loadTopics();
-  }, []);
+  useEffect(() => { load(); }, []);
 
-  async function previewTopicExpansion(topicKey: string, topicLabel: string) {
-    setBusyTopic(topicKey);
+  async function updateStatus(item: RequestItem, status: RequestItem["status"]) {
+    setUpdatingId(item.id);
     setMessage("");
-    setCreatedItems([]);
-    setSkippedItems([]);
-    setError("");
-    setSuggestedItems([]);
-    setSelectedMap({});
-    setPreviewTopicKey("");
-    setPreviewTopicLabel("");
-
     try {
-      const response = await fetch("/api/admin/expand-topic", {
+      const res = await fetch("/api/admin/update-request-status", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: item.id, status, admin_note: adminNote[item.id] || "" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setMessage(`✓ ${item.requested_name} marked as ${status}`);
+      await load();
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Update failed.");
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+  async function createFromRequest(item: RequestItem) {
+    if (!item.recommended_category) return;
+    setCreatingId(item.id);
+    setMessage("");
+    try {
+      const res = await fetch("/api/admin/create-tool", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          topic_key: topicKey,
-          count: 6,
+          idea: item.requested_name,
+          category: item.recommended_category,
+          requestId: item.id,
         }),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.error || "Failed to preview topic expansion.");
-      }
-
-      const suggestions = Array.isArray(data.suggestions) ? data.suggestions : [];
-
-      const nextSelectedMap: Record<string, boolean> = {};
-      for (const item of suggestions) {
-        nextSelectedMap[item.slug] = true;
-      }
-
-      setPreviewTopicKey(topicKey);
-      setPreviewTopicLabel(topicLabel);
-      setSuggestedItems(suggestions);
-      setSelectedMap(nextSelectedMap);
-      setMessage(
-        `Preview ready for ${topicLabel}. Review the suggested tools and select what you want to create.`
-      );
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to preview topic expansion."
-      );
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Create failed.");
+      setMessage(data.alreadyExists ? `Already exists: ${data.path}` : `✓ Created: ${data.path}`);
+      await load();
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Create failed.");
     } finally {
-      setBusyTopic("");
+      setCreatingId(null);
     }
   }
 
-  async function createSelectedTools() {
-    const selectedItems = suggestedItems.filter((item) => selectedMap[item.slug]);
-
-    if (selectedItems.length === 0) {
-      setError("Select at least one suggested tool before creating.");
-      return;
-    }
-
-    setCreateBusy(true);
-    setError("");
-    setMessage("");
-    setCreatedItems([]);
-    setSkippedItems([]);
-
-    try {
-      const response = await fetch("/api/admin/create-selected-tools", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          items: selectedItems,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.error || "Failed to create selected tools.");
-      }
-
-      setCreatedItems(Array.isArray(data.created) ? data.created : []);
-      setSkippedItems(Array.isArray(data.skipped) ? data.skipped : []);
-      setMessage(
-        `Created ${data.createdCount} tool(s), skipped ${data.skippedCount}.`
-      );
-
-      setSuggestedItems([]);
-      setSelectedMap({});
-      setPreviewTopicKey("");
-      setPreviewTopicLabel("");
-
-      await loadTopics();
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to create selected tools."
-      );
-    } finally {
-      setCreateBusy(false);
-    }
+  function copyEmail(item: RequestItem) {
+    const text = `Hi ${item.requester_name || "there"},\n\nThank you for your ${item.mode === "report" ? "report" : "request"} regarding "${item.requested_name}" on QuickFnd.\n\n${item.status === "implemented" ? "We have implemented this tool." : item.status === "rejected" ? "After review, we are unable to add this at this time." : "We are reviewing your submission."}\n\nThanks,\nQuickFnd Team`;
+    navigator.clipboard.writeText(text);
+    setMessage("✓ Email template copied to clipboard");
   }
 
-  function toggleSelected(slug: string) {
-    setSelectedMap((prev) => ({
-      ...prev,
-      [slug]: !prev[slug],
-    }));
-  }
+  const filtered = items.filter((item) => {
+    if (activeTab === "requests") return item.mode !== "report";
+    if (activeTab === "reports") return item.mode === "report";
+    if (activeTab === "pending") return item.status === "pending";
+    if (activeTab === "implemented") return item.status === "implemented";
+    if (activeTab === "rejected") return item.status === "rejected";
+    return true;
+  });
 
-  function selectAllSuggestions(value: boolean) {
-    const next: Record<string, boolean> = {};
-    for (const item of suggestedItems) {
-      next[item.slug] = value;
-    }
-    setSelectedMap(next);
-  }
+  const counts = {
+    all: items.length,
+    requests: items.filter((i) => i.mode !== "report").length,
+    reports: items.filter((i) => i.mode === "report").length,
+    pending: items.filter((i) => i.status === "pending").length,
+    implemented: items.filter((i) => i.status === "implemented").length,
+    rejected: items.filter((i) => i.status === "rejected").length,
+  };
 
-  const selectedCount = useMemo(() => {
-    return Object.values(selectedMap).filter(Boolean).length;
-  }, [selectedMap]);
+  const tabs: { key: Tab; label: string; urgent?: boolean }[] = [
+    { key: "pending", label: `Pending (${counts.pending})`, urgent: counts.pending > 0 },
+    { key: "reports", label: `Reports (${counts.reports})` },
+    { key: "requests", label: `Requests (${counts.requests})` },
+    { key: "implemented", label: `Implemented (${counts.implemented})` },
+    { key: "rejected", label: `Rejected (${counts.rejected})` },
+    { key: "all", label: `All (${counts.all})` },
+  ];
 
   return (
-    <div className="grid gap-8">
+    <div className="space-y-6">
+
+      {/* Header */}
       <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-semibold text-q-text">Topic Expansion</h2>
-            <p className="mt-3 max-w-4xl text-sm leading-7 text-q-muted md:text-base">
-              Review niche opportunities with the strongest expansion potential.
-              Preview suggested tools first, then choose which ones to create.
+            <h2 className="text-2xl font-bold text-q-text">Requests & Reports</h2>
+            <p className="mt-2 text-sm text-q-muted">
+              Manage tool requests and reports from users. Use the workflow below to review,
+              create, or reject each item. Reply templates available for user communication.
             </p>
           </div>
-
           <button
-            onClick={loadTopics}
+            onClick={load}
             className="rounded-xl border border-q-border bg-q-bg px-4 py-2 text-sm font-medium text-q-text transition hover:bg-q-card-hover"
           >
             Refresh
           </button>
         </div>
 
-        {message ? (
-          <div className="mt-5 rounded-2xl border border-green-300 bg-green-50 p-4 text-sm text-green-700">
-            {message}
-          </div>
-        ) : null}
-
-        {error ? (
-          <div className="mt-5 rounded-2xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">
-            {error}
-          </div>
-        ) : null}
-      </section>
-
-      <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
-        <h3 className="text-2xl font-semibold text-q-text">Topic Opportunities</h3>
-
-        {loading ? (
-          <div className="mt-5 rounded-2xl border border-q-border bg-q-bg p-5 text-sm text-q-muted">
-            Loading topic opportunities...
-          </div>
-        ) : items.length === 0 ? (
-          <div className="mt-5 rounded-2xl border border-q-border bg-q-bg p-5 text-sm text-q-muted">
-            No topic opportunities available yet.
-          </div>
-        ) : (
-          <div className="mt-6 grid gap-5">
-            {items.map((item) => (
-              <div
-                key={item.key}
-                className="rounded-2xl border border-q-border bg-q-bg p-5"
-              >
-                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                  <div className="max-w-4xl">
-                    <div className="flex items-center gap-3">
-                      <div className="text-xl font-semibold text-q-text">{item.label}</div>
-                      <div className="rounded-full border border-q-border bg-q-card px-3 py-1 text-xs font-medium text-q-text">
-                        Score {item.opportunity_score}
-                      </div>
-                    </div>
-
-                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                      <div className="rounded-xl border border-q-border bg-q-card p-3">
-                        <div className="text-xs uppercase tracking-wide text-q-muted">
-                          Live Tools
-                        </div>
-                        <div className="mt-1 text-sm font-medium text-q-text">
-                          {item.live_tool_count}
-                        </div>
-                      </div>
-
-                      <div className="rounded-xl border border-q-border bg-q-card p-3">
-                        <div className="text-xs uppercase tracking-wide text-q-muted">
-                          Total Usage
-                        </div>
-                        <div className="mt-1 text-sm font-medium text-q-text">
-                          {item.total_usage}
-                        </div>
-                      </div>
-
-                      <div className="rounded-xl border border-q-border bg-q-card p-3">
-                        <div className="text-xs uppercase tracking-wide text-q-muted">
-                          Request Mentions
-                        </div>
-                        <div className="mt-1 text-sm font-medium text-q-text">
-                          {item.request_mentions}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-4">
-                      <div className="text-xs uppercase tracking-wide text-q-muted">
-                        Recommended Engines
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {item.recommended_engine_types.map((engine) => (
-                          <span
-                            key={engine}
-                            className="rounded-full border border-q-border bg-q-card px-3 py-1 text-xs text-q-text"
-                          >
-                            {engine}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="mt-4">
-                      <div className="text-xs uppercase tracking-wide text-q-muted">
-                        Example Expansion Ideas
-                      </div>
-                      <ul className="mt-2 space-y-1 text-sm text-q-text">
-                        {item.example_ideas.map((idea) => (
-                          <li key={idea}>• {idea}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-
-                  <div className="w-full xl:max-w-xs">
-                    <button
-                      onClick={() => previewTopicExpansion(item.key, item.label)}
-                      disabled={busyTopic === item.key}
-                      className="w-full rounded-xl bg-q-primary px-4 py-3 font-medium text-white transition hover:bg-q-primary-hover disabled:opacity-60"
-                    >
-                      {busyTopic === item.key ? "Preparing..." : "Preview Expansion"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h3 className="text-2xl font-semibold text-q-text">
-              {previewTopicLabel ? `Suggested Tools for ${previewTopicLabel}` : "Suggested Tools"}
-            </h3>
-            <p className="mt-2 text-sm text-q-muted">
-              Preview topic expansion suggestions, select what you want, then create only the chosen tools.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => selectAllSuggestions(true)}
-              disabled={suggestedItems.length === 0}
-              className="rounded-xl border border-q-border bg-q-bg px-4 py-2 text-sm font-medium text-q-text transition hover:bg-q-card-hover disabled:opacity-50"
-            >
-              Select All
-            </button>
-
-            <button
-              onClick={() => selectAllSuggestions(false)}
-              disabled={suggestedItems.length === 0}
-              className="rounded-xl border border-q-border bg-q-bg px-4 py-2 text-sm font-medium text-q-text transition hover:bg-q-card-hover disabled:opacity-50"
-            >
-              Clear
-            </button>
-
-            <button
-              onClick={createSelectedTools}
-              disabled={createBusy || selectedCount === 0}
-              className="rounded-xl bg-q-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-q-primary-hover disabled:opacity-60"
-            >
-              {createBusy ? "Creating..." : `Create Selected (${selectedCount})`}
-            </button>
-          </div>
+        {/* Stats */}
+        <div className="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-6">
+          {[
+            { label: "Total", count: counts.all, color: "text-q-text" },
+            { label: "Pending", count: counts.pending, color: counts.pending > 0 ? "text-amber-600" : "text-q-muted" },
+            { label: "Requests", count: counts.requests, color: "text-blue-600" },
+            { label: "Reports", count: counts.reports, color: counts.reports > 0 ? "text-red-600" : "text-q-muted" },
+            { label: "Built", count: counts.implemented, color: "text-green-600" },
+            { label: "Rejected", count: counts.rejected, color: "text-q-muted" },
+          ].map((s) => (
+            <div key={s.label} className="rounded-xl border border-q-border bg-q-bg p-3 text-center">
+              <div className={`text-2xl font-bold ${s.color}`}>{s.count}</div>
+              <div className="mt-1 text-xs text-q-muted">{s.label}</div>
+            </div>
+          ))}
         </div>
+      </section>
 
-        {suggestedItems.length === 0 ? (
-          <div className="mt-5 rounded-2xl border border-q-border bg-q-bg p-5 text-sm text-q-muted">
-            No preview loaded yet. Choose a topic and click Preview Expansion first.
-          </div>
-        ) : (
-          <div className="mt-6 grid gap-4 lg:grid-cols-2">
-            {suggestedItems.map((item) => (
+      {/* Message */}
+      {message && (
+        <div className="rounded-xl border border-q-border bg-q-bg px-4 py-3 text-sm text-q-text">
+          {message}
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div className="flex flex-wrap gap-2">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`rounded-xl border px-4 py-2 text-sm font-medium transition ${
+              activeTab === tab.key
+                ? "border-blue-400 bg-blue-600 text-white"
+                : tab.urgent
+                ? "border-amber-300 bg-amber-50 text-amber-700"
+                : "border-q-border bg-q-card text-q-text hover:bg-q-card-hover"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Items */}
+      {loading ? (
+        <div className="rounded-2xl border border-q-border bg-q-card p-8 text-center text-sm text-q-muted">
+          Loading...
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-2xl border border-q-border bg-q-card p-8 text-center text-sm text-q-muted">
+          No items in this category.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filtered.map((item) => {
+            const isReport = item.mode === "report";
+            const isExpanded = expandedId === item.id;
+
+            return (
               <div
-                key={item.slug}
-                className="rounded-2xl border border-q-border bg-q-bg p-5"
+                key={item.id}
+                className={`rounded-2xl border bg-q-card ${
+                  isReport ? "border-red-200" : "border-q-border"
+                }`}
+                style={isReport ? { borderColor: "rgba(239,68,68,0.2)" } : undefined}
               >
-                <label className="flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(selectedMap[item.slug])}
-                    onChange={() => toggleSelected(item.slug)}
-                    className="mt-1"
-                  />
+                {/* Card header */}
+                <div className="flex items-start justify-between gap-4 p-5">
                   <div className="min-w-0 flex-1">
-                    <div className="text-lg font-semibold text-q-text">{item.name}</div>
-                    <div className="mt-1 text-sm text-q-muted">/{item.slug}</div>
-                    <div className="mt-2 text-sm text-q-muted">
-                      Engine: {item.engine_type}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-semibold text-q-text">{item.requested_name}</span>
+                      {isReport && <Badge text="Report" color="border-red-300 bg-red-50 text-red-700" />}
+                      <Badge text={item.requested_category} color="border-q-border bg-q-bg text-q-muted" />
+                      <Badge text={item.status} color={STATUS_COLORS[item.status] ?? "border-q-border bg-q-bg text-q-muted"} />
+                      {item.ai_verdict && item.ai_verdict !== "pending" && (
+                        <Badge text={item.ai_verdict} color={VERDICT_COLORS[item.ai_verdict] ?? ""} />
+                      )}
                     </div>
-                    <div className="mt-3 text-sm leading-6 text-q-muted">
-                      {item.description}
+
+                    <p className="mt-2 text-sm text-q-muted line-clamp-2">{item.description}</p>
+
+                    {item.ref_slug && (
+                      <p className="mt-1 text-xs text-q-muted">
+                        Tool reported:{" "}
+                        <a
+                          href={`/${item.requested_category === "calculator" ? "calculators" : item.requested_category === "ai-tool" ? "ai-tools" : "tools"}/${item.ref_slug}`}
+                          target="_blank"
+                          className="font-medium text-blue-500 underline"
+                        >
+                          /{item.ref_slug}
+                        </a>
+                      </p>
+                    )}
+
+                    {item.created_at && (
+                      <p className="mt-1 text-xs text-q-muted">
+                        {new Date(item.created_at).toLocaleDateString("en-GB", {
+                          day: "numeric", month: "short", year: "numeric"
+                        })}
+                      </p>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => setExpandedId(isExpanded ? null : item.id)}
+                    className="shrink-0 rounded-lg border border-q-border bg-q-bg px-3 py-1.5 text-xs text-q-muted transition hover:bg-q-card-hover"
+                  >
+                    {isExpanded ? "Collapse ↑" : "Expand ↓"}
+                  </button>
+                </div>
+
+                {/* Expanded details */}
+                {isExpanded && (
+                  <div className="border-t border-q-border p-5 space-y-5">
+
+                    {/* Full description */}
+                    <div>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-q-muted mb-1">Full Description</div>
+                      <p className="text-sm text-q-text leading-6">{item.description}</p>
+                    </div>
+
+                    {/* AI Assessment */}
+                    {item.ai_summary && (
+                      <div className="rounded-xl border border-blue-200 bg-blue-50 p-4"
+                        style={{ borderColor: "rgba(37,99,235,0.15)", background: "rgba(37,99,235,0.04)" }}>
+                        <div className="text-xs font-semibold uppercase tracking-wide text-blue-700 mb-1">AI Assessment</div>
+                        <p className="text-sm text-q-text">{item.ai_summary}</p>
+                        {item.recommended_engine && (
+                          <p className="mt-1 text-xs text-q-muted">
+                            Recommended engine: <span className="font-mono text-q-text">{item.recommended_engine}</span>
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Requester info */}
+                    {(item.requester_name || item.requester_email) && (
+                      <div className="flex flex-wrap gap-4 text-sm">
+                        {item.requester_name && (
+                          <span className="text-q-muted">Name: <strong className="text-q-text">{item.requester_name}</strong></span>
+                        )}
+                        {item.requester_email && (
+                          <span className="text-q-muted">
+                            Email: <a href={`mailto:${item.requester_email}`} className="font-medium text-blue-500">{item.requester_email}</a>
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Admin note */}
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wide text-q-muted mb-1">
+                        Admin Note (internal)
+                      </label>
+                      <textarea
+                        value={adminNote[item.id] ?? item.admin_note ?? ""}
+                        onChange={(e) => setAdminNote((n) => ({ ...n, [item.id]: e.target.value }))}
+                        placeholder="Internal note about this request or report..."
+                        rows={2}
+                        className="w-full rounded-xl border border-q-border bg-q-bg px-3 py-2 text-sm text-q-text placeholder-q-muted focus:border-blue-400 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex flex-wrap gap-3">
+                      {/* Build from request */}
+                      {!isReport && item.status !== "implemented" && item.ai_verdict === "build-now" && item.recommended_category && (
+                        <button
+                          onClick={() => createFromRequest(item)}
+                          disabled={creatingId === item.id}
+                          className="rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-500 disabled:opacity-60"
+                        >
+                          {creatingId === item.id ? "Building..." : "🔨 Build This Tool"}
+                        </button>
+                      )}
+
+                      {/* Status actions */}
+                      {item.status === "pending" && (
+                        <>
+                          <button
+                            onClick={() => updateStatus(item, "reviewed")}
+                            disabled={updatingId === item.id}
+                            className="rounded-xl border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 disabled:opacity-60"
+                          >
+                            Mark Reviewed
+                          </button>
+                          <button
+                            onClick={() => updateStatus(item, "rejected")}
+                            disabled={updatingId === item.id}
+                            className="rounded-xl border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
+
+                      {item.status === "reviewed" && (
+                        <>
+                          <button
+                            onClick={() => updateStatus(item, "implemented")}
+                            disabled={updatingId === item.id}
+                            className="rounded-xl border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-100 disabled:opacity-60"
+                          >
+                            Mark Implemented
+                          </button>
+                          <button
+                            onClick={() => updateStatus(item, "rejected")}
+                            disabled={updatingId === item.id}
+                            className="rounded-xl border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
+
+                      {(item.status === "rejected" || item.status === "implemented") && (
+                        <button
+                          onClick={() => updateStatus(item, "pending")}
+                          disabled={updatingId === item.id}
+                          className="rounded-xl border border-q-border bg-q-bg px-4 py-2 text-sm text-q-muted transition hover:bg-q-card-hover disabled:opacity-60"
+                        >
+                          Reopen
+                        </button>
+                      )}
+
+                      {/* Email template */}
+                      {item.requester_email && (
+                        <button
+                          onClick={() => copyEmail(item)}
+                          className="rounded-xl border border-q-border bg-q-bg px-4 py-2 text-sm text-q-muted transition hover:bg-q-card-hover"
+                        >
+                          📋 Copy Reply Template
+                        </button>
+                      )}
+
+                      {/* View live tool */}
+                      {item.created_public_slug && (
+                        <a
+                          href={`/tools/${item.created_public_slug}`}
+                          target="_blank"
+                          className="rounded-xl border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                        >
+                          View Live Tool →
+                        </a>
+                      )}
                     </div>
                   </div>
-                </label>
+                )}
               </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
-        <h3 className="text-2xl font-semibold text-q-text">Created Tools</h3>
-
-        {createdItems.length === 0 ? (
-          <div className="mt-5 rounded-2xl border border-q-border bg-q-bg p-5 text-sm text-q-muted">
-            No tools created in this session yet.
-          </div>
-        ) : (
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {createdItems.map((item) => (
-              <div
-                key={item.slug}
-                className="rounded-2xl border border-q-border bg-q-bg p-5"
-              >
-                <div className="text-lg font-semibold text-q-text">{item.name}</div>
-                <div className="mt-2 text-sm text-q-muted">/{item.slug}</div>
-                <div className="mt-2 text-sm text-q-muted">
-                  Engine: {item.engine_type}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
-        <h3 className="text-2xl font-semibold text-q-text">Skipped Items</h3>
-
-        {skippedItems.length === 0 ? (
-          <div className="mt-5 rounded-2xl border border-q-border bg-q-bg p-5 text-sm text-q-muted">
-            No skipped items in this session.
-          </div>
-        ) : (
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {skippedItems.map((item) => (
-              <div
-                key={`${item.slug}-${item.reason}`}
-                className="rounded-2xl border border-q-border bg-q-bg p-5"
-              >
-                <div className="text-lg font-semibold text-q-text">{item.slug}</div>
-                <div className="mt-2 text-sm text-q-muted">{item.reason}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
