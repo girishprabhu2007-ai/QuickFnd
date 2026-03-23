@@ -282,11 +282,17 @@ export function getSiteUrl() {
 }
 
 export function buildPageTitle(item: PublicContentItem, table: PublicTable) {
-  const typeLabel = getCategoryLabel(table);
-  return `${item.name} | QuickFnd ${typeLabel}`;
+  // layout.tsx uses template "%s | QuickFnd" — so do NOT add QuickFnd here.
+  // Keyword-first format for better CTR in search results.
+  if (table === "tools") return `${item.name} — Free Online Tool`;
+  if (table === "calculators") return `${item.name} — Free Online Calculator`;
+  return `${item.name} — Free AI Tool`;
 }
 
 export function buildMetaDescription(item: PublicContentItem, table: PublicTable) {
   const typeLabel = getCategoryLabel(table).toLowerCase();
-  return `${item.description} Explore this ${typeLabel} on QuickFnd.`;
+  const desc = item.description
+    ? item.description.replace(/\.$/, "")
+    : `Use ${item.name} free online`;
+  return `${desc}. Free browser-based ${typeLabel} on QuickFnd. No install needed.`;
 }

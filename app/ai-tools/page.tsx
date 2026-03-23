@@ -1,27 +1,36 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import SiteFooter from "@/components/site/SiteFooter";
-import ToolIcon from "@/components/ui/ToolIcon";
 import ListingSidebar from "@/components/layout/ListingSidebar";
 import AdSlot from "@/components/ads/AdSlot";
 import { getAITools } from "@/lib/db";
 import { getDisplayDescription } from "@/lib/display-content";
 import { filterVisibleAITools } from "@/lib/visibility";
-import {
-  buildHomepageTaxonomy,
-  filterItemsByGroup,
-} from "@/lib/admin-taxonomy";
+import { buildHomepageTaxonomy, filterItemsByGroup } from "@/lib/admin-taxonomy";
 import type { PublicContentItem } from "@/lib/content-pages";
 
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "AI Tools Directory | QuickFnd",
+  title: "Free AI Tools",
   description:
-    "Explore AI-powered tools on QuickFnd for writing, email, blog outlines, prompts, and content productivity. Free browser-based AI utilities.",
+    "Free AI-powered tools for writing, email drafting, blog outlines, and content productivity. No account needed — run directly in your browser.",
 };
 
 const PAGE_SIZE = 18;
+
+const AI_ICONS: Record<string, string> = {
+  "ai-email-writer": "📧",
+  "ai-prompt-generator": "💡",
+  "ai-blog-outline-generator": "📝",
+  "blog-outline-generator": "📝",
+  "content-idea-generator": "🎯",
+  "seo-content-optimizer": "📈",
+};
+
+function getAIIcon(slug: string): string {
+  return AI_ICONS[slug] ?? "✨";
+}
 
 type Props = {
   searchParams?: Promise<{ group?: string; page?: string }>;
@@ -29,147 +38,135 @@ type Props = {
 
 export default async function AIToolsPage({ searchParams }: Props) {
   const rawAITools = await getAITools();
-  // Apply visibility filter — counts now match sidebar
   const allAITools: PublicContentItem[] = filterVisibleAITools(rawAITools);
 
   const params = (await searchParams) || {};
   const activeGroup = params.group || "";
   const currentPage = Math.max(1, Number(params.page) || 1);
 
-  const taxonomy = buildHomepageTaxonomy({
-    tools: [],
-    calculators: [],
-    aiTools: allAITools,
-  });
+  const taxonomy = buildHomepageTaxonomy({ tools: [], calculators: [], aiTools: allAITools });
+  const activeLabel = taxonomy.aiTools.find((g) => g.key === activeGroup)?.label || "";
 
-  const activeLabel =
-    taxonomy.aiTools.find((group) => group.key === activeGroup)?.label || "";
-
-  const filteredAITools: PublicContentItem[] = activeGroup
+  const filteredAI: PublicContentItem[] = activeGroup
     ? filterItemsByGroup("aiTools", allAITools, activeGroup)
     : allAITools;
 
-  const totalPages = Math.max(1, Math.ceil(filteredAITools.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filteredAI.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
   const start = (safePage - 1) * PAGE_SIZE;
-  const visibleAITools = filteredAITools.slice(start, start + PAGE_SIZE);
+  const visibleAI = filteredAI.slice(start, start + PAGE_SIZE);
 
   function buildPageHref(page: number) {
     const query = new URLSearchParams();
     if (activeGroup) query.set("group", activeGroup);
     if (page > 1) query.set("page", String(page));
-    const queryString = query.toString();
-    return queryString ? `/ai-tools?${queryString}` : "/ai-tools";
+    const qs = query.toString();
+    return qs ? `/ai-tools?${qs}` : "/ai-tools";
   }
 
   return (
-    <main className="min-h-screen bg-q-bg px-4 py-8 text-q-text sm:px-6 lg:px-8 lg:py-12">
-      <section className="mx-auto max-w-7xl">
-        <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
+    <main className="min-h-screen bg-q-bg text-q-text">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_300px]">
+
           <div>
-            <div className="mb-10 rounded-3xl border border-q-border bg-q-card p-6 md:p-8 lg:p-10">
-              <p className="text-sm uppercase tracking-[0.2em] text-blue-500">
-                QuickFnd Directory
-              </p>
-
-              <h1 className="mt-4 text-3xl font-bold md:text-5xl">AI Tools</h1>
-
-              <p className="mt-4 max-w-3xl text-base leading-7 text-q-muted md:text-lg md:leading-8">
-                Free AI-powered tools for writing, email drafting, blog outlines,
-                prompt generation, and content productivity workflows.
-              </p>
-
-              <div className="mt-4 flex items-center gap-3">
-                <span className="rounded-full border border-q-border bg-q-bg px-3 py-1 text-xs text-q-muted">
-                  {allAITools.length} AI tools
-                </span>
-              </div>
-
-              {activeLabel ? (
-                <div className="mt-4 flex items-center gap-3">
-                  <span className="rounded-full border border-q-border bg-q-bg px-4 py-2 text-sm text-q-text">
-                    Filter: {activeLabel}
+            {/* Hero banner for AI tools */}
+            <div className="mb-8 overflow-hidden rounded-3xl border border-q-border"
+              style={{ background: "var(--q-gradient-hero)", boxShadow: "var(--q-shadow-lg)" }}>
+              <div className="p-6 md:p-8">
+                <div className="badge badge-green mb-3">✨ AI-Powered</div>
+                <h1 className="text-4xl font-extrabold tracking-tight text-white md:text-5xl">AI Tools</h1>
+                <p className="mt-3 max-w-2xl text-base leading-7 text-white/70">
+                  Free AI-powered tools for writing, email, outlines, and content workflows.
+                  No account needed.
+                </p>
+                <div className="mt-4">
+                  <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white/80">
+                    {allAITools.length} AI tools available
                   </span>
-                  <Link
-                    href="/ai-tools"
-                    className="text-sm text-blue-500 hover:text-blue-400"
-                  >
-                    Clear filter
-                  </Link>
+                  {activeLabel && (
+                    <span className="ml-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white/80">
+                      {activeLabel} ·{" "}
+                      <Link href="/ai-tools" className="underline underline-offset-2">Clear</Link>
+                    </span>
+                  )}
                 </div>
-              ) : null}
+              </div>
             </div>
 
-            {/* Ad slot — top of listing */}
             <div className="mb-6 flex justify-center">
               <AdSlot type="leaderboard" />
             </div>
 
-            {visibleAITools.length === 0 ? (
-              <div className="rounded-2xl border border-q-border bg-q-card p-6 text-q-muted">
+            {visibleAI.length === 0 ? (
+              <div className="rounded-2xl border border-q-border bg-q-card p-8 text-center text-q-muted">
                 No AI tools found for this category yet.
               </div>
             ) : (
               <>
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {visibleAITools.map((item) => (
+                  {visibleAI.map((item) => (
                     <Link
                       key={item.slug}
                       href={`/ai-tools/${item.slug}`}
-                      className="group rounded-2xl border border-q-border bg-q-card p-5 transition hover:-translate-y-1 hover:shadow-lg"
+                      className="card-glow card-shine group rounded-2xl border border-q-border bg-q-card p-5"
+                      style={{ boxShadow: "var(--q-shadow-sm)" }}
                     >
-                      <div className="flex items-start gap-4">
-                        <ToolIcon type="ai" />
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg"
+                          style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.15)" }}>
+                          {getAIIcon(item.slug)}
+                        </div>
                         <div className="min-w-0">
-                          <div className="text-lg font-semibold text-q-text group-hover:text-blue-500">
+                          <div className="font-semibold text-q-text group-hover:text-q-primary transition-colors leading-snug">
                             {item.name}
                           </div>
-                          <p className="mt-2 text-sm leading-6 text-q-muted">
+                          <p className="mt-1.5 text-sm leading-6 text-q-muted line-clamp-2">
                             {getDisplayDescription("ai_tools", item, "card")}
                           </p>
                         </div>
+                      </div>
+                      <div className="mt-3 flex items-center justify-between">
+                        <span className="rounded-full border border-q-border bg-q-bg px-2 py-0.5 text-[10px] text-q-muted">AI</span>
+                        <span className="text-xs font-medium text-q-primary opacity-0 group-hover:opacity-100 transition-opacity">Try it →</span>
                       </div>
                     </Link>
                   ))}
                 </div>
 
-                <div className="mt-8 flex justify-center gap-2">
-                  {safePage > 1 ? (
-                    <Link
-                      href={buildPageHref(safePage - 1)}
-                      className="rounded-lg border border-q-border bg-q-card px-3 py-1 text-sm transition hover:bg-q-card-hover"
-                    >
-                      ←
-                    </Link>
-                  ) : null}
-                  <span className="rounded-lg border border-q-border bg-q-card px-3 py-1 text-sm">
-                    {safePage} / {totalPages}
-                  </span>
-                  {safePage < totalPages ? (
-                    <Link
-                      href={buildPageHref(safePage + 1)}
-                      className="rounded-lg border border-q-border bg-q-card px-3 py-1 text-sm transition hover:bg-q-card-hover"
-                    >
-                      →
-                    </Link>
-                  ) : null}
-                </div>
+                {totalPages > 1 && (
+                  <div className="mt-8 flex items-center justify-center gap-2">
+                    {safePage > 1 && (
+                      <Link href={buildPageHref(safePage - 1)}
+                        className="rounded-xl border border-q-border bg-q-card px-4 py-2 text-sm font-medium text-q-text transition hover:bg-q-card-hover">
+                        ← Prev
+                      </Link>
+                    )}
+                    <span className="rounded-xl border border-q-border bg-q-bg px-4 py-2 text-sm text-q-muted">
+                      Page {safePage} of {totalPages}
+                    </span>
+                    {safePage < totalPages && (
+                      <Link href={buildPageHref(safePage + 1)}
+                        className="rounded-xl border border-q-border bg-q-card px-4 py-2 text-sm font-medium text-q-text transition hover:bg-q-card-hover">
+                        Next →
+                      </Link>
+                    )}
+                  </div>
+                )}
               </>
             )}
           </div>
 
-          <div className="self-start xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto">
-            <div className="space-y-6">
-              {/* Sidebar ad */}
+          <div className="self-start xl:sticky xl:top-24 xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto">
+            <div className="space-y-5">
               <div className="flex justify-center">
-                <AdSlot type="rectangle" />
+                <AdSlot type="rectangle" label={false} />
               </div>
               <ListingSidebar activeSection="ai-tools" />
             </div>
           </div>
         </div>
-      </section>
-
+      </div>
       <SiteFooter />
     </main>
   );

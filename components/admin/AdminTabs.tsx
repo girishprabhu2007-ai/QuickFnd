@@ -11,6 +11,7 @@ const tabs = [
   { href: "/admin/topics", label: "Topics" },
   { href: "/admin/requests", label: "Requests" },
   { href: "/admin/placeholders", label: "Placeholders" },
+  { href: "/admin/ads", label: "Ad Settings" },
 ];
 
 export default function AdminTabs() {

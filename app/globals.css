@@ -1,126 +1,250 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
+/* ─── QuickFnd Design System ─────────────────────────────────────────────── */
+
 :root {
-  --q-bg: #f8fafc;
+  /* Light theme */
+  --q-bg: #f8f9fc;
   --q-card: #ffffff;
-  --q-card-hover: #f1f5f9;
-  --q-border: #dbe4ee;
-  --q-text: #0f172a;
-  --q-muted: #475569;
+  --q-card-hover: #f1f4fa;
+  --q-border: #e2e8f4;
+  --q-text: #0f1623;
+  --q-muted: #64748b;
   --q-primary: #2563eb;
   --q-primary-hover: #1d4ed8;
-  --q-success: #059669;
-  --q-success-hover: #047857;
-  --q-danger-bg: rgba(127, 29, 29, 0.08);
-  --q-danger-border: rgba(127, 29, 29, 0.28);
-  --q-danger-text: #b91c1c;
-  --q-success-bg: rgba(6, 95, 70, 0.08);
-  --q-success-border: rgba(6, 95, 70, 0.28);
-  --q-success-text: #047857;
+  --q-accent: #0ea5e9;
+  --q-accent2: #7c3aed;
+  --q-success: #10b981;
+
+  /* Gradients */
+  --q-gradient-hero: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  --q-gradient-card: linear-gradient(145deg, #ffffff 0%, #f8f9fc 100%);
+  --q-gradient-blue: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
+  --q-gradient-purple: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
+  --q-gradient-green: linear-gradient(135deg, #10b981 0%, #0ea5e9 100%);
+
+  /* Shadows */
+  --q-shadow-sm: 0 1px 3px rgba(15,22,35,0.06), 0 1px 2px rgba(15,22,35,0.04);
+  --q-shadow-md: 0 4px 16px rgba(15,22,35,0.08), 0 2px 4px rgba(15,22,35,0.04);
+  --q-shadow-lg: 0 12px 40px rgba(15,22,35,0.12), 0 4px 8px rgba(15,22,35,0.06);
+  --q-shadow-glow: 0 0 30px rgba(37,99,235,0.15);
 }
 
-.dark:root,
-html.dark {
-  --q-bg: #030712;
-  --q-card: #0f172a;
-  --q-card-hover: #111c33;
-  --q-border: #1f2937;
-  --q-text: #ffffff;
-  --q-muted: #94a3b8;
-  --q-primary: #2563eb;
-  --q-primary-hover: #1d4ed8;
-  --q-success: #059669;
-  --q-success-hover: #047857;
-  --q-danger-bg: rgba(127, 29, 29, 0.35);
-  --q-danger-border: rgba(127, 29, 29, 0.6);
-  --q-danger-text: #fca5a5;
-  --q-success-bg: rgba(6, 95, 70, 0.35);
-  --q-success-border: rgba(6, 95, 70, 0.6);
-  --q-success-text: #86efac;
+[data-theme="dark"] {
+  --q-bg: #0a0e1a;
+  --q-card: #111827;
+  --q-card-hover: #1a2235;
+  --q-border: #1e2d45;
+  --q-text: #f1f5fd;
+  --q-muted: #8899b4;
+  --q-primary: #3b82f6;
+  --q-primary-hover: #2563eb;
+  --q-accent: #38bdf8;
+  --q-accent2: #a78bfa;
+  --q-success: #34d399;
+
+  --q-gradient-hero: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);
+  --q-gradient-card: linear-gradient(145deg, #111827 0%, #0a0e1a 100%);
+  --q-gradient-blue: linear-gradient(135deg, #3b82f6 0%, #38bdf8 100%);
+  --q-gradient-purple: linear-gradient(135deg, #a78bfa 0%, #3b82f6 100%);
+  --q-gradient-green: linear-gradient(135deg, #34d399 0%, #38bdf8 100%);
+
+  --q-shadow-sm: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+  --q-shadow-md: 0 4px 16px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.2);
+  --q-shadow-lg: 0 12px 40px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.3);
+  --q-shadow-glow: 0 0 40px rgba(59,130,246,0.2);
 }
 
-html,
+/* ─── Base ───────────────────────────────────────────────────────────────── */
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
 body {
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  background: var(--q-bg);
-  color: var(--q-text);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-.bg-q-bg {
   background-color: var(--q-bg);
-}
-
-.bg-q-card {
-  background-color: var(--q-card);
-}
-
-.bg-q-card-hover {
-  background-color: var(--q-card-hover);
-}
-
-.border-q-border {
-  border-color: var(--q-border);
-}
-
-.text-q-text {
   color: var(--q-text);
+  font-family: 'DM Sans', 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s, color 0.2s;
 }
 
-.text-q-muted {
-  color: var(--q-muted);
+/* Import DM Sans from Google Fonts */
+
+/* ─── CSS Variable utilities for Tailwind ────────────────────────────────── */
+
+.bg-q-bg { background-color: var(--q-bg); }
+.bg-q-card { background-color: var(--q-card); }
+.bg-q-card-hover { background-color: var(--q-card-hover); }
+.bg-q-primary { background-color: var(--q-primary); }
+.bg-q-primary-hover { background-color: var(--q-primary-hover); }
+.text-q-text { color: var(--q-text); }
+.text-q-muted { color: var(--q-muted); }
+.text-q-primary { color: var(--q-primary); }
+.border-q-border { border-color: var(--q-border); }
+.hover\:bg-q-card-hover:hover { background-color: var(--q-card-hover); }
+.hover\:bg-q-primary-hover:hover { background-color: var(--q-primary-hover); }
+
+/* ─── Gradient utilities ─────────────────────────────────────────────────── */
+
+.bg-q-gradient-hero { background: var(--q-gradient-hero); }
+.bg-q-gradient-blue { background: var(--q-gradient-blue); }
+.bg-q-gradient-purple { background: var(--q-gradient-purple); }
+.bg-q-gradient-green { background: var(--q-gradient-green); }
+
+/* ─── Animated gradient text ─────────────────────────────────────────────── */
+
+.text-gradient {
+  background: linear-gradient(135deg, var(--q-primary) 0%, var(--q-accent) 50%, var(--q-accent2) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 4s ease infinite alternate;
 }
 
-.bg-q-primary {
-  background-color: var(--q-primary);
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
 }
 
-.hover\:bg-q-primary-hover:hover {
-  background-color: var(--q-primary-hover);
+/* ─── Card hover glow ────────────────────────────────────────────────────── */
+
+.card-glow {
+  transition: box-shadow 0.3s ease, transform 0.2s ease, border-color 0.2s ease;
 }
 
-.bg-q-success {
-  background-color: var(--q-success);
+.card-glow:hover {
+  box-shadow: var(--q-shadow-lg), var(--q-shadow-glow);
+  transform: translateY(-3px);
+  border-color: rgba(37,99,235,0.4);
 }
 
-.hover\:bg-q-success-hover:hover {
-  background-color: var(--q-success-hover);
+/* ─── Floating animation ─────────────────────────────────────────────────── */
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
 }
 
-.bg-q-danger-soft {
-  background-color: var(--q-danger-bg);
+.float { animation: float 3s ease-in-out infinite; }
+
+/* ─── Stat counter pulse ─────────────────────────────────────────────────── */
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
-.border-q-danger {
-  border-color: var(--q-danger-border);
+/* ─── Grid pattern background ────────────────────────────────────────────── */
+
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(37,99,235,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37,99,235,0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
-.text-q-danger {
-  color: var(--q-danger-text);
+[data-theme="dark"] .bg-grid {
+  background-image:
+    linear-gradient(rgba(59,130,246,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,130,246,0.06) 1px, transparent 1px);
 }
 
-.bg-q-success-soft {
-  background-color: var(--q-success-bg);
+/* ─── Shine effect on cards ──────────────────────────────────────────────── */
+
+.card-shine {
+  position: relative;
+  overflow: hidden;
 }
 
-.border-q-success {
-  border-color: var(--q-success-border);
+.card-shine::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255,255,255,0.04) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
 }
 
-.text-q-success {
-  color: var(--q-success-text);
+.card-shine:hover::after {
+  transform: translateX(100%);
 }
 
-input,
-textarea,
-select {
-  color: var(--q-text);
+/* ─── Badge styles ───────────────────────────────────────────────────────── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.badge-blue {
+  background: rgba(37,99,235,0.1);
+  color: var(--q-primary);
+  border: 1px solid rgba(37,99,235,0.2);
+}
+
+.badge-purple {
+  background: rgba(124,58,237,0.1);
+  color: var(--q-accent2);
+  border: 1px solid rgba(124,58,237,0.2);
+}
+
+.badge-green {
+  background: rgba(16,185,129,0.1);
+  color: var(--q-success);
+  border: 1px solid rgba(16,185,129,0.2);
+}
+
+/* ─── Scrollbar styling ──────────────────────────────────────────────────── */
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--q-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--q-muted); }
+
+/* ─── Focus styles ───────────────────────────────────────────────────────── */
+
+:focus-visible {
+  outline: 2px solid var(--q-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ─── Monospace for code/slugs ───────────────────────────────────────────── */
+
+.font-mono, code, pre {
+  font-family: 'DM Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+/* ─── Smooth page transitions ────────────────────────────────────────────── */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+main { animation: fadeIn 0.3s ease-out; }
+
+/* ─── Section dividers ───────────────────────────────────────────────────── */
+
+.divider-gradient {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--q-border), transparent);
 }

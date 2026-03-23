@@ -267,6 +267,7 @@ export function buildSoftwareSchema(
   const data = buildSEOSectionData(table, item);
   const baseType =
     table === "ai_tools" ? "WebApplication" : "SoftwareApplication";
+  const siteUrl = getSiteUrl();
 
   return {
     "@context": "https://schema.org",
@@ -274,12 +275,22 @@ export function buildSoftwareSchema(
     name: item.name,
     description: item.description || data.intro,
     applicationCategory: data.applicationCategory,
-    operatingSystem: "Web",
+    operatingSystem: "Web, Browser",
+    browserRequirements: "Requires JavaScript",
     url: data.pageUrl,
+    image: `${siteUrl}/api/og?title=${encodeURIComponent(item.name)}`,
+    provider: {
+      "@type": "Organization",
+      name: "QuickFnd",
+      url: siteUrl,
+    },
     offers: {
       "@type": "Offer",
       price: "0",
       priceCurrency: "USD",
+      availability: "https://schema.org/InStock",
     },
+    featureList: data.benefits.slice(0, 3).join(", "),
+    keywords: [item.name, "free online tool", "browser tool", "QuickFnd"].join(", "),
   };
 }
