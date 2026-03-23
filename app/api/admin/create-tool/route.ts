@@ -65,28 +65,67 @@ function isWeakDescription(desc: string) {
   return desc.length < 40;
 }
 
+
+const ENGINE_CAPABILITY_MAP: Record<string, string> = {
+  "password-generator": "Generates random secure passwords — configurable length, uppercase, numbers, symbols",
+  "password-strength-checker": "Evaluates password strength — good for security analysis tools",
+  "json-formatter": "Formats, prettifies, or minifies JSON — good for any JSON manipulation tool",
+  "word-counter": "Counts words, characters, sentences, reading time — good for text analysis",
+  "uuid-generator": "Generates unique IDs (UUIDs) — good for ID/token generation tools",
+  "slug-generator": "Converts text to URL-safe slugs — good for URL/permalink/filename tools",
+  "random-string-generator": "Generates random strings with configurable options",
+  "base64-encoder": "Encodes text to Base64",
+  "base64-decoder": "Decodes Base64 back to text",
+  "url-encoder": "Encodes text for safe URL use",
+  "url-decoder": "Decodes percent-encoded URLs",
+  "text-case-converter": "Converts text between UPPER, lower, Title, sentence, slug, camelCase",
+  "text-transformer": "Applies text transformations — trim, reverse, remove spaces",
+  "code-formatter": "Formats or minifies code blocks and JSON",
+  "code-snippet-manager": "Saves and retrieves reusable code snippets in the browser",
+  "number-generator": "Generates random numbers within a configurable range",
+  "unit-converter": "Converts between units with a configurable multiplier",
+  "currency-converter": "Converts between currency pairs using live exchange rates",
+  "regex-tester": "Tests a regex pattern against text and shows matches",
+  "regex-extractor": "Extracts all regex matches from text as a list",
+  "sha256-generator": "Generates SHA-256 cryptographic hash of input text",
+  "md5-generator": "Generates MD5 hash of input text",
+  "timestamp-converter": "Converts between Unix timestamps and human-readable dates",
+  "hex-to-rgb": "Converts hex color codes to RGB values",
+  "rgb-to-hex": "Converts RGB values to hex color codes",
+  "text-to-binary": "Converts text to binary representation",
+  "binary-to-text": "Converts binary back to readable text",
+  "json-escape": "Escapes special characters for safe use inside JSON strings",
+  "json-unescape": "Unescapes JSON-encoded string content",
+  "qr-generator": "Generates QR codes from any text, URL, or data",
+  "color-picker": "Visual color picker outputting HEX, RGB, HSL values",
+  "markdown-editor": "Markdown editor with real-time HTML preview",
+  "csv-to-json": "Converts CSV data to JSON format",
+  "ip-lookup": "Looks up location, ISP, timezone for any IP address",
+};
+
 async function generateItemFromIdea(
   idea: string,
   category: AdminCategory
 ): Promise<GeneratedItem | null> {
-  const prompt = `
-Return valid JSON only.
-No markdown.
-No code fences.
+  const engineList = Object.entries(ENGINE_CAPABILITY_MAP)
+    .map(([type, desc]) => `  ${type}: ${desc}`)
+    .join("\n");
 
-Create a HIGH QUALITY QuickFnd ${category} entry.
+  const prompt = `You are a product specialist for QuickFnd, a free browser-based tools platform.
+Generate ONE high-quality tool entry for this idea: "${idea}"
 
-Idea: ${idea}
+AVAILABLE ENGINE TYPES — pick the most appropriate one:
+${engineList}
 
-STRICT RULES:
-- name must be clear and user-focused
-- slug must be SEO-friendly and specific (avoid generic words)
-- description must explain real user value (not generic filler)
-- related_slugs must be relevant and realistic
-- engine_type must match a REAL usable engine
-- DO NOT invent fake tools
+QUALITY REQUIREMENTS:
+- name: Clear, specific, user-focused (e.g. "JWT Token Decoder" not "Token Helper")
+- slug: Lowercase hyphenated, 3-5 words, matches name exactly
+- description: 2 sentences. Sentence 1: what it does. Sentence 2: who benefits and why.
+- engine_type: Must exactly match one from the list above — choose based on what the tool actually does
+- engine_config: {} for most tools, or specific config if the engine needs it (e.g. unit-converter needs multiplier)
+- related_slugs: 3 realistic related tool slugs that already exist or make sense
 
-Return exactly:
+Return JSON only, no markdown:
 {
   "name": "string",
   "slug": "string",
@@ -94,8 +133,7 @@ Return exactly:
   "related_slugs": ["string", "string", "string"],
   "engine_type": "string",
   "engine_config": {}
-}
-  `.trim();
+}`.trim();
 
   const openai = getOpenAIClient();
 
