@@ -22,6 +22,11 @@ export type ToolEngineFamily =
   | "timestamp-tools"
   | "color-tools"
   | "developer-converters"
+  | "qr-generator"
+  | "color-picker"
+  | "markdown-editor"
+  | "csv-to-json"
+  | "ip-lookup"
   | "generic-directory";
 
 export type ToolEnginePreset = {
@@ -62,6 +67,11 @@ const TOOL_PRESET_TYPES: ToolEngineType[] = [
   "binary-to-text",
   "json-escape",
   "json-unescape",
+  "qr-generator",
+  "color-picker",
+  "markdown-editor",
+  "csv-to-json",
+  "ip-lookup",
   "generic-directory",
 ];
 
