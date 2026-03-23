@@ -1,199 +1,269 @@
 import { NextResponse } from "next/server";
-import { getAdminUser } from "@/lib/admin-auth";
-import { getOpenAIClient } from "@/lib/openai-server";
 import {
-  type DemandContentType,
-  filterNewDemandSuggestions,
-  filterSupportedDemandSuggestions,
-  getDemandSignals,
-  parseDemandSuggestions,
-} from "@/lib/tool-demand-engine";
+  buildPublicPath,
+  ensureUniqueSlug,
+  findExistingBySlug,
+  getSupabaseAdmin,
+  getTable,
+  normalizeCategory,
+  type AdminCategory,
+} from "@/lib/admin-publishing";
+import { getOpenAIClient } from "@/lib/openai-server";
+import { normalizeGeneratedContent } from "@/lib/admin-content";
+import { suggestAdminEngine } from "@/lib/admin-engine-assistant";
 
-type RequestBody = {
-  theme?: string;
-  count?: number;
-  contentType?: DemandContentType;
+type GeneratedItem = {
+  name: string;
+  slug: string;
+  description: string;
+  related_slugs: string[];
+  engine_type: string;
+  engine_config?: Record<string, unknown>;
 };
+
+function normalizeGeneratedItem(
+  input: Record<string, unknown>,
+  category: AdminCategory
+): GeneratedItem {
+  const normalized = normalizeGeneratedContent(input, category);
+
+  return {
+    name: normalized.name,
+    slug: normalized.slug,
+    description: normalized.description,
+    related_slugs: normalized.related_slugs,
+    engine_type: String(normalized.engine_type || ""),
+    engine_config: normalized.engine_config,
+  };
+}
+
+function parseGeneratedItem(raw: string, category: AdminCategory): GeneratedItem | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+
+  try {
+    const parsed = JSON.parse(trimmed) as Record<string, unknown>;
+    return normalizeGeneratedItem(parsed, category);
+  } catch {
+    const match = trimmed.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+
+    try {
+      const parsed = JSON.parse(match[0]) as Record<string, unknown>;
+      return normalizeGeneratedItem(parsed, category);
+    } catch {
+      return null;
+    }
+  }
+}
+
+function isWeakSlug(slug: string) {
+  return slug.length < 5 || !slug.includes("-");
+}
+
+function isWeakDescription(desc: string) {
+  return desc.length < 40;
+}
+
+
+const ENGINE_CAPABILITY_MAP: Record<string, string> = {
+  "password-generator": "Generates random secure passwords — configurable length, uppercase, numbers, symbols",
+  "password-strength-checker": "Evaluates password strength — good for security analysis tools",
+  "json-formatter": "Formats, prettifies, or minifies JSON — good for any JSON manipulation tool",
+  "word-counter": "Counts words, characters, sentences, reading time — good for text analysis",
+  "uuid-generator": "Generates unique IDs (UUIDs) — good for ID/token generation tools",
+  "slug-generator": "Converts text to URL-safe slugs — good for URL/permalink/filename tools",
+  "random-string-generator": "Generates random strings with configurable options",
+  "base64-encoder": "Encodes text to Base64",
+  "base64-decoder": "Decodes Base64 back to text",
+  "url-encoder": "Encodes text for safe URL use",
+  "url-decoder": "Decodes percent-encoded URLs",
+  "text-case-converter": "Converts text between UPPER, lower, Title, sentence, slug, camelCase",
+  "text-transformer": "Applies text transformations — trim, reverse, remove spaces",
+  "code-formatter": "Formats or minifies code blocks and JSON",
+  "code-snippet-manager": "Saves and retrieves reusable code snippets in the browser",
+  "number-generator": "Generates random numbers within a configurable range",
+  "unit-converter": "Converts between units with a configurable multiplier",
+  "currency-converter": "Converts between currency pairs using live exchange rates",
+  "regex-tester": "Tests a regex pattern against text and shows matches",
+  "regex-extractor": "Extracts all regex matches from text as a list",
+  "sha256-generator": "Generates SHA-256 cryptographic hash of input text",
+  "md5-generator": "Generates MD5 hash of input text",
+  "timestamp-converter": "Converts between Unix timestamps and human-readable dates",
+  "hex-to-rgb": "Converts hex color codes to RGB values",
+  "rgb-to-hex": "Converts RGB values to hex color codes",
+  "text-to-binary": "Converts text to binary representation",
+  "binary-to-text": "Converts binary back to readable text",
+  "json-escape": "Escapes special characters for safe use inside JSON strings",
+  "json-unescape": "Unescapes JSON-encoded string content",
+  "qr-generator": "Generates QR codes from any text, URL, or data",
+  "color-picker": "Visual color picker outputting HEX, RGB, HSL values",
+  "markdown-editor": "Markdown editor with real-time HTML preview",
+  "csv-to-json": "Converts CSV data to JSON format",
+  "ip-lookup": "Looks up location, ISP, timezone for any IP address",
+};
+
+async function generateItemFromIdea(
+  idea: string,
+  category: AdminCategory
+): Promise<GeneratedItem | null> {
+  const engineList = Object.entries(ENGINE_CAPABILITY_MAP)
+    .map(([type, desc]) => `  ${type}: ${desc}`)
+    .join("\n");
+
+  const prompt = `You are a product specialist for QuickFnd, a free browser-based tools platform.
+Generate ONE high-quality tool entry for this idea: "${idea}"
+
+AVAILABLE ENGINE TYPES — pick the most appropriate one:
+${engineList}
+
+QUALITY REQUIREMENTS:
+- name: Clear, specific, user-focused (e.g. "JWT Token Decoder" not "Token Helper")
+- slug: Lowercase hyphenated, 3-5 words, matches name exactly
+- description: 2 sentences. Sentence 1: what it does. Sentence 2: who benefits and why.
+- engine_type: Must exactly match one from the list above — choose based on what the tool actually does
+- engine_config: {} for most tools, or specific config if the engine needs it (e.g. unit-converter needs multiplier)
+- related_slugs: 3 realistic related tool slugs that already exist or make sense
+
+Return JSON only, no markdown:
+{
+  "name": "string",
+  "slug": "string",
+  "description": "string",
+  "related_slugs": ["string", "string", "string"],
+  "engine_type": "string",
+  "engine_config": {}
+}`.trim();
+
+  const openai = getOpenAIClient();
+
+  const response = await openai.responses.create({
+    model: "gpt-4.1-mini",
+    input: [{ role: "system", content: prompt }],
+  });
+
+  return parseGeneratedItem(response.output_text || "", category);
+}
 
 export async function POST(req: Request) {
   try {
-    const adminUser = await getAdminUser();
+    const body = (await req.json()) as Record<string, unknown>;
 
-    if (!adminUser) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    const idea = String(body.idea || "").trim();
+    const category = normalizeCategory(body.category);
+    const requestId = body.requestId ? Number(body.requestId) : null;
+
+    let item: GeneratedItem | null = null;
+
+    const hasStructuredInput =
+      String(body.name || "").trim() ||
+      String(body.slug || "").trim() ||
+      String(body.description || "").trim();
+
+    if (hasStructuredInput) {
+      item = normalizeGeneratedItem(body, category);
+    } else if (idea) {
+      item = await generateItemFromIdea(idea, category);
     }
 
-    const body = (await req.json()) as RequestBody;
-    const theme = String(body.theme || "").trim();
-    const count = Math.max(5, Math.min(40, Number(body.count) || 15));
-    const contentType =
-      body.contentType === "calculators" || body.contentType === "ai_tools"
-        ? body.contentType
-        : "tools";
-
-    if (!theme) {
-      return NextResponse.json({ error: "Theme is required." }, { status: 400 });
+    if (!item || !item.name || !item.slug || !item.description) {
+      return NextResponse.json(
+        { error: "Name and description are required, or provide a valid idea." },
+        { status: 400 }
+      );
     }
 
-    const signals = await getDemandSignals(contentType);
-    const openai = getOpenAIClient();
-
-    const topUsed = Object.entries(signals.topUsage)
-      .sort((a, b) => b[1].total - a[1].total)
-      .slice(0, 20)
-      .map(([slug, metrics]) => `${slug} (total:${metrics.total}, month:${metrics.thisMonth})`)
-      .join("\n");
-
-    const recentRequests = signals.requests
-      .slice(0, 30)
-      .map((row) => {
-        return `name:${row.requested_name || ""} | category:${row.requested_category || ""} | verdict:${row.ai_verdict || ""} | engine:${row.recommended_engine || ""} | description:${row.description || ""}`;
-      })
-      .join("\n");
-
-    const existingItems = signals.existingItems
-      .slice(0, 300)
-      .map((row) => `${row.slug} | ${row.name} | ${row.engine_type || ""}`)
-      .join("\n");
-
-    const systemPrompt =
-      contentType === "tools"
-        ? `
-Return valid JSON only.
-No markdown.
-No code fences.
-
-Return exactly this shape:
-{
-  "items": [
-    {
-      "content_type": "tools",
-      "name": "string",
-      "slug": "string",
-      "description": "string",
-      "related_slugs": ["string", "string", "string"],
-      "engine_type": "string",
-      "engine_config": {},
-      "demand_score": 1,
-      "demand_reason": "string"
-    }
-  ]
-}
-
-Task:
-Generate ${count} high-potential QuickFnd tool ideas for this niche/theme: ${theme}
-
-Use these decision inputs:
-1. Existing published tools
-2. Recent user requests
-3. Current top usage patterns
-4. Only supported engine-backed tools
-
-Rules:
-- content_type must always be "tools"
-- Only use these exact supported engine_type values:
-${signals.supportedEngineTypes.join("\n")}
-- Suggest tools with strong search/demand potential inside the requested niche.
-- Prefer gaps not already covered by existing tools.
-- demand_score must be 1 to 100.
-- demand_reason must be one concise sentence.
-- name should be product-ready.
-- slug must be lowercase and hyphen-separated.
-- description should be 2 concise SEO-friendly sentences.
-- related_slugs should contain 3 to 6 realistic related slugs.
-- engine_config should usually be {} unless needed.
-- Avoid duplicates and avoid already existing slugs when possible.
-          `.trim()
-        : `
-Return valid JSON only.
-No markdown.
-No code fences.
-
-Return exactly this shape:
-{
-  "items": [
-    {
-      "content_type": "${contentType}",
-      "name": "string",
-      "slug": "string",
-      "description": "string",
-      "demand_score": 1,
-      "demand_reason": "string"
-    }
-  ]
-}
-
-Task:
-Generate ${count} high-potential QuickFnd ${
-            contentType === "calculators" ? "calculator" : "AI tool"
-          } ideas for this niche/theme: ${theme}
-
-Use these decision inputs:
-1. Existing published ${contentType}
-2. Recent user requests
-3. Current top usage patterns
-
-Rules:
-- content_type must always be "${contentType}"
-- Do not include engine_type
-- Do not include related_slugs
-- Name should be product-ready.
-- slug must be lowercase and hyphen-separated.
-- description should be 2 concise SEO-friendly sentences.
-- demand_score must be 1 to 100.
-- demand_reason must be one concise sentence.
-- Avoid duplicates and avoid already existing slugs when possible.
-          `.trim();
-
-    const response = await openai.responses.create({
-      model: "gpt-4.1-mini",
-      input: [
+    // 🔥 QUALITY GUARD
+    if (isWeakSlug(item.slug) || isWeakDescription(item.description)) {
+      return NextResponse.json(
         {
-          role: "system",
-          content: systemPrompt,
+          error:
+            "Generated item is too weak (slug or description). Please refine the idea.",
         },
-        {
-          role: "user",
-          content: `
-NICHE / THEME:
-${theme}
+        { status: 400 }
+      );
+    }
 
-CURRENT EXISTING ITEMS:
-${existingItems || "none"}
-
-RECENT REQUESTS:
-${recentRequests || "none"}
-
-TOP USAGE SIGNALS:
-${topUsed || "none"}
-          `.trim(),
-        },
-      ],
+    const suggestion = suggestAdminEngine(category, {
+      name: item.name,
+      slug: item.slug,
+      description: item.description,
+      engine_type: body.engine_type ?? item.engine_type,
+      engine_config: body.engine_config ?? item.engine_config,
     });
 
-    const raw = response.output_text || "";
-    const parsed = parseDemandSuggestions(raw, contentType);
-    const supported = filterSupportedDemandSuggestions(parsed, contentType);
-    const fresh = filterNewDemandSuggestions(supported, signals.existingItems);
+    if (!suggestion.engine_type) {
+      return NextResponse.json(
+        { error: "No valid engine assigned. Cannot create item." },
+        { status: 400 }
+      );
+    }
+
+    if (category !== "ai-tool" && !suggestion.is_supported) {
+      return NextResponse.json(
+        {
+          error:
+            "This item does not match a real working engine. Avoid publishing fake tools.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const existing = await findExistingBySlug(category, item.slug);
+    if (existing) {
+      const path = buildPublicPath(category, item.slug);
+
+      return NextResponse.json({
+        success: true,
+        alreadyExists: true,
+        slug: item.slug,
+        table: getTable(category),
+        path,
+        engine_type: suggestion.engine_type,
+        engine_config: suggestion.engine_config,
+        engine_reason: suggestion.reason,
+      });
+    }
+
+    const uniqueSlug = await ensureUniqueSlug(category, item.slug);
+    const table = getTable(category);
+
+    const payload = {
+      name: item.name,
+      slug: uniqueSlug,
+      description: item.description,
+      related_slugs: item.related_slugs,
+      engine_type: suggestion.engine_type,
+      engine_config: suggestion.engine_config,
+    };
+
+    const supabaseAdmin = getSupabaseAdmin();
+    const { error } = await supabaseAdmin.from(table).insert([payload]);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
 
     return NextResponse.json({
       success: true,
-      theme,
-      contentType,
-      suggestions: fresh,
-      generatedCount: parsed.length,
-      supportedCount: supported.length,
-      newCount: fresh.length,
+      created: true,
+      slug: uniqueSlug,
+      table,
+      path: buildPublicPath(category, uniqueSlug),
+      engine_type: suggestion.engine_type,
+      engine_config: suggestion.engine_config,
+      engine_reason: suggestion.reason,
+      quality: {
+        strong_match: suggestion.is_supported,
+      },
     });
   } catch (error) {
-    console.error("tool-demand route error:", error);
+    console.error("create-tool route error:", error);
 
     return NextResponse.json(
       {
         error:
-          error instanceof Error
-            ? error.message
-            : "Failed to generate demand suggestions.",
+          error instanceof Error ? error.message : "Failed to create tool.",
       },
       { status: 500 }
     );
