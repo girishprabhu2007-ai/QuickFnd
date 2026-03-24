@@ -1100,6 +1100,63 @@ function FormulaCalculator({
           },
         ];
 
+      case "time-conversion":
+        return [
+          { key: "value", label: "Value to convert", placeholder: "60" },
+          { key: "from_unit", label: "From unit (seconds/minutes/hours/days/weeks)", placeholder: "minutes" },
+          { key: "to_unit", label: "To unit (seconds/minutes/hours/days/weeks)", placeholder: "hours" },
+        ];
+
+      case "datetime-difference":
+        return [
+          { key: "start_date", label: "Start date (YYYY-MM-DD)", placeholder: "2024-01-01" },
+          { key: "end_date", label: "End date (YYYY-MM-DD)", placeholder: "2024-12-31" },
+        ];
+
+      case "shift-hours":
+        return [
+          { key: "start_hour", label: "Shift start (24h, e.g. 9 for 9am)", placeholder: "9" },
+          { key: "end_hour", label: "Shift end (24h, e.g. 17 for 5pm)", placeholder: "17" },
+          { key: "break_minutes", label: "Break minutes", placeholder: "30" },
+        ];
+
+      case "sleep-cycle":
+        return [
+          { key: "sleep_time", label: "Bedtime (24h hour, e.g. 23 for 11pm)", placeholder: "23" },
+          { key: "cycles", label: "Sleep cycles (each ~90 min, usually 5-6)", placeholder: "5" },
+        ];
+
+      case "project-time-estimator":
+        return [
+          { key: "tasks", label: "Number of tasks", placeholder: "10" },
+          { key: "hours_per_task", label: "Hours per task (estimate)", placeholder: "2" },
+          { key: "buffer_pct", label: "Buffer % (e.g. 20 for 20% extra)", placeholder: "20" },
+        ];
+
+      case "countdown":
+        return [
+          { key: "target_days", label: "Days until the event", placeholder: "30" },
+          { key: "hours_per_day", label: "Working hours per day", placeholder: "8" },
+        ];
+
+      case "pomodoro":
+        return [
+          { key: "focus_minutes", label: "Focus session (minutes)", placeholder: "25" },
+          { key: "break_minutes", label: "Short break (minutes)", placeholder: "5" },
+          { key: "sessions", label: "Number of sessions", placeholder: "4" },
+        ];
+
+      case "timezone-difference":
+        return [
+          { key: "offset_a", label: "Timezone A offset from UTC (e.g. 5.5 for IST)", placeholder: "5.5" },
+          { key: "offset_b", label: "Timezone B offset from UTC (e.g. -5 for EST)", placeholder: "-5" },
+        ];
+
+      case "unix-timestamp":
+        return [
+          { key: "timestamp", label: "Unix timestamp (seconds since 1970)", placeholder: "1700000000" },
+        ];
+
       case "probability":
       case "metric-ratio":
       default:
@@ -1183,6 +1240,147 @@ function FormulaCalculator({
           "This calculator assumes the entered activities are mutually exclusive.",
           "You can use it for routine planning, work-life balance checks, and schedule stress testing.",
         ],
+      };
+    }
+
+    if (preset === "time-conversion") {
+      const unitMap: Record<string, number> = {
+        seconds: 1, second: 1,
+        minutes: 60, minute: 60,
+        hours: 3600, hour: 3600,
+        days: 86400, day: 86400,
+        weeks: 604800, week: 604800,
+      };
+      const val = Number(values.value);
+      const from = (values.from_unit || "minutes").toLowerCase().trim();
+      const to = (values.to_unit || "hours").toLowerCase().trim();
+      if (!Number.isFinite(val) || !unitMap[from] || !unitMap[to]) return null;
+      const result = (val * unitMap[from]) / unitMap[to];
+      return {
+        primary: result.toFixed(4).replace(/\.?0+$/, ""),
+        secondary: to,
+        insight: `${val} ${from} = ${result.toFixed(4).replace(/\.?0+$/, "")} ${to}`,
+        recommendation: "Useful for converting between time units in scheduling, development, and planning.",
+        notes: ["Supported units: seconds, minutes, hours, days, weeks"],
+      };
+    }
+
+    if (preset === "datetime-difference") {
+      const start = new Date(values.start_date || "");
+      const end = new Date(values.end_date || "");
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+      const diffMs = end.getTime() - start.getTime();
+      const days = Math.abs(Math.floor(diffMs / 86400000));
+      const weeks = Math.floor(days / 7);
+      const months = Math.floor(days / 30.44);
+      return {
+        primary: String(days),
+        secondary: "days difference",
+        extra: `${weeks} weeks · ${months} months`,
+        insight: days === 0 ? "Same date" : `${days} days between the two dates`,
+        recommendation: "Use for project timelines, deadlines, and date range calculations.",
+        notes: ["Negative values mean the end date is before the start date"],
+      };
+    }
+
+    if (preset === "shift-hours") {
+      const start = Number(values.start_hour);
+      const end = Number(values.end_hour);
+      const brk = Number(values.break_minutes || 0);
+      if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+      let totalMins = (end - start) * 60 - brk;
+      if (totalMins < 0) totalMins += 24 * 60;
+      const hrs = Math.floor(totalMins / 60);
+      const mins = totalMins % 60;
+      return {
+        primary: `${hrs}h ${mins}m`,
+        secondary: "working time",
+        insight: `${hrs} hours ${mins} minutes of work after ${brk} minute break`,
+        recommendation: "Use for shift planning, payroll calculations, and scheduling.",
+        notes: ["Handles overnight shifts automatically"],
+      };
+    }
+
+    if (preset === "sleep-cycle") {
+      const bedtime = Number(values.sleep_time);
+      const cycles = Number(values.cycles || 5);
+      if (!Number.isFinite(bedtime) || !Number.isFinite(cycles)) return null;
+      const totalMinutes = cycles * 90;
+      const wakeHour = (bedtime + Math.floor(totalMinutes / 60)) % 24;
+      const wakeMins = totalMinutes % 60;
+      return {
+        primary: `${wakeHour}:${String(wakeMins).padStart(2, "0")}`,
+        secondary: "optimal wake time",
+        insight: `After ${cycles} sleep cycles (${totalMinutes} minutes), wake at ${wakeHour}:${String(wakeMins).padStart(2, "0")}`,
+        recommendation: "Wake between sleep cycles to feel more refreshed.",
+        notes: ["Each sleep cycle is approximately 90 minutes", "Most adults need 5-6 cycles (7.5-9 hours)"],
+      };
+    }
+
+    if (preset === "project-time-estimator") {
+      const tasks = Number(values.tasks);
+      const hoursPerTask = Number(values.hours_per_task);
+      const buffer = Number(values.buffer_pct || 0);
+      if (!Number.isFinite(tasks) || !Number.isFinite(hoursPerTask)) return null;
+      const base = tasks * hoursPerTask;
+      const total = base * (1 + buffer / 100);
+      return {
+        primary: total.toFixed(1),
+        secondary: "total hours estimated",
+        extra: `Base: ${base}h + ${buffer}% buffer = ${total.toFixed(1)}h`,
+        insight: `With ${buffer}% buffer, ${tasks} tasks at ${hoursPerTask}h each = ${total.toFixed(1)} hours total`,
+        recommendation: "Always add a buffer — software projects typically need 20-30% extra time.",
+        notes: ["Buffer accounts for meetings, debugging, and unexpected complexity"],
+      };
+    }
+
+    if (preset === "countdown") {
+      const days = Number(values.target_days);
+      const hpd = Number(values.hours_per_day || 8);
+      if (!Number.isFinite(days) || !Number.isFinite(hpd)) return null;
+      const totalHours = days * hpd;
+      const weeks = Math.floor(days / 7);
+      return {
+        primary: String(days),
+        secondary: "days remaining",
+        extra: `${totalHours} working hours · ${weeks} weeks`,
+        insight: `${days} days = ${totalHours} working hours at ${hpd}h/day`,
+        recommendation: "Break large goals into weekly milestones for better progress tracking.",
+        notes: ["Working hours calculated based on your hours-per-day setting"],
+      };
+    }
+
+    if (preset === "pomodoro") {
+      const focus = Number(values.focus_minutes || 25);
+      const brk = Number(values.break_minutes || 5);
+      const sessions = Number(values.sessions || 4);
+      if (!Number.isFinite(focus) || !Number.isFinite(brk) || !Number.isFinite(sessions)) return null;
+      const totalMinutes = sessions * focus + (sessions - 1) * brk;
+      const longBreak = 15;
+      const grandTotal = totalMinutes + longBreak;
+      return {
+        primary: `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`,
+        secondary: "total focus time",
+        extra: `Full cycle with long break: ${Math.floor(grandTotal / 60)}h ${grandTotal % 60}m`,
+        insight: `${sessions} × ${focus}min focus + ${sessions - 1} × ${brk}min breaks = ${totalMinutes} minutes`,
+        recommendation: "After every 4 Pomodoros, take a longer 15-30 minute break.",
+        notes: ["The Pomodoro Technique improves focus by breaking work into timed intervals"],
+      };
+    }
+
+    if (preset === "timezone-difference") {
+      const a = Number(values.offset_a);
+      const b = Number(values.offset_b);
+      if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+      const diff = Math.abs(a - b);
+      const diffH = Math.floor(diff);
+      const diffM = Math.round((diff - diffH) * 60);
+      return {
+        primary: `${diffH}h ${diffM}m`,
+        secondary: "time difference",
+        insight: `UTC+${a} and UTC+${b} are ${diffH}h ${diffM}m apart`,
+        recommendation: "Use for scheduling meetings across time zones.",
+        notes: ["Positive UTC offset = ahead of UTC, Negative = behind UTC", "IST = UTC+5:30, EST = UTC-5, PST = UTC-8"],
       };
     }
 
