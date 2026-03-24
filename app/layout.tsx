@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { DM_Sans, DM_Mono } from "next/font/google";
 import "./globals.css";
 
-// Load fonts via next/font — self-hosted on Vercel edge, no render blocking
 const dmSans = DM_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -160,13 +159,11 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${dmSans.variable} ${dmMono.variable}`}>
       <head>
-        {/* ── Performance: preconnect to critical origins ─────────────── */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        {/* Performance: preconnect & dns-prefetch */}
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
-
-        {/* ── Search engine verification ───────────────────────────────── */}
+        {/* Search engine verification ───────────────────────────────── */}
         {googleVerification && (
           <meta name="google-site-verification" content={googleVerification} />
         )}
@@ -213,16 +210,18 @@ export default async function RootLayout({
         {/* ── Google AdSense ───────────────────────────────────────────── */}
         {hasAdsense && (
           <script
-            async
-            defer
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
-            crossOrigin="anonymous"
-          />
-        )}
-        {hasAdsense && (
-          <script
             dangerouslySetInnerHTML={{
-              __html: `window.__ADSENSE_CLIENT__="${ADSENSE_CLIENT}";`,
+              __html: `
+                window.__ADSENSE_CLIENT__="${ADSENSE_CLIENT}";
+                window.addEventListener('load', function() {
+                  setTimeout(function() {
+                    var s = document.createElement('script');
+                    s.async = true; s.crossOrigin = 'anonymous';
+                    s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}';
+                    document.head.appendChild(s);
+                  }, 3000);
+                });
+              `,
             }}
           />
         )}

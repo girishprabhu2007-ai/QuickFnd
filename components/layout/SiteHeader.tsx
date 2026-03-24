@@ -23,7 +23,7 @@ export default function SiteHeader() {
 
   return (
     <header
-      className="sticky top-0 z-50 border-b border-q-border bg-q-card/95 backdrop-blur-xl"
+      className="sticky top-0 z-50 border-b border-q-border bg-q-card"
       style={{ boxShadow: "0 1px 0 var(--q-border), 0 4px 24px rgba(0,0,0,0.05)" }}
     >
       <div className="mx-auto flex max-w-7xl items-center gap-6 px-4 py-3 sm:px-6 lg:px-8">

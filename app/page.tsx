@@ -14,7 +14,7 @@ import {
 import { getTopicCollections } from "@/lib/programmatic-seo";
 import { getSiteUrl } from "@/lib/site-url";
 
-export const revalidate = 300;
+export const revalidate = 60; // ISR: rebuild every 60s, serve cached immediately
 
 const siteUrl = getSiteUrl();
 
@@ -109,12 +109,10 @@ export default async function HomePage() {
 
       {/* ── Hero ───────────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden">
-        {/* Background glow orbs */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -left-32 -top-32 h-[500px] w-[500px] rounded-full opacity-[0.06]"
-            style={{ background: "radial-gradient(circle, var(--q-primary) 0%, transparent 70%)" }} />
-          <div className="absolute -right-32 top-20 h-[400px] w-[400px] rounded-full opacity-[0.04]"
-            style={{ background: "radial-gradient(circle, var(--q-accent2) 0%, transparent 70%)" }} />
+        {/* Background glow — CSS only, no JS, lightweight */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+          <div className="absolute -left-32 -top-32 h-[400px] w-[400px] rounded-full opacity-[0.05]"
+            style={{ background: "radial-gradient(circle, #2563eb 0%, transparent 70%)" }} />
         </div>
 
         <div className="relative mx-auto max-w-7xl px-4 pb-8 pt-12 sm:px-6 lg:px-8 lg:pt-16">
