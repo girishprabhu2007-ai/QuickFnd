@@ -1103,8 +1103,8 @@ function FormulaCalculator({
       case "time-conversion":
         return [
           { key: "value", label: "Value to convert", placeholder: "60" },
-          { key: "from_unit", label: "From unit (seconds/minutes/hours/days/weeks)", placeholder: "minutes" },
-          { key: "to_unit", label: "To unit (seconds/minutes/hours/days/weeks)", placeholder: "hours" },
+          { key: "from_unit", label: "From unit", placeholder: "minutes" },
+          { key: "to_unit", label: "To unit", placeholder: "hours" },
         ];
 
       case "datetime-difference":
@@ -1245,23 +1245,20 @@ function FormulaCalculator({
 
     if (preset === "time-conversion") {
       const unitMap: Record<string, number> = {
-        seconds: 1, second: 1,
-        minutes: 60, minute: 60,
-        hours: 3600, hour: 3600,
-        days: 86400, day: 86400,
-        weeks: 604800, week: 604800,
+        seconds: 1, minutes: 60, hours: 3600, days: 86400, weeks: 604800,
       };
       const val = Number(values.value);
       const from = (values.from_unit || "minutes").toLowerCase().trim();
       const to = (values.to_unit || "hours").toLowerCase().trim();
       if (!Number.isFinite(val) || !unitMap[from] || !unitMap[to]) return null;
-      const result = (val * unitMap[from]) / unitMap[to];
+      const converted = (val * unitMap[from]) / unitMap[to];
+      const display = Number.isInteger(converted) ? String(converted) : converted.toFixed(6).replace(/0+$/, "");
       return {
-        primary: result.toFixed(4).replace(/\.?0+$/, ""),
+        primary: display,
         secondary: to,
-        insight: `${val} ${from} = ${result.toFixed(4).replace(/\.?0+$/, "")} ${to}`,
-        recommendation: "Useful for converting between time units in scheduling, development, and planning.",
-        notes: ["Supported units: seconds, minutes, hours, days, weeks"],
+        insight: `${val} ${from} = ${display} ${to}`,
+        recommendation: "Convert time units for scheduling, development, and planning tasks.",
+        notes: ["Supported: seconds, minutes, hours, days, weeks"],
       };
     }
 
@@ -1600,21 +1597,36 @@ function FormulaCalculator({
                   )}
                 </>
               ) : (
-                fieldDefinitions.map((field) => (
-                  <input
-                    key={field.key}
-                    type="number"
-                    value={values[field.key] || ""}
-                    onChange={(e) =>
-                      setValues((prev) => ({
-                        ...prev,
-                        [field.key]: e.target.value,
-                      }))
-                    }
-                    placeholder={field.placeholder || field.label}
-                    className={fieldClass()}
-                  />
-                ))
+                fieldDefinitions.map((field) => {
+                  const isUnitField = field.key === "from_unit" || field.key === "to_unit";
+                  const isDateField = field.key === "start_date" || field.key === "end_date";
+                  return (
+                    <div key={field.key} className="flex flex-col gap-1">
+                      {field.label && (
+                        <label className="text-xs font-medium text-q-muted px-1">{field.label}</label>
+                      )}
+                      {isUnitField ? (
+                        <select
+                          value={values[field.key] || field.placeholder || "minutes"}
+                          onChange={(e) => setValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                          className={fieldClass()}
+                        >
+                          {["seconds","minutes","hours","days","weeks"].map(u => (
+                            <option key={u} value={u}>{u}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type={isDateField ? "date" : "number"}
+                          value={values[field.key] || ""}
+                          onChange={(e) => setValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                          placeholder={field.placeholder || field.label}
+                          className={fieldClass()}
+                        />
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
           </InputPanel>
