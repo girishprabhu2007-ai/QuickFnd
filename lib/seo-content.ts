@@ -561,6 +561,57 @@ export function buildSEOSectionData(table: PublicTable, item: PublicContentItem)
   };
 }
 
+// ─── DB-powered async builder ────────────────────────────────────────────────
+// Checks seo_content table first, falls back to hardcoded UNIQUE_CONTENT, 
+// then falls back to generic. Call this from page.tsx instead of buildSEOSectionData
+// when you want DB-generated content to take precedence.
+
+import { getSupabaseAdmin } from "@/lib/admin-publishing";
+
+export async function buildSEOSectionDataFromDB(
+  table: PublicTable,
+  item: PublicContentItem
+): Promise<SEOSectionData> {
+  // Try to fetch from seo_content DB table
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data } = await supabase
+      .from("seo_content")
+      .select("intro, benefits, steps, use_cases, faqs")
+      .eq("slug", item.slug)
+      .eq("table_name", table)
+      .maybeSingle();
+
+    if (data) {
+      // DB content found — use it
+      const siteUrl = getSiteUrl();
+      const categoryLabel = getCategoryLabel(table);
+      const categoryPath = getCategoryPath(table);
+      const categoryTitle = table === "tools" ? "Tools" : table === "calculators" ? "Calculators" : "AI Tools";
+      const applicationCategory = table === "tools" ? "UtilitiesApplication" : table === "calculators" ? "FinanceApplication" : "BusinessApplication";
+      const pageUrl = table === "tools" ? `${siteUrl}/tools/${item.slug}` : table === "calculators" ? `${siteUrl}/calculators/${item.slug}` : `${siteUrl}/ai-tools/${item.slug}`;
+      const breadcrumbs: BreadcrumbItem[] = [
+        { name: "Home", url: siteUrl },
+        { name: categoryTitle, url: `${siteUrl}${categoryPath}` },
+        { name: item.name, url: pageUrl },
+      ];
+      return {
+        categoryLabel, categoryPath, categoryTitle, pageUrl, breadcrumbs, applicationCategory,
+        intro: data.intro || buildGenericIntro(table, item),
+        benefits: Array.isArray(data.benefits) ? data.benefits : buildGenericBenefits(table, item),
+        steps: Array.isArray(data.steps) ? data.steps : buildGenericSteps(table, item),
+        useCases: Array.isArray(data.use_cases) ? data.use_cases : buildGenericUseCases(table),
+        faqs: Array.isArray(data.faqs) ? data.faqs : buildGenericFAQs(table, item),
+      };
+    }
+  } catch {
+    // DB fetch failed — fall through to sync version
+  }
+
+  // Fall back to hardcoded + generic
+  return buildSEOSectionData(table, item);
+}
+
 // ─── Schema builders ──────────────────────────────────────────────────────────
 
 export function buildBreadcrumbSchema(table: PublicTable, item: PublicContentItem) {

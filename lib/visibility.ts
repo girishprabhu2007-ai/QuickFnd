@@ -1,31 +1,25 @@
 /**
- * lib/visibility.ts
- * ─────────────────────────────────────────────────────────────────────────────
- * SINGLE SOURCE OF TRUTH for what is publicly visible across tools,
- * calculators, and ai_tools.
- *
+ * lib/visibility.ts — SINGLE SOURCE OF TRUTH for public visibility
+ * 
  * Rules applied in order:
  * 1. Item must have a non-empty slug
- * 2. Slug must not be in the hard-hidden list for its content type
- * 3. engine_type must not be a placeholder value
- * 4. (AI tools only) engine_config task must not be a generic/empty value
+ * 2. Slug must not be in the hard-hidden list
+ * 3. engine_type must not be a placeholder
+ * 4. (AI tools only) engine_config.task must not be generic
  *
- * All count displays, listing pages, sitemaps, and sidebars must go through
- * these functions. Never count raw DB results.
+ * HIDDEN STRATEGY:
+ * - Keep ONE canonical tool per function (e.g. "word-counter" not "smart-word-counter")
+ * - Hide all platform-specific keyword variants (Twitter X, Instagram Y, YouTube Z)
+ * - Hide tools that are just renamed versions of existing tools
+ * - Hide tools with no real engine (generic-directory only)
  */
 
 import type { PublicContentItem } from "@/lib/content-pages";
-
-// ─── Shared helpers ──────────────────────────────────────────────────────────
 
 function normalize(value: string | null | undefined): string {
   return String(value ?? "").trim().toLowerCase();
 }
 
-/**
- * engine_type values that indicate a placeholder or unfinished item.
- * These are never shown publicly regardless of content type.
- */
 const PLACEHOLDER_ENGINE_TYPES = new Set<string>([
   "",
   "auto",
@@ -36,14 +30,16 @@ function isPlaceholderEngine(item: PublicContentItem): boolean {
   return PLACEHOLDER_ENGINE_TYPES.has(normalize(item.engine_type));
 }
 
-// ─── TOOLS visibility ────────────────────────────────────────────────────────
+// ─── TOOLS — hard hidden list ─────────────────────────────────────────────────
 
-/**
- * Slugs that are confirmed duplicates or thin variants of a canonical tool.
- * Add here when a cleanup pass identifies near-clones.
- */
 const TOOL_HARD_HIDDEN = new Set<string>([
-  // ── URL Encoder duplicates (keep canonical: url-encoder) ─────────────────
+
+  // ── Base64 duplicates (keep: base64-encoder) ──────────────────────────────
+  "base64-decoder",
+  "base64-image-encoder",
+  "base64-file-encoder",
+
+  // ── URL Encoder duplicates (keep: url-encoder) ────────────────────────────
   "url-decoder",
   "url-encoding-and-decoding-tool",
   "seo-url-encoder",
@@ -51,12 +47,12 @@ const TOOL_HARD_HIDDEN = new Set<string>([
   "url-encoder-for-seo",
   "url-encoder-for-campaign-links",
   "ig-story-url-encoder",
-  "twitter-url-encoder",
+  "tweet-url-encoder",
   "youtube-url-encoder",
   "amazon-url-encoder",
   "facebook-url-encoder",
 
-  // ── Word Counter duplicates (keep canonical: word-counter) ────────────────
+  // ── Word Counter duplicates (keep: word-counter) ──────────────────────────
   "smart-word-counter",
   "hashtag-word-counter",
   "twitter-bio-word-counter",
@@ -67,15 +63,19 @@ const TOOL_HARD_HIDDEN = new Set<string>([
   "youtube-description-word-counter",
   "seo-meta-description-length-checker",
   "tweet-character-counter",
+  "meta-description-word-counter",
+  "video-description-word-counter",
+  "word-count-assistant",
 
-  // ── JSON Formatter duplicates (keep canonical: json-formatter) ────────────
+  // ── JSON Formatter duplicates (keep: json-formatter) ─────────────────────
   "json-code-beautifier",
   "json-seo-schema-formatter",
   "twitter-content-json-formatter",
   "json-pretty-printer",
   "json-minifier",
+  "tweet-json-formatter",
 
-  // ── Password Generator duplicates (keep canonical: password-generator) ────
+  // ── Password duplicates (keep: password-generator, password-strength-checker)
   "human-readable-password-generator",
   "random-pronounceable-password-generator",
   "secure-password-creator",
@@ -83,53 +83,81 @@ const TOOL_HARD_HIDDEN = new Set<string>([
   "instagram-password-generator",
   "wifi-password-generator",
   "pin-generator",
+  "twitter-bio-password-strength",
 
-  // ── Base64 duplicates (keep canonical: base64-encoder) ───────────────────
-  "base64-decoder",
-  "base64-image-encoder",
-  "base64-file-encoder",
-
-  // ── Slug Generator duplicates (keep canonical: slug-generator) ───────────
+  // ── Slug Generator duplicates (keep: slug-generator) ─────────────────────
   "seo-keyword-slug-generator",
   "url-slug-generator",
   "wordpress-slug-generator",
   "youtube-slug-generator",
+  "twitter-username-slugifier",
 
-  // ── Text Case duplicates (keep canonical: text-case-converter) ───────────
+  // ── Text Case duplicates (keep: text-case-converter) ─────────────────────
   "text-transformer",
   "lowercase-text-converter",
   "uppercase-text-converter",
-  "title-case-converter",
-  "sentence-case-converter",
-  "camelcase-converter",
+  "title-case-formatter",
+  "sentence-capitalizer",
+  "case-style-converter",
+  "advanced-text-transformer",
+  "youtube-comment-text-transformer",
+  "thumbnail-caption-transformer",
+  "text-case-conversion-suite",
 
-  // ── Timestamp duplicates (keep canonical: timestamp-converter) ───────────
+  // ── Timestamp duplicates (keep: timestamp-converter) ─────────────────────
   "timestamp-to-date-converter",
   "tweet-timestamp-converter",
   "unix-timestamp-converter",
   "epoch-converter",
 
-  // ── Hash duplicates (keep canonical: sha256-generator) ───────────────────
+  // ── Hash duplicates (keep: sha256-generator, md5-generator) ──────────────
   "cryptocurrency-price-hash-generator",
   "tweet-hash-generator",
   "instagram-post-hash-generator",
   "sha256-hash-checker",
-  "md5-hash-generator",
+  "twitter-md5-hash-generator",
 
-  // ── Currency/Arbitrage junk ───────────────────────────────────────────────
+  // ── Currency/arbitrage junk ───────────────────────────────────────────────
   "currency-arbitrage-calculator",
   "forex-arbitrage-calculator",
 
-  // ── Other thin keyword variants ───────────────────────────────────────────
-  "advanced-text-transformer",
+  // ── Twitter keyword variants (thin, no unique function) ──────────────────
   "twitter-bio-formatter",
+  "twitter-hashtag-formatter",
+  "twitter-thread-formatter",
+  "twitter-username-formatter",
+  "tweet-formatter",
+
+  // ── Instagram keyword variants ────────────────────────────────────────────
   "instagram-bio-formatter",
+  "instagram-caption-formatter",
+  "instagram-hashtag-formatter",
+
+  // ── YouTube keyword variants (keep genuine tools only) ───────────────────
   "youtube-description-formatter",
+  "youtube-hashtag-formatter",
+  "youtube-title-formatter",
+
+  // ── LinkedIn/Reddit/other social variants ─────────────────────────────────
   "linkedin-headline-formatter",
+  "linkedin-post-formatter",
+  "reddit-post-formatter",
+
+  // ── SEO formatter variants (thin) ─────────────────────────────────────────
   "seo-title-formatter",
   "meta-description-formatter",
-  "twitter-thread-formatter",
-  "reddit-post-formatter",
+  "seo-text-transformer",
+  "headline-enhancer",
+  "text-simplifier",
+  "passive-voice-detector",
+  "sentence-capitalizer",
+
+  // ── Random string variants (keep: random-string-generator) ───────────────
+  "random-string-generator-with-custom-rules",
+
+  // ── Other confirmed thin/duplicate tools ──────────────────────────────────
+  "meta-description-generator",
+  "keyword-density-analyzer",
 ]);
 
 export function isToolVisible(item: PublicContentItem): boolean {
@@ -144,27 +172,24 @@ export function filterVisibleTools<T extends PublicContentItem>(items: T[]): T[]
   return items.filter((item) => isToolVisible(item));
 }
 
-// ─── CALCULATORS visibility ──────────────────────────────────────────────────
+// ─── CALCULATORS — hard hidden list ──────────────────────────────────────────
 
-/**
- * Calculator slugs that are duplicates or should be hidden.
- */
 const CALCULATOR_HARD_HIDDEN = new Set<string>([
-  // ── Generator calculators (niche junk, not useful to general users) ───────
+  // Generator calculators (low intent)
   "generator-fuel-efficiency-calculator",
   "generator-power-output-percentage-calculator",
   "generator-age-calculator",
   "generator-runtime-calculator",
   "generator-load-calculator",
 
-  // ── SEO calculators (thin, very low search intent) ────────────────────────
+  // SEO calculators (thin)
   "seo-campaign-roi-calculator",
   "backlink-growth-rate-calculator",
   "seo-keyword-density-calculator",
   "seo-strength-calculator",
   "domain-authority-estimator",
 
-  // ── Developer metric calculators (keep genuine ones, hide junk) ──────────
+  // Dev metric calculators (obscure, low search intent)
   "merge-conflict-probability-calculator",
   "code-review-efficiency-calculator",
   "ci-build-time-calculator",
@@ -185,18 +210,10 @@ export function filterVisibleCalculators<T extends PublicContentItem>(items: T[]
   return items.filter((item) => isCalculatorVisible(item));
 }
 
-// ─── AI TOOLS visibility ─────────────────────────────────────────────────────
+// ─── AI TOOLS — hard hidden list ─────────────────────────────────────────────
 
-/**
- * AI tool slugs that are generic shells or duplicates.
- */
-const AI_TOOL_HARD_HIDDEN = new Set<string>([
-  // Add confirmed AI tool duplicates here as they are identified
-]);
+const AI_TOOL_HARD_HIDDEN = new Set<string>([]);
 
-/**
- * engine_config.task values that indicate a generic/unfinished AI tool.
- */
 const GENERIC_AI_TASKS = new Set<string>([
   "",
   "text-generation",
@@ -216,9 +233,6 @@ export function isAIToolVisible(item: PublicContentItem): boolean {
   if (!slug) return false;
   if (AI_TOOL_HARD_HIDDEN.has(slug)) return false;
   if (isPlaceholderEngine(item)) return false;
-  // AI tools with a specific named engine_type (not openai-text-tool generic)
-  // are always visible. Generic openai-text-tool items are only visible if
-  // they have a non-generic task config.
   const engineType = normalize(item.engine_type);
   if (engineType === "openai-text-tool" && isGenericAIEngine(item)) return false;
   return true;
@@ -228,7 +242,7 @@ export function filterVisibleAITools<T extends PublicContentItem>(items: T[]): T
   return items.filter((item) => isAIToolVisible(item));
 }
 
-// ─── Universal filter (used by sitemap, etc.) ────────────────────────────────
+// ─── Universal filter ─────────────────────────────────────────────────────────
 
 export type ContentType = "tools" | "calculators" | "ai_tools";
 

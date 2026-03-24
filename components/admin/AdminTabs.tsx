@@ -4,22 +4,22 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const tabs = [
-  { href: "/admin",             label: "Dashboard",      icon: "📊" },
-  { href: "/admin/generate",    label: "Generate",       icon: "✨" },
-  { href: "/admin/bulk-generate", label: "Bulk",         icon: "⚡" },
-  { href: "/admin/tools",       label: "Tools",          icon: "⚙️" },
-  { href: "/admin/topics",      label: "Topics",         icon: "🗂️" },
-  { href: "/admin/requests",    label: "Requests",       icon: "📬" },
-  { href: "/admin/placeholders", label: "Placeholders",  icon: "🔧" },
-  { href: "/admin/ads",         label: "Ad Settings",    icon: "💰" },
-  { href: "/admin/site-settings", label: "Site Settings", icon: "🌐" },
+  { href: "/admin", label: "Dashboard" },
+  { href: "/admin/generate", label: "Generate" },
+  { href: "/admin/bulk-generate", label: "Bulk Generate" },
+  { href: "/admin/tools", label: "Tools" },
+  { href: "/admin/topics", label: "Topics" },
+  { href: "/admin/requests", label: "Requests" },
+  { href: "/admin/placeholders", label: "Placeholders" },
+  { href: "/admin/ads", label: "Ad Settings" },
+  { href: "/admin/seo-content", label: "SEO Content", icon: "✍️" },
 ];
 
 export default function AdminTabs() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex flex-wrap gap-2">
+    <nav className="flex flex-wrap gap-3">
       {tabs.map((tab) => {
         const active =
           pathname === tab.href ||
@@ -29,13 +29,12 @@ export default function AdminTabs() {
           <Link
             key={tab.href}
             href={tab.href}
-            className={`flex items-center gap-1.5 rounded-xl border px-4 py-2.5 text-sm font-medium transition ${
+            className={`rounded-2xl border px-5 py-3 text-sm font-medium transition ${
               active
-                ? "border-blue-500 bg-blue-600 text-white"
+                ? "border-q-primary bg-q-primary text-white"
                 : "border-q-border bg-q-card text-q-text hover:bg-q-card-hover"
             }`}
           >
-            <span className="text-xs">{tab.icon}</span>
             {tab.label}
           </Link>
         );
