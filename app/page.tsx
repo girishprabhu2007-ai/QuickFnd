@@ -14,7 +14,7 @@ import {
 import { getTopicCollections } from "@/lib/programmatic-seo";
 import { getSiteUrl } from "@/lib/site-url";
 
-export const revalidate = 0;
+export const revalidate = 300;
 
 const siteUrl = getSiteUrl();
 
@@ -41,11 +41,11 @@ const PINNED_TOOL_SLUGS = [
 ];
 
 const PINNED_CALCULATOR_SLUGS = [
-  "bmi-calculator",
+  "sip-calculator",
+  "income-tax-calculator",
   "emi-calculator",
-  "age-calculator",
-  "percentage-calculator",
-  "loan-calculator",
+  "bmi-calculator",
+  "fd-calculator",
   "gst-calculator",
 ];
 
