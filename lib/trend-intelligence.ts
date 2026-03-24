@@ -293,10 +293,13 @@ export async function scoreGap(
 ): Promise<number> {
   const slug = queryToSlug(query);
   
-  // Already exists — no gap
-  if (existingSlugs.some(s => s === slug || s.includes(slug.split("-")[0]))) {
-    return 0;
-  }
+  // Already exists as exact slug — no gap
+  if (existingSlugs.some(s => s === slug)) return 0;
+  
+  // Very close match (first 2 words match an existing slug) — low score
+  const firstTwoWords = slug.split("-").slice(0, 2).join("-");
+  const closeMatch = firstTwoWords.length > 5 && existingSlugs.some(s => s.startsWith(firstTwoWords));
+  if (closeMatch) return 5; // Still queue it but very low priority
   
   // High-intent universal keywords (applies globally)
   const intentBonus = /calculator|tool|generator|converter|checker|formatter|editor|maker|online|free/.test(query.toLowerCase()) ? 15 : 0;
@@ -310,7 +313,7 @@ export async function scoreGap(
   // Volume-based score (capped at 50)
   const volumeScore = Math.min(50, Math.floor(volume / 100));
   
-  return Math.min(100, volumeScore + intentBonus + financeBonus + devBonus + 10);
+  return Math.min(100, volumeScore + intentBonus + financeBonus + devBonus + 20);
 }
 
 // ─── Main collection function ─────────────────────────────────────────────────

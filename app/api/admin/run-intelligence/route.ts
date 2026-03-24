@@ -33,7 +33,7 @@ export async function POST() {
     });
 
     // Step 2: Analyse gaps
-    const { queued, skipped } = await analyzeGaps({ minScore: 25, limit: 30 });
+    const { queued, skipped } = await analyzeGaps({ minScore: 15, limit: 50 });
 
     const duration = Date.now() - startTime;
 
