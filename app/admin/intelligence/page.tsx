@@ -110,20 +110,18 @@ export default function AdminIntelligencePage() {
     setRunning(true);
     setMessage("");
     try {
-      const secret = process.env.NEXT_PUBLIC_CRON_SECRET || "";
-      const res = await fetch("/api/cron/intelligence", {
-        headers: { Authorization: `Bearer ${secret}` },
-      });
+      const res = await fetch("/api/admin/run-intelligence", { method: "POST" });
       const data = await res.json();
       if (data.success) {
-        setMessage(`✓ Collected ${data.signals_collected} signals, queued ${data.gaps_queued} gaps`);
+        setMessage(`✓ Collected ${data.signals_collected} signals, queued ${data.gaps_queued} gaps in ${(data.duration_ms/1000).toFixed(1)}s`);
         loadStats();
         loadQueue();
+        if (activeTab === "cron") loadCronLog();
       } else {
         setMessage(`Error: ${data.error}`);
       }
     } catch {
-      setMessage("Failed to trigger cron job");
+      setMessage("Failed to trigger pipeline");
     } finally {
       setRunning(false);
     }
@@ -155,7 +153,7 @@ export default function AdminIntelligencePage() {
             <h2 className="text-xl font-bold text-q-text">Intelligence Pipeline</h2>
             <p className="mt-1 text-sm text-q-muted">
               Automated trend collection from Google Autocomplete, Search Console, and Serper.
-              Runs daily at 2am IST via Vercel Cron.
+              Runs daily at 2am UTC via Vercel Cron.
             </p>
           </div>
           <div className="flex gap-3">
