@@ -1,5 +1,23 @@
 import type { Metadata, Viewport } from "next";
+import { DM_Sans, DM_Mono } from "next/font/google";
 import "./globals.css";
+
+// Load fonts via next/font — self-hosted on Vercel edge, no render blocking
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-dm-sans",
+  display: "swap",
+  preload: true,
+});
+
+const dmMono = DM_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-dm-mono",
+  display: "swap",
+  preload: false,
+});
 import ThemeProvider from "@/components/theme/ThemeProvider";
 import SiteHeader from "@/components/layout/SiteHeader";
 import { getSiteUrl } from "@/lib/site-url";
@@ -140,8 +158,14 @@ export default async function RootLayout({
   `;
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={`${dmSans.variable} ${dmMono.variable}`}>
       <head>
+        {/* ── Performance: preconnect to critical origins ─────────────── */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+
         {/* ── Search engine verification ───────────────────────────────── */}
         {googleVerification && (
           <meta name="google-site-verification" content={googleVerification} />
@@ -190,6 +214,7 @@ export default async function RootLayout({
         {hasAdsense && (
           <script
             async
+            defer
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
             crossOrigin="anonymous"
           />

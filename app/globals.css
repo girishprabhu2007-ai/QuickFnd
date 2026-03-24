@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
+/* Font loaded via next/font in layout.tsx for optimal performance */
 @import "tailwindcss";
 
 /* ─── QuickFnd Design System ─────────────────────────────────────────────── */
@@ -65,7 +65,7 @@ html { scroll-behavior: smooth; }
 body {
   background-color: var(--q-bg);
   color: var(--q-text);
-  font-family: 'DM Sans', 'Segoe UI', system-ui, sans-serif;
+  font-family: var(--font-dm-sans), 'Segoe UI', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.2s, color 0.2s;
 }
@@ -230,7 +230,7 @@ body {
 /* ─── Monospace for code/slugs ───────────────────────────────────────────── */
 
 .font-mono, code, pre {
-  font-family: 'DM Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-family: var(--font-dm-mono), 'Fira Code', 'Cascadia Code', monospace;
 }
 
 /* ─── Smooth page transitions ────────────────────────────────────────────── */
