@@ -68,7 +68,9 @@ export default function AdminIntelligencePage() {
   const [queueStatus, setQueueStatus] = useState("pending");
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [message, setMessage] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const loadStats = useCallback(async () => {
     const res = await fetch("/api/admin/trend-signals?view=stats");
@@ -106,22 +108,50 @@ export default function AdminIntelligencePage() {
     if (activeTab === "cron") loadCronLog();
   }, [activeTab, loadSignals, loadCronLog]);
 
-  async function runCronNow() {
-    setRunning(true);
+  async function generateApproved(ids?: string[]) {
+    setGenerating(true);
     setMessage("");
     try {
-      const res = await fetch("/api/admin/run-intelligence", { method: "POST" });
+      const body = ids ? { ids } : {};
+      const res = await fetch("/api/admin/auto-generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
       const data = await res.json();
       if (data.success) {
-        setMessage(`✓ Collected ${data.signals_collected} signals, queued ${data.gaps_queued} gaps in ${(data.duration_ms/1000).toFixed(1)}s`);
+        setMessage(`✓ Published ${data.published}/${data.processed} tools. ${data.failed} failed quality gate.`);
         loadStats();
         loadQueue();
-        if (activeTab === "cron") loadCronLog();
+        setSelected(new Set());
       } else {
         setMessage(`Error: ${data.error}`);
       }
     } catch {
-      setMessage("Failed to trigger pipeline");
+      setMessage("Failed to run auto-generate pipeline");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function runCronNow() {
+    setRunning(true);
+    setMessage("");
+    try {
+      const secret = process.env.NEXT_PUBLIC_CRON_SECRET || "";
+      const res = await fetch("/api/cron/intelligence", {
+        headers: { Authorization: `Bearer ${secret}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage(`✓ Collected ${data.signals_collected} signals, queued ${data.gaps_queued} gaps`);
+        loadStats();
+        loadQueue();
+      } else {
+        setMessage(`Error: ${data.error}`);
+      }
+    } catch {
+      setMessage("Failed to trigger cron job");
     } finally {
       setRunning(false);
     }
@@ -153,13 +183,17 @@ export default function AdminIntelligencePage() {
             <h2 className="text-xl font-bold text-q-text">Intelligence Pipeline</h2>
             <p className="mt-1 text-sm text-q-muted">
               Automated trend collection from Google Autocomplete, Search Console, and Serper.
-              Runs daily at 2am UTC via Vercel Cron.
+              Runs daily at 2am IST via Vercel Cron.
             </p>
           </div>
           <div className="flex gap-3">
             <button onClick={runCronNow} disabled={running}
               className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-50">
               {running ? "Running..." : "▶ Run Now"}
+            </button>
+            <button onClick={() => generateApproved()} disabled={generating}
+              className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50">
+              {generating ? "Publishing..." : "⚡ Auto-Publish Approved"}
             </button>
             <Link href="/admin" className="rounded-xl border border-q-border bg-q-bg px-4 py-2.5 text-sm font-medium text-q-muted hover:bg-q-card-hover transition">
               ← Dashboard
@@ -263,20 +297,24 @@ export default function AdminIntelligencePage() {
                       </div>
                     </div>
 
-                    {item.status === "pending" && (
-                      <div className="flex gap-2 shrink-0">
-                        <button
-                          onClick={() => updateStatus(item.id, "approved")}
+                    <div className="flex gap-2 shrink-0">
+                      {(item.status?.trim().toLowerCase() === "pending") && (<>
+                        <button onClick={() => updateStatus(item.id, "approved")}
                           className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 transition">
                           Approve
                         </button>
-                        <button
-                          onClick={() => updateStatus(item.id, "rejected", "Not relevant")}
+                        <button onClick={() => updateStatus(item.id, "rejected", "Not relevant")}
                           className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 transition dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400">
                           Reject
                         </button>
-                      </div>
-                    )}
+                      </>)}
+                      {(item.status?.trim().toLowerCase() === "approved") && (
+                        <button onClick={() => generateApproved([item.id])} disabled={generating}
+                          className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-500 transition disabled:opacity-50">
+                          {generating ? "..." : "⚡ Publish Now"}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
