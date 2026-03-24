@@ -504,7 +504,9 @@ export async function analyzeGaps(options: {
     const { engine, category } = inferEngineAndCategory(signal.query);
     const name = queryToName(signal.query);
 
-    const { error } = await supabase.from("demand_queue").upsert({
+    // Use insert with explicit error handling instead of upsert
+    // (partial unique index on demand_queue doesn't work with upsert)
+    const { error } = await supabase.from("demand_queue").insert({
       query: signal.query,
       suggested_name: name,
       suggested_slug: slug,
@@ -515,10 +517,17 @@ export async function analyzeGaps(options: {
       gap_score: score,
       sources: [signal.source],
       status: "pending",
-    }, { onConflict: "suggested_slug" });
+    });
 
-    if (!error) queuedCount++;
-    else skipped++;
+    if (!error) {
+      queuedCount++;
+      queuedSlugs.add(slug); // prevent dupes within same run
+    } else if (error.code === "23505") {
+      skipped++; // duplicate slug — already in queue
+    } else {
+      console.error("demand_queue insert error:", error.message, error.code);
+      skipped++;
+    }
   }
 
   return { queued: queuedCount, skipped };
