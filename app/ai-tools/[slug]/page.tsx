@@ -35,7 +35,7 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
-export const revalidate = 300;
+export const revalidate = 60;
 
 function AIToolFallback({
   item,
