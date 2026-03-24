@@ -1466,14 +1466,427 @@ function GenericCalculator({ name }: { name?: string }) {
   );
 }
 
+
+// ─── SIP Calculator ───────────────────────────────────────────────────────────
+function SIPCalculator() {
+  const [monthly, setMonthly] = useState("");
+  const [rate, setRate] = useState("");
+  const [years, setYears] = useState("");
+
+  const result = useMemo<InterpretedResult | null>(() => {
+    const p = Number(monthly);
+    const r = Number(rate) / 100 / 12;
+    const n = Number(years) * 12;
+    if (!p || !r || !n || n <= 0) return null;
+
+    const invested = p * n;
+    const maturity = p * ((Math.pow(1 + r, n) - 1) / r) * (1 + r);
+    const gains = maturity - invested;
+    const xirr = ((maturity / invested) ** (1 / Number(years)) - 1) * 100;
+
+    return {
+      primary: `₹${maturity.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
+      secondary: "Estimated maturity value",
+      extra: `Total invested: ₹${invested.toLocaleString("en-IN")} · Estimated gains: ₹${gains.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
+      insight: `Your ₹${p.toLocaleString("en-IN")}/month grows to ₹${maturity.toLocaleString("en-IN", { maximumFractionDigits: 0 })} over ${years} years at ${rate}% p.a. — wealth created is ${((gains / invested) * 100).toFixed(0)}% more than what you invested.`,
+      recommendation: xirr > 12
+        ? "This projection assumes a consistent rate. Equity mutual funds historically average 12–15% over long periods but returns vary year to year — stay invested through market cycles."
+        : "For long-term goals like retirement, SIPs in equity mutual funds tend to outperform FDs and PPF over 10+ year horizons. Start early to maximise compounding.",
+    };
+  }, [monthly, rate, years]);
+
+  return (
+    <Workspace title="SIP Calculator">
+      <CalculatorGrid
+        left={
+          <InputPanel subtitle="Calculate returns on a monthly Systematic Investment Plan (SIP) in mutual funds.">
+            <div className="grid gap-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Monthly Investment (₹)</label>
+                <input type="number" value={monthly} onChange={e => setMonthly(e.target.value)} placeholder="e.g. 5000" className={fieldClass()} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Expected Annual Return (%)</label>
+                <input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="e.g. 12" className={fieldClass()} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Investment Period (Years)</label>
+                <input type="number" value={years} onChange={e => setYears(e.target.value)} placeholder="e.g. 10" className={fieldClass()} />
+              </div>
+            </div>
+          </InputPanel>
+        }
+        right={<ResultsStage title="SIP maturity estimate" result={result} emptyText="Enter monthly amount, return rate, and period to calculate." />}
+      />
+    </Workspace>
+  );
+}
+
+// ─── FD Calculator ────────────────────────────────────────────────────────────
+function FDCalculator() {
+  const [principal, setPrincipal] = useState("");
+  const [rate, setRate] = useState("");
+  const [years, setYears] = useState("");
+  const [compounding, setCompounding] = useState("4");
+
+  const result = useMemo<InterpretedResult | null>(() => {
+    const p = Number(principal);
+    const r = Number(rate) / 100;
+    const t = Number(years);
+    const n = Number(compounding);
+    if (!p || !r || !t || !n) return null;
+
+    const maturity = p * Math.pow(1 + r / n, n * t);
+    const interest = maturity - p;
+
+    return {
+      primary: `₹${maturity.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
+      secondary: "Maturity amount",
+      extra: `Principal: ₹${p.toLocaleString("en-IN")} · Interest earned: ₹${interest.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
+      insight: `Your FD of ₹${p.toLocaleString("en-IN")} at ${rate}% p.a. (compounded ${["","annually","semi-annually","","quarterly"][n] || n+"x/year"}) matures to ₹${maturity.toLocaleString("en-IN", { maximumFractionDigits: 0 })} in ${t} years.`,
+      recommendation: interest / p > 0.5
+        ? "FD interest income is fully taxable as per your income tax slab. For higher returns with similar safety, consider debt mutual funds (indexation benefits after 3 years) or RBI Floating Rate Bonds."
+        : "FDs are ideal for capital preservation. Compare rates across banks — small finance banks and NBFCs often offer 0.5–1% higher rates than large banks with similar deposit insurance protection.",
+    };
+  }, [principal, rate, years, compounding]);
+
+  return (
+    <Workspace title="FD Calculator">
+      <CalculatorGrid
+        left={
+          <InputPanel subtitle="Calculate the maturity amount for a Fixed Deposit with compound interest.">
+            <div className="grid gap-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Principal Amount (₹)</label>
+                <input type="number" value={principal} onChange={e => setPrincipal(e.target.value)} placeholder="e.g. 100000" className={fieldClass()} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Annual Interest Rate (%)</label>
+                <input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="e.g. 7.5" className={fieldClass()} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Tenure (Years)</label>
+                <input type="number" value={years} onChange={e => setYears(e.target.value)} placeholder="e.g. 3" className={fieldClass()} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Compounding Frequency</label>
+                <select value={compounding} onChange={e => setCompounding(e.target.value)} className={fieldClass()}>
+                  <option value="1">Annual</option>
+                  <option value="2">Semi-Annual</option>
+                  <option value="4">Quarterly</option>
+                  <option value="12">Monthly</option>
+                </select>
+              </div>
+            </div>
+          </InputPanel>
+        }
+        right={<ResultsStage title="FD maturity value" result={result} emptyText="Enter principal, rate, and tenure to calculate FD maturity." />}
+      />
+    </Workspace>
+  );
+}
+
+// ─── PPF Calculator ───────────────────────────────────────────────────────────
+function PPFCalculator() {
+  const [yearly, setYearly] = useState("");
+  const [rate, setRate] = useState("7.1");
+  const [years, setYears] = useState("15");
+
+  const result = useMemo<InterpretedResult | null>(() => {
+    const p = Number(yearly);
+    const r = Number(rate) / 100;
+    const n = Number(years);
+    if (!p || !r || !n || n < 15) return null;
+
+    let balance = 0;
+    for (let i = 0; i < n; i++) {
+      balance = (balance + p) * (1 + r);
+    }
+    const invested = p * n;
+    const interest = balance - invested;
+
+    return {
+      primary: `₹${balance.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
+      secondary: "PPF maturity value",
+      extra: `Total deposited: ₹${invested.toLocaleString("en-IN")} · Interest earned: ₹${interest.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
+      insight: `Investing ₹${p.toLocaleString("en-IN")}/year in PPF for ${n} years at ${rate}% p.a. builds a corpus of ₹${balance.toLocaleString("en-IN", { maximumFractionDigits: 0 })}. All interest and maturity amount is fully tax-free.`,
+      recommendation: p > 150000
+        ? "PPF deposits are capped at ₹1,50,000 per year. Contributions above this limit do not earn interest. Consider NPS, ELSS, or Sukanya Samriddhi for additional tax-saving options."
+        : "PPF is one of India's safest long-term investments — government-backed, EEE tax status (exempt-exempt-exempt), and currently earning " + rate + "% p.a. Ideal for retirement and children's education planning.",
+    };
+  }, [yearly, rate, years]);
+
+  return (
+    <Workspace title="PPF Calculator">
+      <CalculatorGrid
+        left={
+          <InputPanel subtitle="Calculate Public Provident Fund maturity with India's EEE tax-free government scheme.">
+            <div className="grid gap-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Yearly Deposit (₹ max 1,50,000)</label>
+                <input type="number" value={yearly} onChange={e => setYearly(e.target.value)} placeholder="e.g. 150000" className={fieldClass()} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">PPF Interest Rate (% p.a.)</label>
+                <input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="7.1" className={fieldClass()} />
+                <p className="mt-1 text-xs text-q-muted">Current rate: 7.1% p.a. (Q1 FY2025-26)</p>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Tenure (min 15 years)</label>
+                <input type="number" value={years} onChange={e => setYears(e.target.value)} placeholder="15" min="15" className={fieldClass()} />
+              </div>
+            </div>
+          </InputPanel>
+        }
+        right={<ResultsStage title="PPF maturity estimate" result={result} emptyText="Enter yearly deposit and tenure (minimum 15 years) to calculate." />}
+      />
+    </Workspace>
+  );
+}
+
+// ─── HRA Calculator ───────────────────────────────────────────────────────────
+function HRACalculator() {
+  const [basic, setBasic] = useState("");
+  const [hra, setHra] = useState("");
+  const [rent, setRent] = useState("");
+  const [metro, setMetro] = useState("true");
+
+  const result = useMemo<InterpretedResult | null>(() => {
+    const b = Number(basic);
+    const h = Number(hra);
+    const r = Number(rent);
+    const isMetro = metro === "true";
+    if (!b || !h || !r) return null;
+
+    const annual_basic = b * 12;
+    const annual_hra = h * 12;
+    const annual_rent = r * 12;
+
+    const exemption1 = annual_hra;
+    const exemption2 = annual_rent - 0.1 * annual_basic;
+    const exemption3 = (isMetro ? 0.5 : 0.4) * annual_basic;
+
+    const exemption = Math.max(0, Math.min(exemption1, exemption2, exemption3));
+    const taxable_hra = annual_hra - exemption;
+
+    return {
+      primary: `₹${exemption.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
+      secondary: "Annual HRA exemption",
+      extra: `Monthly exemption: ₹${(exemption / 12).toLocaleString("en-IN", { maximumFractionDigits: 0 })} · Taxable HRA: ₹${taxable_hra.toLocaleString("en-IN", { maximumFractionDigits: 0 })}/year`,
+      insight: `Your HRA exemption is the lowest of: (1) Actual HRA ₹${annual_hra.toLocaleString("en-IN")}, (2) Rent minus 10% basic ₹${Math.max(0, exemption2).toLocaleString("en-IN", { maximumFractionDigits: 0 })}, (3) ${isMetro ? "50%" : "40%"} of basic ₹${exemption3.toLocaleString("en-IN", { maximumFractionDigits: 0 })}. The lowest of these three = ₹${exemption.toLocaleString("en-IN", { maximumFractionDigits: 0 })} is your exemption.`,
+      recommendation: exemption < annual_hra
+        ? `You are leaving ₹${(annual_hra - exemption).toLocaleString("en-IN", { maximumFractionDigits: 0 })}/year of HRA taxable. To maximise exemption, either pay higher rent (ensure rent receipts and landlord PAN for rent above ₹1 lakh/year) or check if you qualify for the old tax regime.`
+        : "Your full HRA is exempt from tax based on the three-condition check. Ensure you submit rent receipts and landlord PAN details to your employer for Form 12BB.",
+    };
+  }, [basic, hra, rent, metro]);
+
+  return (
+    <Workspace title="HRA Calculator">
+      <CalculatorGrid
+        left={
+          <InputPanel subtitle="Calculate your House Rent Allowance (HRA) exemption under Indian income tax rules.">
+            <div className="grid gap-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Basic Salary per Month (₹)</label>
+                <input type="number" value={basic} onChange={e => setBasic(e.target.value)} placeholder="e.g. 50000" className={fieldClass()} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">HRA Received per Month (₹)</label>
+                <input type="number" value={hra} onChange={e => setHra(e.target.value)} placeholder="e.g. 20000" className={fieldClass()} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Actual Rent Paid per Month (₹)</label>
+                <input type="number" value={rent} onChange={e => setRent(e.target.value)} placeholder="e.g. 18000" className={fieldClass()} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">City Type</label>
+                <select value={metro} onChange={e => setMetro(e.target.value)} className={fieldClass()}>
+                  <option value="true">Metro (Delhi, Mumbai, Chennai, Kolkata) — 50%</option>
+                  <option value="false">Non-Metro — 40%</option>
+                </select>
+              </div>
+            </div>
+          </InputPanel>
+        }
+        right={<ResultsStage title="HRA exemption" result={result} emptyText="Enter your basic salary, HRA received, and rent paid to calculate." />}
+      />
+    </Workspace>
+  );
+}
+
+// ─── Income Tax Calculator ────────────────────────────────────────────────────
+function IncomeTaxCalculator() {
+  const [income, setIncome] = useState("");
+  const [regime, setRegime] = useState("new");
+  const [deductions, setDeductions] = useState("");
+
+  const result = useMemo<InterpretedResult | null>(() => {
+    const gross = Number(income);
+    if (!gross || gross <= 0) return null;
+
+    let taxable = gross;
+    let tax = 0;
+
+    if (regime === "new") {
+      // New regime FY2025-26 slabs
+      taxable = Math.max(0, gross - 75000); // Standard deduction ₹75,000
+      const slabs = [
+        { upto: 400000, rate: 0 },
+        { upto: 800000, rate: 0.05 },
+        { upto: 1200000, rate: 0.10 },
+        { upto: 1600000, rate: 0.15 },
+        { upto: 2000000, rate: 0.20 },
+        { upto: 2400000, rate: 0.25 },
+        { upto: Infinity, rate: 0.30 },
+      ];
+      let prev = 0;
+      for (const slab of slabs) {
+        if (taxable > prev) {
+          tax += (Math.min(taxable, slab.upto) - prev) * slab.rate;
+          prev = slab.upto;
+        }
+      }
+      // Rebate u/s 87A — zero tax if taxable income ≤ ₹12,00,000
+      if (taxable <= 1200000) tax = 0;
+    } else {
+      // Old regime
+      const ded = Math.min(Number(deductions) || 0, 150000);
+      taxable = Math.max(0, gross - 50000 - ded); // Standard deduction + 80C
+      if (taxable <= 250000) tax = 0;
+      else if (taxable <= 500000) tax = (taxable - 250000) * 0.05;
+      else if (taxable <= 1000000) tax = 12500 + (taxable - 500000) * 0.20;
+      else tax = 112500 + (taxable - 1000000) * 0.30;
+      // Rebate u/s 87A for old regime ≤ ₹5L
+      if (taxable <= 500000) tax = 0;
+    }
+
+    const cess = tax * 0.04;
+    const total = tax + cess;
+    const effective = gross > 0 ? (total / gross) * 100 : 0;
+    const monthly = total / 12;
+
+    return {
+      primary: `₹${total.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
+      secondary: `Total tax payable (FY2025-26, ${regime === "new" ? "New" : "Old"} Regime)`,
+      extra: `Base tax: ₹${tax.toLocaleString("en-IN", { maximumFractionDigits: 0 })} + Cess (4%): ₹${cess.toLocaleString("en-IN", { maximumFractionDigits: 0 })} · Monthly TDS: ₹${monthly.toLocaleString("en-IN", { maximumFractionDigits: 0 })} · Effective rate: ${effective.toFixed(1)}%`,
+      insight: regime === "new"
+        ? `Under the new regime, standard deduction of ₹75,000 applies. ${taxable <= 1200000 ? "Your net taxable income is ₹" + taxable.toLocaleString("en-IN") + " — within the ₹12L rebate limit under Sec 87A, so zero tax applies." : "No rebate applies at your income level — tax calculated on full taxable income."}`
+        : `Under the old regime with ₹${(50000 + Math.min(Number(deductions) || 0, 150000)).toLocaleString("en-IN")} in deductions, your taxable income is ₹${taxable.toLocaleString("en-IN")}.`,
+      recommendation: total === 0
+        ? "Your income falls within the zero-tax bracket under the selected regime. File your ITR by July 31 even if tax payable is nil — it establishes your financial record."
+        : `Compare both regimes. The new regime is simpler and better if your deductions are low. The old regime saves more if you have high 80C, HRA, and home loan deductions. Always consult a CA for final planning.`,
+    };
+  }, [income, regime, deductions]);
+
+  return (
+    <Workspace title="Income Tax Calculator">
+      <CalculatorGrid
+        left={
+          <InputPanel subtitle="Estimate income tax for FY2025-26 under the new or old tax regime.">
+            <div className="grid gap-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Annual Gross Income (₹)</label>
+                <input type="number" value={income} onChange={e => setIncome(e.target.value)} placeholder="e.g. 1200000" className={fieldClass()} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Tax Regime</label>
+                <select value={regime} onChange={e => setRegime(e.target.value)} className={fieldClass()}>
+                  <option value="new">New Regime (FY2025-26) — Default</option>
+                  <option value="old">Old Regime (with deductions)</option>
+                </select>
+              </div>
+              {regime === "old" && (
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Section 80C Deductions (₹ max 1,50,000)</label>
+                  <input type="number" value={deductions} onChange={e => setDeductions(e.target.value)} placeholder="e.g. 150000" className={fieldClass()} />
+                  <p className="mt-1 text-xs text-q-muted">Includes PPF, ELSS, LIC, EPF, home loan principal etc.</p>
+                </div>
+              )}
+            </div>
+          </InputPanel>
+        }
+        right={<ResultsStage title="Tax estimate" result={result} emptyText="Enter your annual income and select a tax regime to estimate tax." />}
+      />
+    </Workspace>
+  );
+}
+
+// ─── Compound Interest Calculator ─────────────────────────────────────────────
+function CompoundInterestCalculator() {
+  const [principal, setPrincipal] = useState("");
+  const [rate, setRate] = useState("");
+  const [years, setYears] = useState("");
+  const [compounding, setCompounding] = useState("1");
+
+  const result = useMemo<InterpretedResult | null>(() => {
+    const p = Number(principal);
+    const r = Number(rate) / 100;
+    const t = Number(years);
+    const n = Number(compounding);
+    if (!p || !r || !t) return null;
+
+    const amount = n === 0
+      ? p * Math.exp(r * t) // continuous
+      : p * Math.pow(1 + r / n, n * t);
+    const interest = amount - p;
+    const simpleInterest = p * r * t;
+    const extraFromCompounding = interest - simpleInterest;
+
+    return {
+      primary: `₹${amount.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
+      secondary: "Total amount after compounding",
+      extra: `Principal: ₹${p.toLocaleString("en-IN")} · Interest: ₹${interest.toLocaleString("en-IN", { maximumFractionDigits: 0 })} · Extra vs simple interest: ₹${extraFromCompounding.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
+      insight: `Compounding adds ₹${extraFromCompounding.toLocaleString("en-IN", { maximumFractionDigits: 0 })} more than simple interest over ${t} years. Your money grows ${(amount / p).toFixed(2)}x — this is the power of earning "interest on interest".`,
+      recommendation: extraFromCompounding > p * 0.5
+        ? "At this time horizon, compounding frequency matters significantly. Monthly compounding earns noticeably more than annual compounding — compare investments by their effective annual rate (EAR), not just the nominal rate."
+        : "For shorter time periods, the difference between compounding frequencies is small. Focus on the interest rate and tenure — both have a larger impact on returns than compounding frequency.",
+      notes: [
+        "This calculator assumes a fixed, constant rate for the entire period.",
+        "Real-world investments like mutual funds have variable returns — this is for illustration only.",
+        "Compare investments using CAGR (Compound Annual Growth Rate) for fair comparison.",
+      ],
+    };
+  }, [principal, rate, years, compounding]);
+
+  return (
+    <Workspace title="Compound Interest Calculator">
+      <CalculatorGrid
+        left={
+          <InputPanel subtitle="Calculate compound interest and compare it against simple interest over any period.">
+            <div className="grid gap-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Principal Amount (₹)</label>
+                <input type="number" value={principal} onChange={e => setPrincipal(e.target.value)} placeholder="e.g. 100000" className={fieldClass()} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Annual Interest Rate (%)</label>
+                <input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="e.g. 8" className={fieldClass()} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Time Period (Years)</label>
+                <input type="number" value={years} onChange={e => setYears(e.target.value)} placeholder="e.g. 10" className={fieldClass()} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Compounding Frequency</label>
+                <select value={compounding} onChange={e => setCompounding(e.target.value)} className={fieldClass()}>
+                  <option value="1">Annual</option>
+                  <option value="2">Semi-Annual</option>
+                  <option value="4">Quarterly</option>
+                  <option value="12">Monthly</option>
+                  <option value="365">Daily</option>
+                </select>
+              </div>
+            </div>
+          </InputPanel>
+        }
+        right={<ResultsStage title="Compound interest result" result={result} emptyText="Enter principal, rate, and time period to calculate compound interest." />}
+      />
+    </Workspace>
+  );
+}
+
 export default function BuiltInCalculatorClient({ item }: Props) {
-  // Always run slug-based inference first — DB may store stale/wrong engine_type
-  // (e.g. "generic-directory") that would prevent correct rendering.
-  // inferEngineType is the authoritative source for calculators.
-  const inferred = inferEngineType("calculator", item.slug);
-  const engine = (inferred && inferred !== "generic-directory")
-    ? inferred
-    : String(item.engine_type || "");
+  const engine = String(item.engine_type || inferEngineType("calculator", item.slug) || "");
   const config = item.engine_config || {};
 
   if (engine === "age-calculator") return <AgeCalculator />;
@@ -1490,6 +1903,12 @@ export default function BuiltInCalculatorClient({ item }: Props) {
   if (engine === "formula-calculator") {
     return <FormulaCalculator config={config} name={item.name} />;
   }
+  if (engine === "sip-calculator") return <SIPCalculator />;
+  if (engine === "fd-calculator") return <FDCalculator />;
+  if (engine === "ppf-calculator") return <PPFCalculator />;
+  if (engine === "hra-calculator") return <HRACalculator />;
+  if (engine === "income-tax-calculator") return <IncomeTaxCalculator />;
+  if (engine === "compound-interest-calculator") return <CompoundInterestCalculator />;
 
   return <GenericCalculator name={item.name} />;
 }

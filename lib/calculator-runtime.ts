@@ -128,6 +128,30 @@ export function resolveCalculatorRuntime(input: CalculatorRuntimeInput): Calcula
     };
   }
 
+  if (slug.includes("sip") || (slug.includes("systematic") && slug.includes("investment"))) {
+    return { engine_type: "sip-calculator", engine_config: {}, is_supported: true, reason: 'Matched sip-calculator.' };
+  }
+
+  if (slug.includes("fixed-deposit") || slug === "fd-calculator" || (slug.includes("fd") && slug.includes("calculator"))) {
+    return { engine_type: "fd-calculator", engine_config: {}, is_supported: true, reason: 'Matched fd-calculator.' };
+  }
+
+  if (slug.includes("ppf") || slug.includes("public-provident")) {
+    return { engine_type: "ppf-calculator", engine_config: {}, is_supported: true, reason: 'Matched ppf-calculator.' };
+  }
+
+  if (slug.includes("hra") || slug.includes("house-rent-allowance")) {
+    return { engine_type: "hra-calculator", engine_config: {}, is_supported: true, reason: 'Matched hra-calculator.' };
+  }
+
+  if (slug.includes("income-tax") || slug.includes("tax-calculator") || slug.includes("itr-calculator")) {
+    return { engine_type: "income-tax-calculator", engine_config: {}, is_supported: true, reason: 'Matched income-tax-calculator.' };
+  }
+
+  if (slug.includes("compound-interest") || (slug.includes("compound") && slug.includes("interest"))) {
+    return { engine_type: "compound-interest-calculator", engine_config: {}, is_supported: true, reason: 'Matched compound-interest-calculator.' };
+  }
+
   if (hasAny(slug, ["event-duration", "elapsed-time"])) {
     return formulaPreset("datetime-difference", name || "Event Duration Calculator");
   }
