@@ -189,6 +189,9 @@ const CALCULATOR_HARD_HIDDEN = new Set<string>([
   "seo-strength-calculator",
   "domain-authority-estimator",
 
+  // Auto-published with wrong engine (formula-calculator, no preset)
+  "investment-calculator",
+
   // Dev metric calculators (obscure, low search intent)
   "merge-conflict-probability-calculator",
   "code-review-efficiency-calculator",
@@ -203,6 +206,14 @@ export function isCalculatorVisible(item: PublicContentItem): boolean {
   if (!slug) return false;
   if (CALCULATOR_HARD_HIDDEN.has(slug)) return false;
   if (isPlaceholderEngine(item)) return false;
+
+  // Hide formula-calculators with no preset — they show a useless generic interface
+  if (normalize(item.engine_type) === "formula-calculator") {
+    const config = item.engine_config as Record<string, unknown> | null;
+    const preset = String(config?.preset || "").trim();
+    if (!preset || preset === "metric-ratio") return false;
+  }
+
   return true;
 }
 

@@ -196,11 +196,11 @@ const ENGINE_PATTERNS: { pattern: RegExp; engine: string; category: "tool" | "ca
   { pattern: /due date calculator|pregnancy calculator|ovulation/i, engine: "age-calculator", category: "calculator" },
 
   // ── Math calculators ──
-  { pattern: /scientific calculator|advanced calculator|math calculator/i, engine: "formula-calculator", category: "calculator" },
-  { pattern: /fraction calculator|decimal to fraction|fraction simplify/i, engine: "formula-calculator", category: "calculator" },
-  { pattern: /area calculator|volume calculator|perimeter/i, engine: "formula-calculator", category: "calculator" },
-  { pattern: /speed calculator|distance calculator|time calculator/i, engine: "formula-calculator", category: "calculator" },
-  { pattern: /prime number|factor calculator|lcm calculator|gcd calculator/i, engine: "formula-calculator", category: "calculator" },
+  { pattern: /scientific calculator|advanced calculator|math calculator/i, engine: "percentage-calculator", category: "calculator" },
+  { pattern: /fraction calculator|decimal to fraction|fraction simplify/i, engine: "percentage-calculator", category: "calculator" },
+  { pattern: /area calculator|volume calculator|perimeter/i, engine: "percentage-calculator", category: "calculator" },
+  { pattern: /speed calculator|distance calculator|time calculator/i, engine: "percentage-calculator", category: "calculator" },
+  { pattern: /prime number|factor calculator|lcm calculator|gcd calculator/i, engine: "percentage-calculator", category: "calculator" },
 
   // ── AI tools ──
   { pattern: /ai email|email writer ai|write email|email generator/i, engine: "ai-email-writer", category: "ai_tool" },
@@ -231,8 +231,9 @@ export function inferEngineAndCategory(query: string): {
   }
 
   // Smart fallback based on query structure
+  // NOTE: formula-calculator requires a preset — never assign it as auto-fallback
   if (/calculator|compute|calc/.test(lower)) {
-    return { engine: "formula-calculator", category: "calculator", confidence: "medium" };
+    return { engine: "percentage-calculator", category: "calculator", confidence: "medium" };
   }
   if (/ai |gpt|generate |write |summarize|paraphrase/.test(lower)) {
     return { engine: "openai-text-tool", category: "ai_tool", confidence: "medium" };

@@ -101,6 +101,17 @@ function checkEngine(tool: GeneratedTool): { passed: boolean; reason: string } {
   if (!engine) return { passed: false, reason: "No engine type assigned" };
   if (!VALID_ENGINES.has(engine)) return { passed: false, reason: `Unknown engine: "${engine}" — not in valid engine list` };
 
+  // Block formula-calculator — requires a specific preset to be useful
+  // Without preset it shows a meaningless generic interface
+  if (engine === "formula-calculator") {
+    return { passed: false, reason: "formula-calculator requires a specific preset — not safe for auto-publish. Use a specific calculator engine instead." };
+  }
+
+  // Block text-transformer for calculators — wrong engine type
+  if (engine === "text-transformer") {
+    return { passed: false, reason: "text-transformer is a text tool engine, not a calculator engine." };
+  }
+
   // Cross-check engine vs name for obvious mismatches
   const nameLower = tool.name.toLowerCase();
   const obvious_mismatches: [RegExp, string[]][] = [
