@@ -373,20 +373,6 @@ export async function fetchSerperSignals(
 
 // ─── Gap analysis: score a query against existing tools ──────────────────────
 
-export function inferEngineAndCategory(query: string): {
-  engine: string;
-  category: "tool" | "calculator" | "ai_tool";
-} {
-  const lower = query.toLowerCase();
-  for (const { pattern, engine, category } of ENGINE_PATTERNS) {
-    if (pattern.test(lower)) return { engine, category };
-  }
-  // Default inference
-  if (/calculator|compute|calc/.test(lower)) return { engine: "formula-calculator", category: "calculator" };
-  if (/ai |gpt|generate|write/.test(lower)) return { engine: "openai-text-tool", category: "ai_tool" };
-  return { engine: "text-transformer", category: "tool" };
-}
-
 export function queryToSlug(query: string): string {
   return query
     .toLowerCase()
