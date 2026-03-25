@@ -10,6 +10,7 @@ import { buildHomepageTaxonomy, filterItemsByGroup } from "@/lib/admin-taxonomy"
 import type { PublicContentItem } from "@/lib/content-pages";
 
 export const revalidate = 0;
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Free AI Tools",
