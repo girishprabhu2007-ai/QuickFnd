@@ -737,13 +737,6 @@ function PercentageCalculator({ config = {}, name = "" }: { config?: Record<stri
   const [a, setA] = useState("");
   const [b, setB] = useState("");
 
-  // Config-driven mode: custom labels mean this is a specific ratio calculator
-  const customMode = Boolean(config.numeratorLabel || config.denominatorLabel);
-  const numeratorLabel = String(config.numeratorLabel || "Value A");
-  const denominatorLabel = String(config.denominatorLabel || "Value B");
-  const resultLabel = String(config.resultLabel || "Percentage");
-  const multiplier = Number(config.multiplier || 100);
-
   const result = useMemo<InterpretedResult | null>(() => {
     const first = Number(a);
     const second = Number(b);
@@ -755,18 +748,6 @@ function PercentageCalculator({ config = {}, name = "" }: { config?: Record<stri
       b === ""
     ) {
       return null;
-    }
-
-    // Custom config mode: calculate ratio/percentage with specific labels
-    if (customMode) {
-      if (second === 0) return { primary: "Cannot divide by zero", secondary: resultLabel, insight: `Enter a valid ${denominatorLabel}.`, recommendation: "" };
-      const value = (first / second) * multiplier;
-      return {
-        primary: `${value.toFixed(2)}${multiplier === 100 ? "%" : ""}`,
-        secondary: resultLabel,
-        insight: `${first} out of ${second} = ${value.toFixed(2)}${multiplier === 100 ? "%" : ""}`,
-        recommendation: `${numeratorLabel}: ${first} · ${denominatorLabel}: ${second}`,
-      };
     }
 
     if (mode === "of") {
@@ -825,47 +806,40 @@ function PercentageCalculator({ config = {}, name = "" }: { config?: Record<stri
     <Workspace title={name || "Percentage Calculator"}>
       <CalculatorGrid
         left={
-          <InputPanel subtitle={customMode ? `Enter values to calculate ${resultLabel.toLowerCase()}.` : "Compare values as percentages, portions, or relative change."}>
+          <InputPanel subtitle="Compare values as percentages, portions, or relative change.">
             <div className="grid gap-4">
-              {!customMode && (
-                <select
-                  value={mode}
-                  onChange={(e) =>
-                    setMode(e.target.value as "of" | "whatPercent" | "change")
-                  }
-                  className={selectClass()}
-                >
-                  <option value="of">What is A% of B?</option>
-                  <option value="whatPercent">A is what percent of B?</option>
-                  <option value="change">Percentage change from B to A</option>
-                </select>
-              )}
-              <div className="flex flex-col gap-1">
-                {customMode && <label className="text-xs font-medium text-q-muted px-1">{numeratorLabel}</label>}
-                <input
-                  type="number"
-                  value={a}
-                  onChange={(e) => setA(e.target.value)}
-                  placeholder={customMode ? numeratorLabel : "Value A"}
-                  className={fieldClass()}
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                {customMode && <label className="text-xs font-medium text-q-muted px-1">{denominatorLabel}</label>}
-                <input
-                  type="number"
-                  value={b}
-                  onChange={(e) => setB(e.target.value)}
-                  placeholder={customMode ? denominatorLabel : "Value B"}
-                  className={fieldClass()}
-                />
-              </div>
+              <select
+                value={mode}
+                onChange={(e) =>
+                  setMode(e.target.value as "of" | "whatPercent" | "change")
+                }
+                className={selectClass()}
+              >
+                <option value="of">What is A% of B?</option>
+                <option value="whatPercent">A is what percent of B?</option>
+                <option value="change">Percentage change from B to A</option>
+              </select>
+
+              <input
+                type="number"
+                value={a}
+                onChange={(e) => setA(e.target.value)}
+                placeholder="Value A"
+                className={fieldClass()}
+              />
+              <input
+                type="number"
+                value={b}
+                onChange={(e) => setB(e.target.value)}
+                placeholder="Value B"
+                className={fieldClass()}
+              />
             </div>
           </InputPanel>
         }
         right={
           <ResultsStage
-            title={customMode ? resultLabel : "Percentage result"}
+            title="Percentage result"
             result={result}
             emptyText="Enter values to calculate."
           />
@@ -1063,6 +1037,73 @@ function FormulaCalculator({
     }
 
     switch (preset) {
+      case "tip-split":
+        return [
+          { key: "bill", label: "Bill amount", placeholder: "50.00" },
+          { key: "tip_pct", label: "Tip percentage (%)", placeholder: "15" },
+          { key: "people", label: "Number of people", placeholder: "2" },
+        ];
+      case "discount":
+        return [
+          { key: "original", label: "Original price", placeholder: "100.00" },
+          { key: "discount_pct", label: "Discount (%)", placeholder: "20" },
+        ];
+      case "vat":
+        return [
+          { key: "amount", label: "Amount", placeholder: "100.00" },
+          { key: "rate", label: "VAT / tax rate (%)", placeholder: "20" },
+          { key: "direction", label: "Mode: add or extract", placeholder: "add" },
+        ];
+      case "sales-tax":
+        return [
+          { key: "price", label: "Price before tax", placeholder: "100.00" },
+          { key: "rate", label: "Tax rate (%)", placeholder: "10" },
+        ];
+      case "mortgage":
+        return [
+          { key: "principal", label: "Loan amount", placeholder: "300000" },
+          { key: "rate", label: "Annual interest rate (%)", placeholder: "4.5" },
+          { key: "years", label: "Loan term (years)", placeholder: "25" },
+        ];
+      case "calories":
+        return [
+          { key: "age", label: "Age (years)", placeholder: "30" },
+          { key: "weight", label: "Weight (kg)", placeholder: "70" },
+          { key: "height", label: "Height (cm)", placeholder: "175" },
+          { key: "gender", label: "Gender (male or female)", placeholder: "male" },
+          { key: "activity", label: "Activity (1=sedentary 2=light 3=moderate 4=active 5=very active)", placeholder: "2" },
+        ];
+      case "fuel-cost":
+        return [
+          { key: "distance", label: "Distance (km)", placeholder: "100" },
+          { key: "efficiency", label: "Fuel use per 100km (litres)", placeholder: "8" },
+          { key: "price", label: "Fuel price per litre", placeholder: "1.50" },
+        ];
+      case "inflation":
+        return [
+          { key: "amount", label: "Original amount", placeholder: "1000" },
+          { key: "from_year", label: "From year", placeholder: "2000" },
+          { key: "to_year", label: "To year", placeholder: "2024" },
+          { key: "rate", label: "Average annual inflation rate (%)", placeholder: "3" },
+        ];
+      case "ratio-percentage":
+        return [
+          { key: "numerator", label: String(config.numeratorLabel || "Value (part)"), placeholder: "25" },
+          { key: "denominator", label: String(config.denominatorLabel || "Total (whole)"), placeholder: "100" },
+        ];
+
+      case "uptime-percentage":
+        return [
+          { key: "uptime_hours", label: "Server uptime (hours)", placeholder: "719" },
+          { key: "total_hours", label: "Total period (hours, e.g. 720 = 30 days)", placeholder: "720" },
+        ];
+
+      case "growth-rate":
+        return [
+          { key: "current", label: String(config.numeratorLabel || "Current value"), placeholder: "150" },
+          { key: "previous", label: String(config.denominatorLabel || "Previous value"), placeholder: "100" },
+        ];
+
       case "daily-time-budget":
         return [
           { key: "total_hours", label: "Total hours in day", placeholder: "24" },
@@ -1233,6 +1274,112 @@ function FormulaCalculator({
         recommendation:
           "Use this when preparing timestamps for APIs, databases, scheduling systems, or log comparisons.",
         notes: getUnixTimestampNotes(),
+      };
+    }
+
+    if (preset === "tip-split") {
+      const bill=Number(values.bill), tip=Number(values.tip_pct||15), ppl=Math.max(Number(values.people||1),1);
+      if (!Number.isFinite(bill)||bill<=0) return null;
+      const tipAmt=bill*(tip/100), total=bill+tipAmt, perPerson=total/ppl, tipPer=tipAmt/ppl;
+      return { primary: perPerson.toFixed(2), secondary: "per person (incl. tip)", extra: `Tip total: ${tipAmt.toFixed(2)} · Each pays: ${perPerson.toFixed(2)} · Bill total: ${total.toFixed(2)}`, insight: `A ${tip}% tip on ${bill.toFixed(2)} = ${tipAmt.toFixed(2)} tip. Split ${ppl} ways: ${perPerson.toFixed(2)} each (${tipPer.toFixed(2)} tip per person).`, recommendation: "Standard tip: 15-20% for good service. 10% for average.", notes: ["Tip is typically calculated on the pre-tax subtotal"] };
+    }
+    if (preset === "discount") {
+      const orig=Number(values.original), pct=Number(values.discount_pct);
+      if (!Number.isFinite(orig)||!Number.isFinite(pct)) return null;
+      const saving=orig*(pct/100), final=orig-saving;
+      return { primary: final.toFixed(2), secondary: "final price", extra: `You save: ${saving.toFixed(2)} (${pct}% off ${orig.toFixed(2)})`, insight: `${pct}% discount on ${orig.toFixed(2)} saves ${saving.toFixed(2)}.`, recommendation: "Always compare the discounted price with competitors before purchasing.", notes: ["Price shown excludes applicable taxes"] };
+    }
+    if (preset === "vat") {
+      const amount=Number(values.amount), rate=Number(values.rate||20), dir=(values.direction||"add").toLowerCase();
+      if (!Number.isFinite(amount)||!Number.isFinite(rate)) return null;
+      let net: number, vatAmt: number, gross: number;
+      if (dir.includes("extract")) { net=amount/(1+rate/100); vatAmt=amount-net; gross=amount; }
+      else { net=amount; vatAmt=amount*(rate/100); gross=amount+vatAmt; }
+      return { primary: gross.toFixed(2), secondary: dir.includes("extract")?"gross (inc-tax)":"total (inc-tax)", extra: `Net: ${net.toFixed(2)} · Tax (${rate}%): ${vatAmt.toFixed(2)} · Gross: ${gross.toFixed(2)}`, insight: `At ${rate}% VAT: net ${net.toFixed(2)} + ${vatAmt.toFixed(2)} tax = ${gross.toFixed(2)} gross.`, recommendation: "Check the applicable rate for your country and product category.", notes: ["UK VAT: 20% standard · EU: 17-27% · Australia GST: 10% · USA: no federal VAT"] };
+    }
+    if (preset === "sales-tax") {
+      const price=Number(values.price), rate=Number(values.rate);
+      if (!Number.isFinite(price)||!Number.isFinite(rate)) return null;
+      const tax=price*(rate/100), total=price+tax;
+      return { primary: total.toFixed(2), secondary: "total with tax", extra: `Pre-tax: ${price.toFixed(2)} · Tax (${rate}%): ${tax.toFixed(2)} · Total: ${total.toFixed(2)}`, insight: `${rate}% tax on ${price.toFixed(2)} = ${tax.toFixed(2)} tax, ${total.toFixed(2)} total.`, recommendation: "US sales tax varies by state (0%–10.25%) and product category.", notes: ["Some states exempt groceries, medicine, and clothing from sales tax"] };
+    }
+    if (preset === "mortgage") {
+      const P=Number(values.principal), ann=Number(values.rate), yrs=Number(values.years);
+      if (!Number.isFinite(P)||!Number.isFinite(ann)||!Number.isFinite(yrs)||ann<=0) return null;
+      const r=ann/100/12, n=yrs*12;
+      const monthly=P*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1);
+      const totalPaid=monthly*n, totalInterest=totalPaid-P;
+      return { primary: monthly.toFixed(2), secondary: "monthly payment", extra: `Total paid: ${totalPaid.toFixed(2)} · Interest: ${totalInterest.toFixed(2)} · Loan: ${P.toFixed(2)}`, insight: `Over ${yrs} years at ${ann}%, you pay ${monthly.toFixed(2)}/month — ${totalInterest.toFixed(2)} in total interest.`, recommendation: "Even a 0.5% rate reduction saves tens of thousands over a 25-year term. Shop around.", notes: ["Assumes fixed rate. Variable rate mortgages will differ."] };
+    }
+    if (preset === "calories") {
+      const age=Number(values.age), weight=Number(values.weight), height=Number(values.height), activity=Number(values.activity||2);
+      const gender=(values.gender||"male").toLowerCase();
+      if ([age,weight,height].some(v=>!Number.isFinite(v)||v<=0)) return null;
+      const bmr=gender.includes("f") ? 10*weight+6.25*height-5*age-161 : 10*weight+6.25*height-5*age+5;
+      const factors=[1,1.2,1.375,1.55,1.725,1.9];
+      const tdee=bmr*(factors[Math.min(Math.floor(activity),5)]||1.375);
+      return { primary: Math.round(tdee).toString(), secondary: "calories/day to maintain weight", extra: `BMR: ${Math.round(bmr)} · Weight loss: ${Math.round(tdee-500)} cal/day · Weight gain: ${Math.round(tdee+500)} cal/day`, insight: `Your BMR is ${Math.round(bmr)} calories. With your activity level, you need ${Math.round(tdee)} cal/day to maintain weight.`, recommendation: "A 500 cal/day deficit = ~0.5kg/week weight loss. Consult a doctor before major dietary changes.", notes: ["Mifflin-St Jeor equation — global medical standard","Activity: 1=sedentary 2=light 3=moderate 4=active 5=very active"] };
+    }
+    if (preset === "fuel-cost") {
+      const dist=Number(values.distance), eff=Number(values.efficiency), price=Number(values.price);
+      if ([dist,eff,price].some(v=>!Number.isFinite(v)||v<=0)) return null;
+      const fuelUsed=(dist/100)*eff, total=fuelUsed*price;
+      return { primary: total.toFixed(2), secondary: "total fuel cost", extra: `Fuel used: ${fuelUsed.toFixed(2)}L · Cost per 100km: ${((total/dist)*100).toFixed(2)}`, insight: `${dist}km at ${eff}L/100km uses ${fuelUsed.toFixed(1)} litres costing ${total.toFixed(2)}.`, recommendation: "Reducing highway speed from 120 to 100 km/h typically cuts fuel use by 15-20%.", notes: ["Actual consumption varies with driving conditions, load and vehicle age"] };
+    }
+    if (preset === "inflation") {
+      const amount=Number(values.amount), from=Number(values.from_year), to=Number(values.to_year), rate=Number(values.rate||3);
+      if ([amount,from,to,rate].some(v=>!Number.isFinite(v))) return null;
+      const years=to-from, adjusted=amount*Math.pow(1+rate/100,years), change=adjusted-amount;
+      return { primary: adjusted.toFixed(2), secondary: `equivalent in ${to}`, extra: `Original: ${amount.toFixed(2)} in ${from} · Change: +${change.toFixed(2)} (+${((change/amount)*100).toFixed(1)}%)`, insight: `${amount.toFixed(2)} in ${from} equals ${adjusted.toFixed(2)} in ${to} at ${rate}% average annual inflation.`, recommendation: "Global average inflation has been ~3-4% historically. Check your country's CPI for accurate figures.", notes: ["This is an estimate. Real purchasing power varies by country and product category."] };
+    }
+    if (preset === "ratio-percentage") {
+      const num = Number(values.numerator);
+      const den = Number(values.denominator);
+      if (!Number.isFinite(num) || !Number.isFinite(den) || den === 0) return null;
+      const pct = (num / den) * 100;
+      const resultLabel = String(config.resultLabel || "Result");
+      const numLabel = String(config.numeratorLabel || "Value");
+      const denLabel = String(config.denominatorLabel || "Total");
+      return {
+        primary: `${pct.toFixed(2)}%`,
+        secondary: resultLabel,
+        extra: `${num} out of ${den}`,
+        insight: `${numLabel}: ${num} ÷ ${denLabel}: ${den} = ${pct.toFixed(2)}%`,
+        recommendation: pct >= 100 ? "Value equals or exceeds total." : pct >= 75 ? "High ratio — strong performance." : pct >= 50 ? "Above average." : "Below 50% — room for improvement.",
+        notes: ["Result is calculated as (numerator ÷ denominator) × 100"],
+      };
+    }
+
+    if (preset === "uptime-percentage") {
+      const up = Number(values.uptime_hours);
+      const total = Number(values.total_hours);
+      if (!Number.isFinite(up) || !Number.isFinite(total) || total === 0) return null;
+      const pct = (up / total) * 100;
+      const downtime = total - up;
+      const sla = pct >= 99.99 ? "Four Nines (99.99%)" : pct >= 99.9 ? "Three Nines (99.9%)" : pct >= 99.5 ? "99.5% SLA" : pct >= 99 ? "99% SLA" : "Below standard SLA";
+      return {
+        primary: `${pct.toFixed(3)}%`,
+        secondary: "Uptime percentage",
+        extra: `Downtime: ${downtime.toFixed(1)} hours · SLA level: ${sla}`,
+        insight: `${up} hours up out of ${total} total hours = ${pct.toFixed(3)}% uptime.`,
+        recommendation: pct >= 99.9 ? "Excellent — meets Three Nines SLA standard." : "Consider infrastructure improvements to reach 99.9% uptime.",
+        notes: ["99.9% uptime = 8.76 hours downtime/year", "99.99% (four nines) = 52 minutes downtime/year"],
+      };
+    }
+
+    if (preset === "growth-rate") {
+      const current = Number(values.current);
+      const previous = Number(values.previous);
+      if (!Number.isFinite(current) || !Number.isFinite(previous) || previous === 0) return null;
+      const growth = ((current - previous) / previous) * 100;
+      const isPositive = growth >= 0;
+      return {
+        primary: `${isPositive ? "+" : ""}${growth.toFixed(2)}%`,
+        secondary: String(config.resultLabel || "Growth rate"),
+        extra: `From ${previous} to ${current} (change: ${current - previous > 0 ? "+" : ""}${current - previous})`,
+        insight: `Growth from ${previous} to ${current} = ${isPositive ? "+" : ""}${growth.toFixed(2)}%`,
+        recommendation: growth > 20 ? "Strong growth — sustain the momentum." : growth > 0 ? "Positive growth — look for ways to accelerate." : "Decline detected — investigate contributing factors.",
+        notes: ["Growth rate = ((current - previous) / previous) × 100"],
       };
     }
 
