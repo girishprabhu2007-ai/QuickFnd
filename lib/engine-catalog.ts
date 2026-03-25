@@ -37,6 +37,10 @@ export type ToolEngineType =
   | "json-unescape"
   | "generic-directory";
 
+// ─── FIXED: Added all calculator engines that exist in calculator-runtime.ts ──
+// Previously missing: sip, fd, ppf, hra, income-tax, compound-interest, formula
+// This caused auto-generated calculators to fall through to generic-directory
+// and get filtered as invisible on all public pages.
 export type CalculatorEngineType =
   | "age-calculator"
   | "bmi-calculator"
@@ -44,7 +48,14 @@ export type CalculatorEngineType =
   | "emi-calculator"
   | "percentage-calculator"
   | "simple-interest-calculator"
+  | "compound-interest-calculator"
   | "gst-calculator"
+  | "sip-calculator"
+  | "fd-calculator"
+  | "ppf-calculator"
+  | "hra-calculator"
+  | "income-tax-calculator"
+  | "formula-calculator"
   | "generic-directory";
 
 export type AIToolEngineType =
@@ -154,12 +165,12 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "slug-generator": createDefinition({
     type: "slug-generator",
     category: "tool",
-    family: "text-transformer",
+    family: "string-generator",
     title: "Slug Generator",
-    description: "Convert text into clean URL-ready slugs.",
-    keywords: ["slug-generator", "slug generator"],
+    description: "Generate URL-friendly slugs from any text.",
+    keywords: ["slug-generator", "slug generator", "url-slug"],
     defaultConfig: {
-      modes: ["slug"],
+      mode: "slug",
     },
   }),
   "random-string-generator": createDefinition({
@@ -167,8 +178,8 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
     category: "tool",
     family: "string-generator",
     title: "Random String Generator",
-    description: "Generate reusable random strings with configurable options.",
-    keywords: ["random-string-generator", "string-generator", "random string"],
+    description: "Generate random strings with configurable characters and length.",
+    keywords: ["random-string-generator", "random string generator", "string generator"],
     defaultConfig: {
       mode: "random-string",
       minLength: 4,
@@ -183,279 +194,200 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "base64-encoder": createDefinition({
     type: "base64-encoder",
     category: "tool",
-    family: "codec",
+    family: "encoder-decoder",
     title: "Base64 Encoder",
-    description: "Encode plain text into Base64.",
-    keywords: ["base64-encoder", "base64 encoder"],
+    description: "Encode text or data to Base64 format.",
+    keywords: ["base64-encoder", "base64 encoder", "base64 encode"],
     defaultConfig: {
-      mode: "base64-encode",
+      mode: "encode",
     },
   }),
   "base64-decoder": createDefinition({
     type: "base64-decoder",
     category: "tool",
-    family: "codec",
+    family: "encoder-decoder",
     title: "Base64 Decoder",
-    description: "Decode Base64 input back into plain text.",
-    keywords: ["base64-decoder", "base64 decoder"],
+    description: "Decode Base64 data back into readable text.",
+    keywords: ["base64-decoder", "base64 decoder", "base64 decode"],
     defaultConfig: {
-      mode: "base64-decode",
+      mode: "decode",
     },
   }),
   "url-encoder": createDefinition({
     type: "url-encoder",
     category: "tool",
-    family: "codec",
+    family: "encoder-decoder",
     title: "URL Encoder",
-    description: "Encode text for safe URL use.",
-    keywords: ["url-encoder", "url encoder"],
+    description: "Percent-encode URLs for safe transmission.",
+    keywords: ["url-encoder", "url encoder", "url encode", "percent-encode"],
     defaultConfig: {
-      mode: "url-encode",
+      mode: "encode",
     },
   }),
   "url-decoder": createDefinition({
     type: "url-decoder",
     category: "tool",
-    family: "codec",
+    family: "encoder-decoder",
     title: "URL Decoder",
-    description: "Decode URL-encoded input.",
-    keywords: ["url-decoder", "url decoder"],
+    description: "Decode percent-encoded URLs back to readable text.",
+    keywords: ["url-decoder", "url decoder", "url decode"],
     defaultConfig: {
-      mode: "url-decode",
+      mode: "decode",
     },
   }),
   "text-case-converter": createDefinition({
     type: "text-case-converter",
     category: "tool",
-    family: "text-transformer",
+    family: "text-formatter",
     title: "Text Case Converter",
-    description: "Convert text to lowercase, uppercase, title case, and slug.",
+    description: "Convert text between UPPERCASE, lowercase, Title Case, camelCase, snake_case.",
     keywords: [
       "text-case-converter",
+      "text case converter",
       "case-converter",
-      "case converter",
       "uppercase",
       "lowercase",
       "title-case",
-      "title case",
-      "sentence-case",
-      "sentence case",
     ],
-    defaultConfig: {
-      modes: ["lowercase", "uppercase", "titlecase", "slug"],
-    },
+    defaultConfig: {},
   }),
   "code-formatter": createDefinition({
     type: "code-formatter",
     category: "tool",
-    family: "text-formatter",
+    family: "code-tools",
     title: "Code Formatter",
-    description: "Apply lightweight formatting to JSON or plain code blocks.",
-    keywords: ["code-formatter", "code formatter"],
-    defaultConfig: {
-      mode: "code",
-      allowMinify: false,
-    },
+    description: "Format source code with proper indentation and structure.",
+    keywords: ["code-formatter", "code formatter", "code beautifier"],
+    defaultConfig: {},
   }),
   "code-snippet-manager": createDefinition({
     type: "code-snippet-manager",
     category: "tool",
-    family: "snippet-manager",
+    family: "code-tools",
     title: "Code Snippet Manager",
-    description: "Save, copy, and delete reusable code snippets in the browser.",
-    keywords: ["code-snippet-manager", "snippet-manager", "snippet manager"],
+    description: "Save and retrieve reusable code snippets.",
+    keywords: ["code-snippet-manager", "code snippet", "snippet manager"],
     defaultConfig: {},
   }),
   "text-transformer": createDefinition({
     type: "text-transformer",
     category: "tool",
-    family: "text-transformer",
+    family: "text-formatter",
     title: "Text Transformer",
-    description: "Run reusable text transforms from config-driven modes.",
-    keywords: ["text-transformer", "text transform"],
-    defaultConfig: {
-      modes: ["lowercase", "uppercase", "titlecase", "slug", "trim"],
-    },
+    description: "Transform text by reversing, trimming, removing blanks, deduplicating lines.",
+    keywords: ["text-transformer", "text transformer", "text transform"],
+    defaultConfig: {},
   }),
   "number-generator": createDefinition({
     type: "number-generator",
     category: "tool",
-    family: "number-generator",
-    title: "Number Generator",
-    description: "Generate random numbers using a configurable range.",
-    keywords: ["number-generator", "random-number-generator", "random number"],
+    family: "string-generator",
+    title: "Random Number Generator",
+    description: "Generate random numbers in a configurable range.",
+    keywords: ["number-generator", "number generator", "random number"],
     defaultConfig: {
       min: 1,
       max: 100,
-      allowDecimal: false,
-      decimalPlaces: 2,
+      count: 1,
     },
   }),
   "unit-converter": createDefinition({
     type: "unit-converter",
     category: "tool",
-    family: "unit-converter",
+    family: "converter",
     title: "Unit Converter",
-    description: "Convert values between units using config-driven multipliers.",
-    keywords: ["unit-converter", "unit converter", "converter", "convert"],
-    defaultConfig: {
-      fromUnit: "meters",
-      toUnit: "feet",
-      multiplier: 3.28084,
-      precision: 4,
-    },
+    description: "Convert between units of length, weight, temperature and volume.",
+    keywords: ["unit-converter", "unit converter", "measurement converter"],
+    defaultConfig: {},
   }),
   "currency-converter": createDefinition({
     type: "currency-converter",
     category: "tool",
-    family: "currency-converter",
+    family: "converter",
     title: "Currency Converter",
-    description: "Convert currencies using the live currency tool engine.",
-    keywords: ["currency-converter", "currency converter", "exchange-rate", "exchange rate"],
+    description: "Convert between currencies using live exchange rates.",
+    keywords: ["currency-converter", "currency converter", "exchange rate"],
     defaultConfig: {},
   }),
   "regex-tester": createDefinition({
     type: "regex-tester",
     category: "tool",
-    family: "regex-tools",
+    family: "developer-tools",
     title: "Regex Tester",
-    description: "Test regular expressions against text and review match counts.",
-    keywords: ["regex-tester", "regex-test", "regex tester"],
-    defaultConfig: {
-      mode: "test",
-      flags: "g",
-    },
+    description: "Test regular expressions against text with real-time match highlighting.",
+    keywords: ["regex-tester", "regex tester", "regular expression tester"],
+    defaultConfig: {},
   }),
   "regex-extractor": createDefinition({
     type: "regex-extractor",
     category: "tool",
-    family: "regex-tools",
+    family: "developer-tools",
     title: "Regex Extractor",
-    description: "Extract all matching values from text using a regex pattern.",
-    keywords: ["regex-extractor", "regex-extract", "match-extractor"],
-    defaultConfig: {
-      mode: "extract",
-      flags: "g",
-    },
+    description: "Extract matching groups from text using regex patterns.",
+    keywords: ["regex-extractor", "regex extractor", "match extractor"],
+    defaultConfig: {},
   }),
   "sha256-generator": createDefinition({
     type: "sha256-generator",
     category: "tool",
-    family: "hash-tools",
-    title: "SHA256 Generator",
-    description: "Generate SHA-256 hashes from text input.",
-    keywords: ["sha256-generator", "sha256", "sha 256"],
-    defaultConfig: {
-      mode: "sha256",
-    },
+    family: "hash-generator",
+    title: "SHA-256 Hash Generator",
+    description: "Generate SHA-256 cryptographic hashes from any text input.",
+    keywords: ["sha256-generator", "sha256 generator", "sha-256", "hash generator"],
+    defaultConfig: {},
   }),
   "md5-generator": createDefinition({
     type: "md5-generator",
     category: "tool",
-    family: "hash-tools",
-    title: "MD5 Generator",
+    family: "hash-generator",
+    title: "MD5 Hash Generator",
     description: "Generate MD5 hashes from text input.",
-    keywords: ["md5-generator", "md5"],
-    defaultConfig: {
-      mode: "md5",
-    },
+    keywords: ["md5-generator", "md5 generator", "md5 hash"],
+    defaultConfig: {},
   }),
   "timestamp-converter": createDefinition({
     type: "timestamp-converter",
     category: "tool",
-    family: "timestamp-tools",
-    title: "Timestamp Converter",
-    description: "Convert Unix timestamps and readable dates in one reusable tool.",
-    keywords: ["timestamp-converter", "timestamp", "unix-time", "unix timestamp", "date converter"],
+    family: "converter",
+    title: "Unix Timestamp Converter",
+    description: "Convert Unix timestamps to human-readable dates and vice versa.",
+    keywords: ["timestamp-converter", "timestamp converter", "unix timestamp", "epoch converter"],
     defaultConfig: {},
   }),
   "hex-to-rgb": createDefinition({
     type: "hex-to-rgb",
     category: "tool",
     family: "color-tools",
-    title: "Hex To RGB",
-    description: "Convert hex color values into RGB format.",
-    keywords: ["hex-to-rgb", "hex to rgb"],
-    defaultConfig: {
-      mode: "hex-to-rgb",
-    },
+    title: "HEX to RGB Converter",
+    description: "Convert HEX color codes to RGB values.",
+    keywords: ["hex-to-rgb", "hex to rgb", "color converter"],
+    defaultConfig: {},
   }),
   "rgb-to-hex": createDefinition({
     type: "rgb-to-hex",
     category: "tool",
     family: "color-tools",
-    title: "RGB To Hex",
-    description: "Convert RGB color values into hex format.",
-    keywords: ["rgb-to-hex", "rgb to hex"],
-    defaultConfig: {
-      mode: "rgb-to-hex",
-    },
+    title: "RGB to HEX Converter",
+    description: "Convert RGB color values to HEX codes.",
+    keywords: ["rgb-to-hex", "rgb to hex", "color converter"],
+    defaultConfig: {},
   }),
   "text-to-binary": createDefinition({
     type: "text-to-binary",
     category: "tool",
-    family: "developer-converters",
-    title: "Text To Binary",
-    description: "Convert text into binary values.",
-    keywords: ["text-to-binary", "text to binary"],
-    defaultConfig: {
-      mode: "text-to-binary",
-    },
+    family: "encoder-decoder",
+    title: "Text to Binary Converter",
+    description: "Convert plain text to binary representation.",
+    keywords: ["text-to-binary", "text to binary", "binary converter"],
+    defaultConfig: {},
   }),
   "binary-to-text": createDefinition({
     type: "binary-to-text",
     category: "tool",
-    family: "developer-converters",
-    title: "Binary To Text",
-    description: "Convert binary values into readable text.",
-    keywords: ["binary-to-text", "binary to text"],
-    defaultConfig: {
-      mode: "binary-to-text",
-    },
-  }),
-  "qr-generator": createDefinition({
-    type: "qr-generator",
-    category: "tool",
-    family: "qr-generator",
-    title: "QR Code Generator",
-    description: "Generate QR codes from URLs, text, or any content.",
-    keywords: ["qr-code-generator", "qr generator", "qr code"],
-    defaultConfig: {},
-  }),
-  "color-picker": createDefinition({
-    type: "color-picker",
-    category: "tool",
-    family: "color-picker",
-    title: "Color Picker",
-    description: "Pick colors and get HEX, RGB, HSL values instantly.",
-    keywords: ["color-picker", "colour picker", "hex color picker"],
-    defaultConfig: {},
-  }),
-  "markdown-editor": createDefinition({
-    type: "markdown-editor",
-    category: "tool",
-    family: "markdown-editor",
-    title: "Markdown Editor",
-    description: "Write Markdown with live HTML preview and export.",
-    keywords: ["markdown-editor", "markdown preview", "markdown converter"],
-    defaultConfig: {},
-  }),
-  "csv-to-json": createDefinition({
-    type: "csv-to-json",
-    category: "tool",
-    family: "csv-to-json",
-    title: "CSV to JSON Converter",
-    description: "Convert CSV data to JSON format instantly.",
-    keywords: ["csv-to-json", "csv converter", "csv json"],
-    defaultConfig: {},
-  }),
-  "ip-lookup": createDefinition({
-    type: "ip-lookup",
-    category: "tool",
-    family: "ip-lookup",
-    title: "IP Address Lookup",
-    description: "Look up location, ISP, and details for any IP address.",
-    keywords: ["ip-lookup", "ip address lookup", "ip checker"],
+    family: "encoder-decoder",
+    title: "Binary to Text Converter",
+    description: "Convert binary code back to readable text.",
+    keywords: ["binary-to-text", "binary to text", "binary decoder"],
     defaultConfig: {},
   }),
   "json-escape": createDefinition({
@@ -480,12 +412,60 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
       mode: "json-unescape",
     },
   }),
+  "qr-generator": createDefinition({
+    type: "qr-generator",
+    category: "tool",
+    family: "generator",
+    title: "QR Code Generator",
+    description: "Generate QR codes from URLs, text or any content.",
+    keywords: ["qr-generator", "qr code generator", "qr code"],
+    defaultConfig: {},
+  }),
+  "color-picker": createDefinition({
+    type: "color-picker",
+    category: "tool",
+    family: "color-tools",
+    title: "Color Picker",
+    description: "Pick colors visually and get HEX, RGB, HSL values.",
+    keywords: ["color-picker", "color picker", "colour picker"],
+    defaultConfig: {},
+  }),
+  "markdown-editor": createDefinition({
+    type: "markdown-editor",
+    category: "tool",
+    family: "text-formatter",
+    title: "Markdown Editor",
+    description: "Write Markdown with live HTML preview.",
+    keywords: ["markdown-editor", "markdown editor", "markdown preview"],
+    defaultConfig: {},
+  }),
+  "csv-to-json": createDefinition({
+    type: "csv-to-json",
+    category: "tool",
+    family: "converter",
+    title: "CSV to JSON Converter",
+    description: "Convert CSV data to JSON with auto-delimiter detection.",
+    keywords: ["csv-to-json", "csv to json", "csv json converter"],
+    defaultConfig: {},
+  }),
+  "ip-lookup": createDefinition({
+    type: "ip-lookup",
+    category: "tool",
+    family: "network-tools",
+    title: "IP Address Lookup",
+    description: "Look up location, ISP and timezone for any IP address.",
+    keywords: ["ip-lookup", "ip lookup", "ip address lookup"],
+    defaultConfig: {},
+  }),
+
+  // ─── CALCULATORS ──────────────────────────────────────────────────────────
+
   "age-calculator": createDefinition({
     type: "age-calculator",
     category: "calculator",
     family: "date-calculator",
     title: "Age Calculator",
-    description: "Calculate age from a birth date.",
+    description: "Calculate exact age from a birth date.",
     keywords: ["age-calculator", "age calculator"],
     defaultConfig: {},
   }),
@@ -495,7 +475,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
     family: "health-calculator",
     title: "BMI Calculator",
     description: "Calculate body mass index from height and weight.",
-    keywords: ["bmi-calculator", "bmi calculator"],
+    keywords: ["bmi-calculator", "bmi calculator", "body mass index"],
     defaultConfig: {},
   }),
   "loan-calculator": createDefinition({
@@ -503,7 +483,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
     category: "calculator",
     family: "finance-calculator",
     title: "Loan Calculator",
-    description: "Calculate loan repayment estimates.",
+    description: "Calculate loan repayment, total interest and monthly payments.",
     keywords: ["loan-calculator", "loan calculator"],
     defaultConfig: {},
   }),
@@ -512,7 +492,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
     category: "calculator",
     family: "finance-calculator",
     title: "EMI Calculator",
-    description: "Calculate equated monthly instalments.",
+    description: "Calculate equated monthly instalments for any loan.",
     keywords: ["emi-calculator", "emi calculator"],
     defaultConfig: {},
   }),
@@ -521,7 +501,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
     category: "calculator",
     family: "math-calculator",
     title: "Percentage Calculator",
-    description: "Calculate common percentage values.",
+    description: "Calculate percentages, increases, decreases and differences.",
     keywords: ["percentage-calculator", "percentage calculator"],
     defaultConfig: {},
   }),
@@ -530,8 +510,18 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
     category: "calculator",
     family: "finance-calculator",
     title: "Simple Interest Calculator",
-    description: "Calculate simple interest values.",
+    description: "Calculate simple interest for any principal, rate and time.",
     keywords: ["simple-interest-calculator", "simple interest", "interest calculator"],
+    defaultConfig: {},
+  }),
+  // ─── NEWLY ADDED to type union ─────────────────────────────────────────────
+  "compound-interest-calculator": createDefinition({
+    type: "compound-interest-calculator",
+    category: "calculator",
+    family: "finance-calculator",
+    title: "Compound Interest Calculator",
+    description: "Calculate compound interest with configurable compounding frequency.",
+    keywords: ["compound-interest-calculator", "compound interest", "compound calculator"],
     defaultConfig: {},
   }),
   "gst-calculator": createDefinition({
@@ -539,10 +529,67 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
     category: "calculator",
     family: "finance-calculator",
     title: "GST Calculator",
-    description: "Calculate GST-inclusive and GST-exclusive amounts.",
+    description: "Calculate GST-inclusive and GST-exclusive amounts instantly.",
     keywords: ["gst-calculator", "gst calculator"],
     defaultConfig: {},
   }),
+  "sip-calculator": createDefinition({
+    type: "sip-calculator",
+    category: "calculator",
+    family: "investment-calculator",
+    title: "SIP Calculator",
+    description: "Calculate SIP returns for mutual fund investments.",
+    keywords: ["sip-calculator", "sip calculator", "systematic investment plan"],
+    defaultConfig: {},
+  }),
+  "fd-calculator": createDefinition({
+    type: "fd-calculator",
+    category: "calculator",
+    family: "investment-calculator",
+    title: "FD Calculator",
+    description: "Calculate fixed deposit maturity amount and interest earned.",
+    keywords: ["fd-calculator", "fd calculator", "fixed deposit calculator"],
+    defaultConfig: {},
+  }),
+  "ppf-calculator": createDefinition({
+    type: "ppf-calculator",
+    category: "calculator",
+    family: "investment-calculator",
+    title: "PPF Calculator",
+    description: "Calculate PPF maturity amount with annual contributions.",
+    keywords: ["ppf-calculator", "ppf calculator", "public provident fund"],
+    defaultConfig: {},
+  }),
+  "hra-calculator": createDefinition({
+    type: "hra-calculator",
+    category: "calculator",
+    family: "tax-calculator",
+    title: "HRA Calculator",
+    description: "Calculate House Rent Allowance tax exemption.",
+    keywords: ["hra-calculator", "hra calculator", "house rent allowance"],
+    defaultConfig: {},
+  }),
+  "income-tax-calculator": createDefinition({
+    type: "income-tax-calculator",
+    category: "calculator",
+    family: "tax-calculator",
+    title: "Income Tax Calculator",
+    description: "Estimate income tax under old and new tax regime.",
+    keywords: ["income-tax-calculator", "income tax calculator", "tax calculator"],
+    defaultConfig: {},
+  }),
+  "formula-calculator": createDefinition({
+    type: "formula-calculator",
+    category: "calculator",
+    family: "formula-calculator",
+    title: "Formula Calculator",
+    description: "Evaluate mathematical formulas and expressions with configurable presets.",
+    keywords: ["formula-calculator", "formula calculator"],
+    defaultConfig: {},
+  }),
+
+  // ─── AI TOOLS ─────────────────────────────────────────────────────────────
+
   "openai-text-tool": createDefinition({
     type: "openai-text-tool",
     category: "ai-tool",
@@ -631,6 +678,11 @@ const TOOL_ENGINE_ORDER: ToolEngineType[] = [
   "binary-to-text",
   "json-escape",
   "json-unescape",
+  "qr-generator",
+  "color-picker",
+  "markdown-editor",
+  "csv-to-json",
+  "ip-lookup",
   "generic-directory",
 ];
 
@@ -641,7 +693,14 @@ const CALCULATOR_ENGINE_ORDER: CalculatorEngineType[] = [
   "emi-calculator",
   "percentage-calculator",
   "simple-interest-calculator",
+  "compound-interest-calculator",
   "gst-calculator",
+  "sip-calculator",
+  "fd-calculator",
+  "ppf-calculator",
+  "hra-calculator",
+  "income-tax-calculator",
+  "formula-calculator",
   "generic-directory",
 ];
 
@@ -836,14 +895,18 @@ export function inferEngineType(category: EngineCategory, slug: string): EngineT
 
   if (category === "calculator") {
     if (value.includes("age")) return "age-calculator";
-    if (value.includes("bmi")) return "bmi-calculator";
+    if (value.includes("bmi") || value.includes("body-mass")) return "bmi-calculator";
     if (value.includes("emi")) return "emi-calculator";
+    if (value.includes("sip") || includesAll(value, ["systematic", "investment"])) return "sip-calculator";
+    if (value.includes("fixed-deposit") || value === "fd-calculator" || includesAll(value, ["fd", "calculator"])) return "fd-calculator";
+    if (value.includes("ppf") || value.includes("public-provident")) return "ppf-calculator";
+    if (value.includes("hra") || value.includes("house-rent-allowance")) return "hra-calculator";
+    if (value.includes("income-tax") || value.includes("tax-calculator") || value.includes("itr")) return "income-tax-calculator";
+    if (value.includes("compound-interest") || includesAll(value, ["compound", "interest"])) return "compound-interest-calculator";
     if (value.includes("loan")) return "loan-calculator";
+    if (value.includes("simple-interest") || value === "interest-calculator") return "simple-interest-calculator";
+    if (value.includes("gst") || value.includes("vat")) return "gst-calculator";
     if (value.includes("percentage")) return "percentage-calculator";
-    if (value.includes("simple-interest") || value.includes("interest")) {
-      return "simple-interest-calculator";
-    }
-    if (value.includes("gst")) return "gst-calculator";
     return "generic-directory";
   }
 

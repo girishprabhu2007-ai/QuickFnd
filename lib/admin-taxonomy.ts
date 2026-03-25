@@ -63,25 +63,16 @@ function pickGroup(
   }
 
   if (!bestGroup) {
-    return {
-      key: fallbackKey,
-      label: fallbackLabel,
-    };
+    return { key: fallbackKey, label: fallbackLabel };
   }
 
   const minScore = bestGroup.minScore ?? 1;
 
   if (bestScore < minScore) {
-    return {
-      key: fallbackKey,
-      label: fallbackLabel,
-    };
+    return { key: fallbackKey, label: fallbackLabel };
   }
 
-  return {
-    key: bestGroup.key,
-    label: bestGroup.label,
-  };
+  return { key: bestGroup.key, label: bestGroup.label };
 }
 
 function bucketItems<
@@ -120,40 +111,10 @@ function bucketItems<
     });
 }
 
+// ─── TOOL GROUPS ──────────────────────────────────────────────────────────────
+// Order matters: more specific groups are matched first.
+
 const TOOL_GROUPS: TaxonomyEntry[] = [
-  {
-    key: "youtube-video-tools",
-    label: "YouTube & Video",
-    include: [
-      /\byoutube\b/i,
-      /\bvideo\b/i,
-      /\bthumbnail\b/i,
-      /\bplaylist\b/i,
-      /\bchannel\b/i,
-      /\bshorts\b/i,
-      /\bcaption\b/i,
-    ],
-    exclude: [/\btwitter\b/i, /\binstagram\b/i, /\btiktok\b/i],
-    minScore: 1,
-  },
-  {
-    key: "seo-marketing-tools",
-    label: "SEO & Marketing",
-    include: [
-      /\bseo\b/i,
-      /\bmeta\b/i,
-      /\bkeyword\b/i,
-      /\bserp\b/i,
-      /\bheadline\b/i,
-      /\btitle\b/i,
-      /\bdescription\b/i,
-      /\butm\b/i,
-      /\brank\b/i,
-      /\bmarketing\b/i,
-    ],
-    exclude: [/\byoutube\b/i, /\bvideo\b/i, /\bthumbnail\b/i],
-    minScore: 1,
-  },
   {
     key: "developer-tools",
     label: "Developer Tools",
@@ -172,6 +133,11 @@ const TOOL_GROUPS: TaxonomyEntry[] = [
       /\btimestamp\b/i,
       /\bsyntax\b/i,
       /\bdeveloper\b/i,
+      /\bjwt\b/i,
+      /\bdiff\b/i,
+      /\bhtml\b/i,
+      /\bcss\b/i,
+      /\bminif\b/i,
     ],
     minScore: 1,
   },
@@ -188,6 +154,8 @@ const TOOL_GROUPS: TaxonomyEntry[] = [
       /\bbinary\b/i,
       /\bconvert\b/i,
       /\bconverter\b/i,
+      /\bunit\b/i,
+      /\bcurrency\b/i,
     ],
     minScore: 1,
   },
@@ -206,17 +174,102 @@ const TOOL_GROUPS: TaxonomyEntry[] = [
       /\bslug\b/i,
       /\brewrite\b/i,
       /\btransform\b/i,
+      /\bdiff\b/i,
+      /\bmarkdown\b/i,
+      /\blorem\b/i,
+      /\blines?\b/i,
     ],
     exclude: [/\byoutube\b/i, /\bvideo\b/i],
     minScore: 1,
   },
   {
+    key: "seo-marketing-tools",
+    label: "SEO & Marketing",
+    include: [
+      /\bseo\b/i,
+      /\bmeta\b/i,
+      /\bkeyword\b/i,
+      /\bserp\b/i,
+      /\bheadline\b/i,
+      /\butm\b/i,
+      /\brank\b/i,
+      /\bmarketing\b/i,
+      /\brobots\b/i,
+      /\bopen.graph\b/i,
+      /\bog.tag\b/i,
+    ],
+    exclude: [/\byoutube\b/i, /\bvideo\b/i, /\bthumbnail\b/i],
+    minScore: 1,
+  },
+  {
+    key: "youtube-video-tools",
+    label: "YouTube & Video",
+    include: [
+      /\byoutube\b/i,
+      /\bvideo\b/i,
+      /\bthumbnail\b/i,
+      /\bplaylist\b/i,
+      /\bchannel\b/i,
+      /\bshorts\b/i,
+      /\bcaption\b/i,
+    ],
+    exclude: [/\btwitter\b/i, /\binstagram\b/i, /\btiktok\b/i],
+    minScore: 1,
+  },
+  {
+    key: "security-tools",
+    label: "Security & Privacy",
+    include: [
+      /\bpassword\b/i,
+      /\bsecurity\b/i,
+      /\bencrypt\b/i,
+      /\bhash\b/i,
+      /\bprivacy\b/i,
+      /\bsafe\b/i,
+    ],
+    minScore: 1,
+  },
+  {
+    key: "design-tools",
+    label: "Design Tools",
+    include: [
+      /\bcolor\b/i,
+      /\bcolour\b/i,
+      /\bgradient\b/i,
+      /\bpalette\b/i,
+      /\bdesign\b/i,
+      /\bcss\b/i,
+      /\bshadow\b/i,
+    ],
+    minScore: 1,
+  },
+  {
     key: "generators",
     label: "Generators",
-    include: [/\bgenerator\b/i, /\brandom\b/i, /\bpassword\b/i],
+    include: [/\bgenerator\b/i, /\brandom\b/i, /\bqr\b/i],
+    exclude: [/\bpassword\b/i],
+    minScore: 1,
+  },
+  {
+    key: "network-tools",
+    label: "Network & Web",
+    include: [
+      /\bip\b/i,
+      /\bdns\b/i,
+      /\bssl\b/i,
+      /\bnetwork\b/i,
+      /\blookup\b/i,
+      /\bping\b/i,
+      /\bemail\b/i,
+      /\bvalidat\b/i,
+    ],
     minScore: 1,
   },
 ];
+
+// ─── CALCULATOR GROUPS ────────────────────────────────────────────────────────
+// FIXED: "Other Calculators" → proper named groups
+// ADDED: Investment, Tax, Utility groups
 
 const CALCULATOR_GROUPS: TaxonomyEntry[] = [
   {
@@ -226,29 +279,129 @@ const CALCULATOR_GROUPS: TaxonomyEntry[] = [
       /\bloan\b/i,
       /\bemi\b/i,
       /\binterest\b/i,
-      /\bgst\b/i,
-      /\btax\b/i,
       /\bprofit\b/i,
       /\bpayment\b/i,
       /\bfinance\b/i,
+      /\bdiscount\b/i,
+      /\bsimple.interest\b/i,
+      /\bcompound\b/i,
+    ],
+    minScore: 1,
+  },
+  {
+    key: "investment-calculators",
+    label: "Investment Calculators",
+    include: [
+      /\bsip\b/i,
+      /\bfixed.deposit\b/i,
+      /\bfd\b/i,
+      /\bppf\b/i,
+      /\bretirement\b/i,
+      /\binvest\b/i,
+      /\bsavings\b/i,
+      /\bprovident\b/i,
+      /\bportfolio\b/i,
+    ],
+    minScore: 1,
+  },
+  {
+    key: "tax-calculators",
+    label: "Tax Calculators",
+    include: [
+      /\bgst\b/i,
+      /\btax\b/i,
+      /\bhra\b/i,
+      /\bincome.tax\b/i,
+      /\bvat\b/i,
+      /\bexemption\b/i,
+      /\bdeduction\b/i,
+    ],
+    minScore: 1,
+  },
+  {
+    key: "health-calculators",
+    label: "Health Calculators",
+    include: [
+      /\bbmi\b/i,
+      /\bhealth\b/i,
+      /\bweight\b/i,
+      /\bcalorie\b/i,
+      /\bsleep\b/i,
+      /\bfitness\b/i,
+      /\bideal.weight\b/i,
     ],
     minScore: 1,
   },
   {
     key: "math-calculators",
     label: "Math Calculators",
-    include: [/\bpercentage\b/i, /\bmath\b/i, /\brate\b/i, /\bnumber\b/i, /\baverage\b/i],
+    include: [
+      /\bpercentage\b/i,
+      /\bmath\b/i,
+      /\bnumber\b/i,
+      /\baverage\b/i,
+      /\bratio\b/i,
+      /\bfraction\b/i,
+      /\bprobability\b/i,
+      /\btip\b/i,
+      /\bmargin\b/i,
+    ],
     minScore: 1,
   },
   {
-    key: "health-calculators",
-    label: "Health Calculators",
-    include: [/\bbmi\b/i, /\bhealth\b/i, /\bweight\b/i, /\bcalorie\b/i, /\bage\b/i],
+    key: "date-time-calculators",
+    label: "Date & Time Calculators",
+    include: [
+      /\bage\b/i,
+      /\bdate\b/i,
+      /\btime\b/i,
+      /\bdays?\b/i,
+      /\bduration\b/i,
+      /\bschedule\b/i,
+      /\bshift\b/i,
+      /\bcountdown\b/i,
+      /\bpomodoro\b/i,
+    ],
+    minScore: 1,
+  },
+  {
+    key: "utility-calculators",
+    label: "Utility Calculators",
+    include: [
+      /\bfuel\b/i,
+      /\btrip\b/i,
+      /\bcost\b/i,
+      /\bestimate\b/i,
+      /\bunit\b/i,
+      /\brate\b/i,
+    ],
     minScore: 1,
   },
 ];
 
+// ─── AI TOOL GROUPS ───────────────────────────────────────────────────────────
+// ADDED: Resume AI, Social AI groups
+
 const AI_GROUPS: TaxonomyEntry[] = [
+  {
+    key: "writing-ai",
+    label: "Writing AI",
+    include: [
+      /\bwriter\b/i,
+      /\bemail\b/i,
+      /\brewrite\b/i,
+      /\bsummary\b/i,
+      /\boutline\b/i,
+      /\bwriting\b/i,
+      /\bgrammar\b/i,
+      /\bparaphras\b/i,
+      /\bcover.letter\b/i,
+      /\bresume\b/i,
+      /\bmeeting\b/i,
+      /\bnotes\b/i,
+    ],
+    minScore: 1,
+  },
   {
     key: "content-ai",
     label: "Content AI",
@@ -260,25 +413,33 @@ const AI_GROUPS: TaxonomyEntry[] = [
       /\bdescription\b/i,
       /\bheadline\b/i,
       /\btitle\b/i,
+      /\bmeta\b/i,
+      /\bproduct\b/i,
+      /\byoutube\b/i,
     ],
     minScore: 1,
   },
   {
-    key: "writing-ai",
-    label: "Writing AI",
-    include: [/\bwriter\b/i, /\bemail\b/i, /\brewrite\b/i, /\bsummary\b/i, /\boutline\b/i, /\bwriting\b/i],
+    key: "social-ai",
+    label: "Social Media AI",
+    include: [
+      /\btweet\b/i,
+      /\btwitter\b/i,
+      /\blinkedin\b/i,
+      /\binstagram\b/i,
+      /\bsocial\b/i,
+      /\bbio\b/i,
+    ],
     minScore: 1,
   },
   {
     key: "prompt-ai",
     label: "Prompt AI",
-    include: [/\bprompt\b/i, /\bmidjourney\b/i, /\bchatgpt\b/i],
-    minScore: 1,
-  },
-  {
-    key: "video-social-ai",
-    label: "Video & Social AI",
-    include: [/\byoutube\b/i, /\bvideo\b/i, /\bthumbnail\b/i, /\binstagram\b/i, /\btiktok\b/i],
+    include: [
+      /\bprompt\b/i,
+      /\bmidjourney\b/i,
+      /\bchatgpt\b/i,
+    ],
     minScore: 1,
   },
 ];
@@ -293,12 +454,12 @@ export function buildHomepageTaxonomy<
   aiTools: TAi[];
 }) {
   return {
-    tools: bucketItems(input.tools, TOOL_GROUPS, "other-tools", "Other Tools"),
+    tools: bucketItems(input.tools, TOOL_GROUPS, "utility-tools", "Utility Tools"),
     calculators: bucketItems(
       input.calculators,
       CALCULATOR_GROUPS,
-      "other-calculators",
-      "Other Calculators"
+      "general-calculators",
+      "General Calculators"
     ),
     aiTools: bucketItems(
       input.aiTools,
@@ -319,7 +480,7 @@ export function filterItemsByGroup<
   if (!groupKey) return items;
 
   if (type === "tools") {
-    const groups = bucketItems(items, TOOL_GROUPS, "other-tools", "Other Tools");
+    const groups = bucketItems(items, TOOL_GROUPS, "utility-tools", "Utility Tools");
     return groups.find((group) => group.key === groupKey)?.items || [];
   }
 
@@ -327,8 +488,8 @@ export function filterItemsByGroup<
     const groups = bucketItems(
       items,
       CALCULATOR_GROUPS,
-      "other-calculators",
-      "Other Calculators"
+      "general-calculators",
+      "General Calculators"
     );
     return groups.find((group) => group.key === groupKey)?.items || [];
   }
