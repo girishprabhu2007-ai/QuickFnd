@@ -216,7 +216,18 @@ export function filterVisibleCalculators<T extends PublicContentItem>(items: T[]
 
 // ─── AI TOOLS — hard hidden list ─────────────────────────────────────────────
 
-const AI_TOOL_HARD_HIDDEN = new Set<string>([]);
+const AI_TOOL_HARD_HIDDEN = new Set<string>([
+  // Competitor products — not QuickFnd tools
+  "chatgpt",
+  "midjourney",
+  "notion-ai",
+  // Thin/duplicate AI tools
+  "seo-meta-tag-generator",
+  "ai-blog-post-idea-generator",
+  "seo-keyword-analyzer",
+  // Duplicate of ai-blog-outline-generator
+  "blog-outline-generator",
+]);
 
 const GENERIC_AI_TASKS = new Set<string>([
   "",
@@ -228,6 +239,10 @@ const GENERIC_AI_TASKS = new Set<string>([
 function isGenericAIEngine(item: PublicContentItem): boolean {
   if (!item.engine_config) return true;
   const config = item.engine_config as Record<string, unknown>;
+  // Tools with a systemPrompt are real specific AI tools — never block them
+  if (config.systemPrompt) return false;
+  // Tools with a specific buttonLabel are real — never block them
+  if (config.buttonLabel) return false;
   const task = normalize(config.task as string);
   return GENERIC_AI_TASKS.has(task);
 }
