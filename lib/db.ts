@@ -23,6 +23,9 @@ function normalizeItem(item: Record<string, unknown>): PublicContentItem {
     engine_type: (item.engine_type as EngineType | null | undefined) ?? null,
     engine_config: normalizeEngineConfig(item.engine_config),
     created_at: typeof item.created_at === "string" ? item.created_at : null,
+    // Featured badge fields — pass through from DB
+    is_featured: typeof item.is_featured === "boolean" ? item.is_featured : null,
+    featured_until: typeof item.featured_until === "string" ? item.featured_until : null,
   };
 }
 
