@@ -20,6 +20,12 @@ import {
   buildFaqSchema,
   buildSoftwareSchema,
 } from "@/lib/seo-content";
+
+function isFeaturedActive(item: import("@/lib/content-pages").PublicContentItem): boolean {
+  if (!item.is_featured) return false;
+  if (!item.featured_until) return true;
+  return item.featured_until > new Date().toISOString();
+}
 import { getSiteUrl } from "@/lib/site-url";
 import { isContentPubliclyVisible } from "@/lib/public-content-visibility";
 import {

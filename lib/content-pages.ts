@@ -11,6 +11,9 @@ export type PublicContentItem = {
   engine_type?: EngineType | null;
   engine_config?: EngineConfig;
   created_at?: string | null;
+  // Featured badge (ai_tools only)
+  is_featured?: boolean | null;
+  featured_until?: string | null;
 };
 
 const STATIC_TOOLS: PublicContentItem[] = [

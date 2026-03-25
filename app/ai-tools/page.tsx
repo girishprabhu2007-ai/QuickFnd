@@ -51,6 +51,16 @@ export default async function AIToolsPage({ searchParams }: Props) {
     ? filterItemsByGroup("aiTools", allAITools, activeGroup)
     : allAITools;
 
+  // Sort: active featured tools float to top
+  const now = new Date().toISOString();
+  filteredAI.sort((a, b) => {
+    const aFeatured = a.is_featured && (!a.featured_until || a.featured_until > now);
+    const bFeatured = b.is_featured && (!b.featured_until || b.featured_until > now);
+    if (aFeatured && !bFeatured) return -1;
+    if (!aFeatured && bFeatured) return 1;
+    return 0;
+  });
+
   const totalPages = Math.max(1, Math.ceil(filteredAI.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
   const start = (safePage - 1) * PAGE_SIZE;
@@ -127,7 +137,14 @@ export default async function AIToolsPage({ searchParams }: Props) {
                         </div>
                       </div>
                       <div className="mt-3 flex items-center justify-between">
-                        <span className="rounded-full border border-q-border bg-q-bg px-2 py-0.5 text-[10px] text-q-muted">AI</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="rounded-full border border-q-border bg-q-bg px-2 py-0.5 text-[10px] text-q-muted">AI</span>
+                          {item.is_featured && (!item.featured_until || item.featured_until > new Date().toISOString()) && (
+                            <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                              ⭐ Featured
+                            </span>
+                          )}
+                        </div>
                         <span className="text-xs font-medium text-q-primary opacity-0 group-hover:opacity-100 transition-opacity">Try it →</span>
                       </div>
                     </Link>

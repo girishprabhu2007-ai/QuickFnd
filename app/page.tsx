@@ -13,6 +13,7 @@ import {
 } from "@/lib/visibility";
 import { getTopicCollections } from "@/lib/programmatic-seo";
 import { getSiteUrl } from "@/lib/site-url";
+import EmailCapture from "@/components/email/EmailCapture";
 
 export const revalidate = 60; // ISR: rebuild every 60s, serve cached immediately
 
@@ -290,6 +291,9 @@ export default async function HomePage() {
               </div>
             </section>
 
+            {/* ── Email Capture ─────────────────────────────────────────── */}
+            <EmailCapture variant="banner" source="homepage" />
+
             {/* ── Featured AI Tools ──────────────────────────────────────── */}
             <section>
               <div className="mb-6 flex items-end justify-between">
@@ -392,6 +396,9 @@ export default async function HomePage() {
                 </div>
               </div>
             </div>
+
+            {/* Email capture — inline sidebar */}
+            <EmailCapture variant="inline" source="homepage-sidebar" />
 
             {/* Trust signals */}
             <div className="rounded-2xl border border-q-border bg-q-card p-5">
