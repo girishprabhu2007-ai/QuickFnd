@@ -14,6 +14,11 @@ type AIConfig = {
   length?: string;
   purpose?: string;
   outputType?: string;
+  // DB-driven fields — when present, systemPrompt takes full control
+  systemPrompt?: string;
+  buttonLabel?: string;
+  outputLabel?: string;
+  placeholder?: string;
 };
 
 function normalize(value: unknown) {
@@ -136,9 +141,17 @@ ${input}
 `.trim();
 }
 
-function buildSystemPrompt(input: string, config: AIConfig) {
-  const engine = resolveEngineType(config);
+function buildFinalPrompt(input: string, config: AIConfig): string {
+  // If a DB-stored systemPrompt exists, use it directly.
+  // This makes every auto-generated AI tool behave as its own specialist.
+  if (config.systemPrompt && config.systemPrompt.trim().length > 0) {
+    const tone = config.tone ? `\nTone: ${config.tone}` : "";
+    const audience = config.audience ? `\nTarget audience: ${config.audience}` : "";
+    const length = config.length ? `\nLength: ${config.length}` : "";
+    return `${config.systemPrompt.trim()}${tone}${audience}${length}\n\nUser input:\n${input}`;
+  }
 
+  const engine = resolveEngineType(config);
   switch (engine) {
     case "email-writer":
       return buildEmailPrompt(input, config);
@@ -153,11 +166,11 @@ function buildSystemPrompt(input: string, config: AIConfig) {
 
 export async function runAITool(input: string, config: AIConfig) {
   const openai = getOpenAIClient();
-  const systemPrompt = buildSystemPrompt(input, config);
+  const prompt = buildFinalPrompt(input, config);
 
   const response = await openai.responses.create({
     model: "gpt-4.1-mini",
-    input: [{ role: "system", content: systemPrompt }],
+    input: [{ role: "system", content: prompt }],
   });
 
   return response.output_text || "";

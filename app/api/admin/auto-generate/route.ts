@@ -86,6 +86,24 @@ async function generateToolSpec(queueItem: {
   const engineDesc = ENGINE_DESCRIPTIONS[queueItem.suggested_engine] ||
     `A browser-based ${queueItem.suggested_category} tool`;
 
+  const isAITool = queueItem.suggested_category === "ai_tool";
+
+  // engine_config shape differs by category:
+  // - tools/calculators: {} (engine handles its own UI)
+  // - ai_tool: must have systemPrompt + buttonLabel + placeholder + outputLabel
+  //   WITHOUT these, visibility.ts filters the tool as generic → invisible on site
+  const engineConfigInstructions = isAITool
+    ? `- engine_config: REQUIRED — must be a JSON object with ALL of these fields:
+    {
+      "systemPrompt": "A detailed, expert system prompt that makes this AI tool a specialist. 3-5 sentences. Tell the AI exactly what role it plays, what it must output, format rules, quality standards. Make it genuinely useful and specific to the tool's purpose.",
+      "buttonLabel": "Action verb label for the generate button (e.g. 'Write Email', 'Generate Bio', 'Summarize', 'Rewrite')",
+      "placeholder": "Helpful example placeholder text for the main input field — what the user should type (e.g. 'Describe your startup in 2-3 sentences...')",
+      "outputLabel": "Label shown above the AI output (e.g. 'Your LinkedIn Bio', 'Generated Summary', 'Rewritten Text')",
+      "task": "openai-text-tool"
+    }
+    CRITICAL: systemPrompt must NOT be empty. A tool with empty systemPrompt is invisible to users.`
+    : `- engine_config: {} (empty object — the engine manages its own configuration)`;
+
   const prompt = `You are a product writer for QuickFnd, a free browser-based tools platform.
 
 Generate a complete tool entry for this search query: "${queueItem.query}"
@@ -97,21 +115,22 @@ SUGGESTED SLUG: ${queueItem.suggested_slug}
 CATEGORY: ${queueItem.suggested_category}
 
 REQUIREMENTS:
-- name: Clear, specific, 2-5 words (e.g. "SHA-256 Hash Generator" not "Hash Tool")
+- name: Clear, specific, 2-5 words (e.g. "LinkedIn Bio Writer" not "Bio Tool")
 - slug: lowercase-hyphenated, 3-6 words, matches name
 - description: Exactly 2 sentences. Sentence 1: what it does. Sentence 2: who uses it and why.
 - engine_type: Use exactly: ${queueItem.suggested_engine}
+${engineConfigInstructions}
 - related_slugs: 3 real QuickFnd tool slugs that make sense as related tools
 - seo_intro: 2-3 sentences, more detailed than description, naturally includes the query
 - seo_faqs: 4 specific Q&A pairs users would actually search
 
-Return JSON only:
+Return JSON only — no markdown fences, no explanation:
 {
   "name": "string",
   "slug": "string",
   "description": "string",
   "engine_type": "${queueItem.suggested_engine}",
-  "engine_config": {},
+  "engine_config": ${isAITool ? '{"systemPrompt": "...", "buttonLabel": "...", "placeholder": "...", "outputLabel": "...", "task": "openai-text-tool"}' : "{}"},
   "related_slugs": ["slug-1", "slug-2", "slug-3"],
   "seo_intro": "string",
   "seo_faqs": [
@@ -266,6 +285,21 @@ export async function POST(req: Request) {
           }).eq("id", queueId);
           results.push({ id: queueId, status: "failed", reason: "GPT failed" });
           continue;
+        }
+
+        // Extra guard for ai_tool: engine_config MUST have a non-empty systemPrompt.
+        // Without it the tool passes quality gate but visibility.ts filters it as generic → invisible.
+        if (item.suggested_category === "ai_tool") {
+          const cfg = tool.engine_config as Record<string, unknown> | undefined;
+          const sp = String(cfg?.systemPrompt || "").trim();
+          if (!sp) {
+            await supabase.from("demand_queue").update({
+              status: "pending",
+              rejection_reason: "AI tool engine_config missing systemPrompt — tool would be invisible on site",
+            }).eq("id", queueId);
+            results.push({ id: queueId, status: "failed", reason: "Missing systemPrompt in engine_config" });
+            continue;
+          }
         }
 
         // Step 2: Quality gate

@@ -1124,6 +1124,9 @@ export default function AIToolRenderer({
             audience: task === "outline" ? outlineForm.audience : audience,
             length: task === "outline" ? outlineForm.depth : length,
             extraInstructions,
+            // Pass DB-stored systemPrompt so auto-generated tools use their
+            // specialist prompt instead of the generic task-based routing
+            ...(config.systemPrompt ? { systemPrompt: config.systemPrompt } : {}),
           },
         }),
       });
