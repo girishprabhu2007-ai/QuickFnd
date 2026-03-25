@@ -8,6 +8,12 @@ type AIToolConfig = {
   tone?: string;
   toneOptions?: string[];
   outputType?: string;
+  // Config-driven fields from engine_config in DB — make each tool unique
+  systemPrompt?: string;
+  buttonLabel?: string;
+  outputLabel?: string;
+  placeholder?: string;
+  intro?: string;
 };
 
 type RunResponse = {
@@ -151,6 +157,19 @@ function inferTaskFromItem(item: PublicContentItem, config: AIToolConfig) {
     return "summarization";
   }
 
+  // ── New tool types ─────────────────────────────────────────────────────────
+  if (slug.includes("grammar")) return "grammar-check";
+  if (slug.includes("paraphras")) return "paraphrase";
+  if (slug.includes("cover-letter")) return "cover-letter";
+  if (slug.includes("linkedin")) return "linkedin-bio";
+  if (slug.includes("product-description")) return "product-description";
+  if (slug.includes("tweet") || slug.includes("twitter")) return "tweet";
+  if (slug.includes("youtube-description")) return "youtube-description";
+  if (slug.includes("cold-email")) return "cold-email";
+  if (slug.includes("meta-description")) return "meta-description";
+  if (slug.includes("resume") || slug.includes("bullet")) return "resume-bullets";
+  if (slug.includes("meeting")) return "meeting-summary";
+
   return "text-generation";
 }
 
@@ -276,6 +295,204 @@ function getTaskMeta(task: string, itemName: string): TaskMeta {
           "Paste the original text",
           "Be explicit about the target tone",
           "Add extra constraints if needed",
+        ],
+      };
+
+    case "grammar-check":
+      return {
+        title: itemName,
+        actionLabel: "Check Grammar",
+        outputLabel: "Corrected Text",
+        helperText: "Check and fix grammar, spelling and punctuation errors. Get corrections with clear explanations.",
+        examples: [
+          "Check a professional email before sending",
+          "Proofread a blog post draft",
+          "Fix grammar in a cover letter",
+        ],
+        checklist: [
+          "Paste the complete text",
+          "Include context if the text uses technical terms",
+          "Review each correction before accepting",
+        ],
+      };
+
+    case "paraphrase":
+      return {
+        title: itemName,
+        actionLabel: "Paraphrase",
+        outputLabel: "Paraphrased Text",
+        helperText: "Rewrite any text in a fresh way while keeping the original meaning. Choose your tone.",
+        examples: [
+          "Paraphrase a formal report into plain English",
+          "Rewrite marketing copy more clearly",
+          "Simplify a technical explanation",
+        ],
+        checklist: [
+          "Paste the original text",
+          "Be explicit about the target tone",
+          "Add extra constraints if needed",
+        ],
+      };
+
+    case "cover-letter":
+      return {
+        title: itemName,
+        actionLabel: "Write Cover Letter",
+        outputLabel: "Cover Letter",
+        helperText: "Write a tailored cover letter from your background and the job description. Ready to personalise and send.",
+        examples: [
+          "Cover letter for a product manager role",
+          "Application for a marketing position",
+          "Tech company job application",
+        ],
+        checklist: [
+          "Paste the job description or key requirements",
+          "Describe your relevant experience",
+          "Mention the company name for a personalised result",
+        ],
+      };
+
+    case "linkedin-bio":
+      return {
+        title: itemName,
+        actionLabel: "Write LinkedIn Bio",
+        outputLabel: "LinkedIn Bio",
+        helperText: "Write a professional LinkedIn About section that gets noticed. Keyword-rich, human and clear.",
+        examples: [
+          "Bio for a software engineer",
+          "LinkedIn summary for a freelancer",
+          "About section for a founder",
+        ],
+        checklist: [
+          "Describe your current role and speciality",
+          "Mention your key achievements",
+          "Include what you're looking for or open to",
+        ],
+      };
+
+    case "product-description":
+      return {
+        title: itemName,
+        actionLabel: "Write Description",
+        outputLabel: "Product Description",
+        helperText: "Write a persuasive product description that converts features into benefits and drives sales.",
+        examples: [
+          "E-commerce product listing",
+          "App store description",
+          "Marketplace listing",
+        ],
+        checklist: [
+          "List the key features",
+          "Describe the target customer",
+          "Mention the main benefit or pain it solves",
+        ],
+      };
+
+    case "tweet":
+      return {
+        title: itemName,
+        actionLabel: "Generate Tweet",
+        outputLabel: "Tweet",
+        helperText: "Generate engaging tweets or Twitter/X threads. Punchy, direct and designed to get engagement.",
+        examples: [
+          "Tweet about a product launch",
+          "Thought leadership thread",
+          "Announcement tweet for a new feature",
+        ],
+        checklist: [
+          "Give a clear idea or opinion",
+          "Mention if you want a thread or single tweet",
+          "Add context or a hook if you have one",
+        ],
+      };
+
+    case "youtube-description":
+      return {
+        title: itemName,
+        actionLabel: "Write Description",
+        outputLabel: "YouTube Description",
+        helperText: "Write SEO-optimised YouTube descriptions that rank and tell viewers exactly what to expect.",
+        examples: [
+          "Tutorial video description",
+          "Vlog description with timestamps",
+          "Product review video description",
+        ],
+        checklist: [
+          "Paste the video title",
+          "List the key topics covered",
+          "Include your target keyword if you have one",
+        ],
+      };
+
+    case "cold-email":
+      return {
+        title: itemName,
+        actionLabel: "Write Cold Email",
+        outputLabel: "Cold Email",
+        helperText: "Write a short, personalised cold outreach email that gets replies. One clear ask, no fluff.",
+        examples: [
+          "Outreach to a potential client",
+          "Partnership proposal email",
+          "Sales introduction email",
+        ],
+        checklist: [
+          "Describe who you're reaching out to",
+          "State your offer clearly",
+          "Keep it under 150 words",
+        ],
+      };
+
+    case "meta-description":
+      return {
+        title: itemName,
+        actionLabel: "Write Meta Description",
+        outputLabel: "Meta Description",
+        helperText: "Write compelling 155-character meta descriptions that improve click-through rates from search results.",
+        examples: [
+          "Blog post meta description",
+          "Product page meta description",
+          "Homepage SEO meta description",
+        ],
+        checklist: [
+          "Include the page title",
+          "Mention the target keyword",
+          "Keep the result under 155 characters",
+        ],
+      };
+
+    case "resume-bullets":
+      return {
+        title: itemName,
+        actionLabel: "Write Bullets",
+        outputLabel: "Resume Bullet Points",
+        helperText: "Turn vague job descriptions into powerful resume bullet points using action verbs and quantified impact.",
+        examples: [
+          "Software engineer job responsibilities",
+          "Marketing manager achievements",
+          "Sales role results to quantify",
+        ],
+        checklist: [
+          "Describe your key responsibilities",
+          "Include any measurable results or achievements",
+          "Mention your role and company type for context",
+        ],
+      };
+
+    case "meeting-summary":
+      return {
+        title: itemName,
+        actionLabel: "Summarize Meeting",
+        outputLabel: "Meeting Summary",
+        helperText: "Extract key decisions, action items and discussion points from raw meeting notes automatically.",
+        examples: [
+          "Weekly team standup notes",
+          "Client discovery call transcript",
+          "Strategy planning meeting notes",
+        ],
+        checklist: [
+          "Include names if you want owners on action items",
+          "Paste the full notes for best results",
+          "Mention any key context upfront",
         ],
       };
 
@@ -970,7 +1187,7 @@ export default function AIToolRenderer({
           </h2>
 
           <p className="mt-3 max-w-2xl text-sm leading-7 text-q-muted md:text-base">
-            {meta.helperText}
+            {config.intro || meta.helperText}
           </p>
         </div>
 
@@ -1224,17 +1441,63 @@ export default function AIToolRenderer({
                   ? "Paste text to summarize"
                   : task === "rewrite"
                   ? "Paste text to rewrite"
+                  : task === "grammar-check"
+                  ? "Text to check"
+                  : task === "paraphrase"
+                  ? "Text to paraphrase"
+                  : task === "cover-letter"
+                  ? "Job description and your background"
+                  : task === "linkedin-bio"
+                  ? "Your role, experience and goals"
+                  : task === "product-description"
+                  ? "Product name, features and target customer"
+                  : task === "tweet"
+                  ? "Topic or idea for the tweet"
+                  : task === "youtube-description"
+                  ? "Video title and key points"
+                  : task === "cold-email"
+                  ? "Prospect context and your offer"
+                  : task === "meta-description"
+                  ? "Page title and main topic"
+                  : task === "resume-bullets"
+                  ? "Your job responsibilities and achievements"
+                  : task === "meeting-summary"
+                  ? "Paste your meeting notes or transcript"
                   : "Enter your prompt or text"}
               </label>
               <textarea
                 value={genericInput}
                 onChange={(e) => setGenericInput(e.target.value)}
                 placeholder={
-                  task === "summarization"
+                  // Use config placeholder from DB if available
+                  config.placeholder ||
+                  (task === "summarization"
                     ? "Paste a long paragraph, transcript, article, or notes here."
                     : task === "rewrite"
                     ? "Paste the original text you want rewritten."
-                    : "Describe what you want the AI tool to generate, improve, or transform."
+                    : task === "grammar-check"
+                    ? "Paste your text here to check for grammar, spelling and punctuation errors..."
+                    : task === "paraphrase"
+                    ? "Paste the text you want rewritten in a different way while keeping the same meaning..."
+                    : task === "cover-letter"
+                    ? "Job title: [title]\nCompany: [company name]\nMy background: [brief summary]\nKey requirements: [paste job requirements]"
+                    : task === "linkedin-bio"
+                    ? "I'm a [role] with [X] years experience in [field]. I specialise in [speciality]. Looking to connect with [audience]."
+                    : task === "product-description"
+                    ? "Product: [name]\nFeatures:\n- [feature 1]\n- [feature 2]\nTarget customer: [who buys this]"
+                    : task === "tweet"
+                    ? "The biggest mistake founders make when launching their first product is..."
+                    : task === "youtube-description"
+                    ? "Video title: [your title]\nKey points covered:\n- [point 1]\n- [point 2]\nTarget keyword: [keyword]"
+                    : task === "cold-email"
+                    ? "Prospect: [role] at [company type]\nMy offer: [what you do and why it's relevant]\nAsk: [what you want — intro call, reply, etc.]"
+                    : task === "meta-description"
+                    ? "Page title: [your page title]\nMain topic: [what the page is about]\nTarget keyword: [primary keyword]"
+                    : task === "resume-bullets"
+                    ? "Role: [your job title]\nResponsibilities: [list what you did]\nAchievements: [any results or impact]"
+                    : task === "meeting-summary"
+                    ? "Paste your raw meeting notes, voice memo transcript, or bullet points from the meeting..."
+                    : "Describe what you want the AI tool to generate, improve, or transform.")
                 }
                 className={textareaClass("min-h-[220px]")}
               />
@@ -1257,7 +1520,7 @@ export default function AIToolRenderer({
               disabled={loading || !canRun}
               className={primaryButtonClass()}
             >
-              {loading ? "Generating..." : meta.actionLabel}
+              {loading ? "Generating..." : (config.buttonLabel || meta.actionLabel)}
             </button>
 
             <button
@@ -1292,7 +1555,7 @@ export default function AIToolRenderer({
           ) : (
             <GenericOutputView
               output={output}
-              label={meta.outputLabel}
+              label={config.outputLabel || meta.outputLabel}
               loading={loading}
               error={error}
             />
