@@ -12,6 +12,7 @@ const tabs = [
   { href: "/admin/requests", label: "Requests" },
   { href: "/admin/placeholders", label: "Placeholders" },
   { href: "/admin/ads", label: "Ad Settings" },
+  { href: "/admin/affiliates", label: "Affiliates" },
   { href: "/admin/site-settings", label: "Site Settings" },
   { href: "/admin/seo-content", label: "SEO Content" },
   { href: "/admin/intelligence", label: "Intelligence" },

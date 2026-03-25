@@ -1,210 +1,130 @@
 /**
  * components/monetisation/AffiliateCard.tsx
  * ─────────────────────────────────────────────────────────────────────────────
- * Contextual affiliate recommendation card shown on tool/calculator/ai-tool pages.
- *
- * Two data sources (first match wins):
- *  1. DB — seo_content.affiliate_link + affiliate_label (set per-slug in admin)
- *  2. STATIC_AFFILIATES — hardcoded slug→affiliate map, instant, no DB needed
- *
- * Design: non-intrusive, clearly labelled "Sponsored recommendation",
- * fits the site's dark card aesthetic.
+ * DB-driven affiliate card. Fetches rules from /api/affiliate-config (cached 5min).
+ * Falls back to static rules if DB fetch fails.
+ * Rules are matched against the tool slug in priority order — first match wins.
+ * Fully controlled from Admin → Affiliates tab.
  */
 
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import type { AffiliateRule, AffiliateSettings } from "@/app/api/admin/affiliate-settings/route";
 
-export type AffiliateData = {
-  link: string;
-  label: string;        // CTA button text e.g. "Try Bitwarden Free"
-  title: string;        // Headline e.g. "Store your passwords securely"
-  description: string;  // 1 sentence why this is relevant to the tool
-  badge?: string;       // Optional badge e.g. "Free plan available"
-};
+// ─── Static fallback rules (used if DB fetch fails) ───────────────────────────
+// Mirrors the defaults in the API route so the card always works even if DB is down.
 
-// ─── Static affiliate map ─────────────────────────────────────────────────────
-// Covers the high-value placements from the monetisation roadmap.
-// Slug patterns: if the tool slug includes the key, the affiliate fires.
-// Add more here as new affiliate deals are set up.
-
-const SLUG_AFFILIATE_MAP: { pattern: RegExp; data: AffiliateData }[] = [
-  // Password tools → Bitwarden
-  {
-    pattern: /password/i,
-    data: {
-      link: "https://bitwarden.com/?utm_source=quickfnd",
-      label: "Try Bitwarden Free",
-      title: "Never forget a password again",
-      description: "Bitwarden is a free, open-source password manager trusted by millions — store all your passwords securely in one place.",
-      badge: "Free forever plan",
-    },
-  },
-
-  // Security / hash tools → NordVPN
-  {
-    pattern: /sha256|md5|hash|encrypt/i,
-    data: {
-      link: "https://nordvpn.com/?utm_source=quickfnd",
-      label: "Get NordVPN",
-      title: "Protect your online privacy",
-      description: "NordVPN encrypts your connection and keeps your data private — essential for anyone working with sensitive data.",
-      badge: "67% off today",
-    },
-  },
-
-  // SIP / FD / PPF / investment calculators → Zerodha
-  {
-    pattern: /sip|fd-calc|ppf|mutual.fund|investment/i,
-    data: {
-      link: "https://zerodha.com/?utm_source=quickfnd",
-      label: "Open a Free Demat Account",
-      title: "Start investing with Zerodha",
-      description: "India's largest stockbroker — zero brokerage on equity delivery, ₹0 account opening fee, and a powerful investment platform.",
-      badge: "₹0 account opening",
-    },
-  },
-
-  // EMI / loan / mortgage calculators → BankBazaar
-  {
-    pattern: /emi|loan|mortgage|home.loan|personal.loan/i,
-    data: {
-      link: "https://www.bankbazaar.com/?utm_source=quickfnd",
-      label: "Compare Loan Rates",
-      title: "Find the best loan rates in India",
-      description: "BankBazaar lets you compare EMI rates from 50+ banks instantly — get pre-approved offers without affecting your credit score.",
-      badge: "Free credit score check",
-    },
-  },
-
-  // GST / income tax / HRA / tax calculators → ClearTax
-  {
-    pattern: /gst|income.tax|hra|tax.calc/i,
-    data: {
-      link: "https://cleartax.in/?utm_source=quickfnd",
-      label: "File ITR Free with ClearTax",
-      title: "File your taxes in minutes",
-      description: "ClearTax is India's most trusted tax filing platform — file ITR, claim all deductions, and get expert support if needed.",
-      badge: "Free basic filing",
-    },
-  },
-
-  // SEO tools → Ahrefs
-  {
-    pattern: /seo|keyword|backlink|rank/i,
-    data: {
-      link: "https://ahrefs.com/?utm_source=quickfnd",
-      label: "Try Ahrefs",
-      title: "Take your SEO to the next level",
-      description: "Ahrefs is the industry's most trusted SEO toolkit — keyword research, backlink analysis, site audits, and competitor intelligence.",
-      badge: "7-day trial for $7",
-    },
-  },
-
-  // AI writing / content tools → Jasper
-  {
-    pattern: /ai.writ|blog|content.gen|copy|headline|email.writ/i,
-    data: {
-      link: "https://www.jasper.ai/?utm_source=quickfnd",
-      label: "Try Jasper AI",
-      title: "Scale your content with AI",
-      description: "Jasper writes long-form blog posts, ad copy, emails, and more in your brand voice — trained on 10+ billion words of high-quality content.",
-      badge: "7-day free trial",
-    },
-  },
-
-  // Currency / forex tools → Wise
-  {
-    pattern: /currency|forex|exchange.rate|money.transfer/i,
-    data: {
-      link: "https://wise.com/?utm_source=quickfnd",
-      label: "Send Money with Wise",
-      title: "Save on international transfers",
-      description: "Wise uses the real mid-market exchange rate with low transparent fees — send money abroad up to 8x cheaper than banks.",
-      badge: "First transfer free",
-    },
-  },
-
-  // QR code → Canva
-  {
-    pattern: /qr.gen|qr.code/i,
-    data: {
-      link: "https://www.canva.com/?utm_source=quickfnd",
-      label: "Design with Canva Free",
-      title: "Make stunning visuals in minutes",
-      description: "Canva's free design platform lets you create logos, social posts, flyers, and branded QR code designs with zero design skills needed.",
-      badge: "Free forever plan",
-    },
-  },
+const STATIC_RULES: AffiliateRule[] = [
+  { id: "s1", enabled: true, name: "Password", pattern: "password", pattern_type: "regex", priority: 10,
+    title: "Never forget a password again", badge: "Free forever plan",
+    description: "Bitwarden is a free, open-source password manager trusted by millions.",
+    link: "https://bitwarden.com/?utm_source=quickfnd", label: "Try Bitwarden Free" },
+  { id: "s2", enabled: true, name: "Security", pattern: "sha256|md5|hash|encrypt", pattern_type: "regex", priority: 20,
+    title: "Protect your online privacy", badge: "67% off today",
+    description: "NordVPN encrypts your connection and keeps your data private.",
+    link: "https://nordvpn.com/?utm_source=quickfnd", label: "Get NordVPN" },
+  { id: "s3", enabled: true, name: "Investment", pattern: "sip|fd-calc|ppf|investment", pattern_type: "regex", priority: 30,
+    title: "Start investing with Zerodha", badge: "₹0 account opening",
+    description: "India's largest stockbroker — zero brokerage on equity delivery.",
+    link: "https://zerodha.com/?utm_source=quickfnd", label: "Open a Free Demat Account" },
+  { id: "s4", enabled: true, name: "Loan/EMI", pattern: "emi|loan|mortgage", pattern_type: "regex", priority: 40,
+    title: "Find the best loan rates in India", badge: "Free credit score check",
+    description: "BankBazaar lets you compare EMI rates from 50+ banks instantly.",
+    link: "https://www.bankbazaar.com/?utm_source=quickfnd", label: "Compare Loan Rates" },
+  { id: "s5", enabled: true, name: "Tax", pattern: "gst|income-tax|hra|tax-calc", pattern_type: "regex", priority: 50,
+    title: "File your taxes in minutes", badge: "Free basic filing",
+    description: "ClearTax is India's most trusted tax filing platform.",
+    link: "https://cleartax.in/?utm_source=quickfnd", label: "File ITR Free with ClearTax" },
+  { id: "s6", enabled: true, name: "SEO", pattern: "seo|keyword|backlink|rank", pattern_type: "regex", priority: 60,
+    title: "Take your SEO to the next level", badge: "7-day trial for $7",
+    description: "Ahrefs is the industry's most trusted SEO toolkit.",
+    link: "https://ahrefs.com/?utm_source=quickfnd", label: "Try Ahrefs" },
+  { id: "s7", enabled: true, name: "AI Writing", pattern: "ai-writ|blog|content-gen|email-writ", pattern_type: "regex", priority: 70,
+    title: "Scale your content with AI", badge: "7-day free trial",
+    description: "Jasper writes long-form blog posts, ad copy, and emails in your brand voice.",
+    link: "https://www.jasper.ai/?utm_source=quickfnd", label: "Try Jasper AI" },
+  { id: "s8", enabled: true, name: "Currency", pattern: "currency|forex|exchange-rate", pattern_type: "regex", priority: 80,
+    title: "Save on international transfers", badge: "First transfer free",
+    description: "Wise uses the real mid-market exchange rate with low transparent fees.",
+    link: "https://wise.com/?utm_source=quickfnd", label: "Send Money with Wise" },
+  { id: "s9", enabled: true, name: "Design", pattern: "qr-gen|qr-code|color-picker|color-contrast", pattern_type: "regex", priority: 90,
+    title: "Make stunning visuals in minutes", badge: "Free forever plan",
+    description: "Canva's free design platform — create logos, social posts, and more.",
+    link: "https://www.canva.com/?utm_source=quickfnd", label: "Design with Canva Free" },
 ];
 
-// ─── Resolver ─────────────────────────────────────────────────────────────────
+// ─── Matcher ──────────────────────────────────────────────────────────────────
 
-export function resolveAffiliate(
-  slug: string,
-  dbLink?: string | null,
-  dbLabel?: string | null
-): AffiliateData | null {
-  // DB entry takes priority — allows per-tool overrides from admin
-  if (dbLink && dbLabel) {
-    return {
-      link: dbLink,
-      label: dbLabel,
-      title: "Recommended tool",
-      description: "A hand-picked recommendation relevant to this tool.",
-    };
+function matchRule(slug: string, rules: AffiliateRule[]): AffiliateRule | null {
+  const sorted = [...rules].sort((a, b) => a.priority - b.priority);
+  for (const rule of sorted) {
+    if (!rule.enabled) continue;
+    try {
+      if (rule.pattern_type === "slugs") {
+        const slugs = rule.pattern.split(",").map((s) => s.trim().toLowerCase());
+        if (slugs.includes(slug.toLowerCase())) return rule;
+      } else {
+        if (new RegExp(rule.pattern, "i").test(slug)) return rule;
+      }
+    } catch {
+      // invalid regex — skip
+    }
   }
-
-  // Fall back to static map
-  for (const { pattern, data } of SLUG_AFFILIATE_MAP) {
-    if (pattern.test(slug)) return data;
-  }
-
   return null;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-type Props = {
-  slug: string;
-  dbLink?: string | null;
-  dbLabel?: string | null;
-};
+type Props = { slug: string };
 
-export default function AffiliateCard({ slug, dbLink, dbLabel }: Props) {
-  const affiliate = resolveAffiliate(slug, dbLink, dbLabel);
-  if (!affiliate) return null;
+export default function AffiliateCard({ slug }: Props) {
+  const [rule, setRule] = useState<AffiliateRule | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/affiliate-config")
+      .then((r) => r.json())
+      .then((data: AffiliateSettings) => {
+        if (!data.global_enabled) { setLoaded(true); return; }
+        setRule(matchRule(slug, data.rules));
+        setLoaded(true);
+      })
+      .catch(() => {
+        // Fallback to static rules
+        setRule(matchRule(slug, STATIC_RULES));
+        setLoaded(true);
+      });
+  }, [slug]);
+
+  if (!loaded || !rule) return null;
 
   return (
     <div className="rounded-2xl border border-q-border bg-q-card p-5 space-y-3">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-q-muted uppercase tracking-wide">
           Sponsored recommendation
         </span>
-        {affiliate.badge && (
+        {rule.badge && (
           <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-semibold text-emerald-400">
-            {affiliate.badge}
+            {rule.badge}
           </span>
         )}
       </div>
 
-      {/* Content */}
       <div className="space-y-1">
-        <p className="font-semibold text-q-text text-sm leading-snug">
-          {affiliate.title}
-        </p>
-        <p className="text-sm text-q-muted leading-relaxed">
-          {affiliate.description}
-        </p>
+        <p className="font-semibold text-q-text text-sm leading-snug">{rule.title}</p>
+        <p className="text-sm text-q-muted leading-relaxed">{rule.description}</p>
       </div>
 
-      {/* CTA */}
       <Link
-        href={affiliate.link}
+        href={rule.link}
         target="_blank"
         rel="noopener noreferrer sponsored"
         className="inline-flex items-center gap-1.5 rounded-xl bg-q-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-q-primary-hover"
       >
-        {affiliate.label}
+        {rule.label}
         <svg className="w-3.5 h-3.5 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
         </svg>
