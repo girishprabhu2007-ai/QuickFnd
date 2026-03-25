@@ -78,6 +78,24 @@ export async function GET(req: Request) {
 
     console.log(`[cron/intelligence] Queued ${queued} new gaps, skipped ${skipped}`);
 
+    // ── Step 3: Auto-approve high-confidence items ──
+    // Items with demand_score >= 70 are high-confidence opportunities.
+    // Auto-approving them ensures the 3am auto-publish cron has work to do
+    // without requiring manual admin intervention every day.
+    const AUTO_APPROVE_THRESHOLD = 70;
+    const { data: autoApproved, error: approveError } = await supabase
+      .from("demand_queue")
+      .update({ status: "approved", updated_at: new Date().toISOString() })
+      .eq("status", "pending")
+      .gte("demand_score", AUTO_APPROVE_THRESHOLD)
+      .select("id, suggested_name, demand_score");
+
+    const autoApprovedCount = autoApproved?.length ?? 0;
+    console.log(`[cron/intelligence] Auto-approved ${autoApprovedCount} high-score items (score >= ${AUTO_APPROVE_THRESHOLD})`);
+    if (approveError) {
+      console.error("[cron/intelligence] Auto-approve error:", approveError.message);
+    }
+
     // ── Update run log ──
     const duration = Date.now() - startTime;
     await supabase
@@ -86,6 +104,7 @@ export async function GET(req: Request) {
         status: collectErrors.length > 0 ? "partial" : "success",
         signals_collected: collected,
         gaps_identified: queued,
+        items_published: autoApprovedCount,
         error_message: collectErrors.length > 0 ? collectErrors.join("; ") : null,
         completed_at: new Date().toISOString(),
         duration_ms: duration,
@@ -97,6 +116,7 @@ export async function GET(req: Request) {
       signals_collected: collected,
       gaps_queued: queued,
       gaps_skipped: skipped,
+      auto_approved: autoApprovedCount,
       errors: collectErrors,
       duration_ms: duration,
     });

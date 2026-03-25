@@ -29,6 +29,7 @@ import {
   dedupeTopicLinkItems,
 } from "@/lib/internal-linking";
 import type { PublicContentItem } from "@/lib/content-pages";
+import AffiliateCard from "@/components/monetisation/AffiliateCard";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -214,6 +215,7 @@ export default async function ToolDetailPage({ params }: Props) {
 
   const secondaryContent = (
     <div className="space-y-8">
+      <AffiliateCard slug={item.slug} />
       <TopicLinksSection title="Explore This Topic" items={topicLinks} />
       <RelatedToolsSection title="Related Tools" items={smartRelatedTools} />
       <TopicLinksSection title="Nearby Topics" items={relatedTopics} />
