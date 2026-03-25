@@ -1704,7 +1704,7 @@ function GenericCalculator({ name }: { name?: string }) {
 
 
 // ─── SIP Calculator ───────────────────────────────────────────────────────────
-function SIPCalculator(({ name = "" }: { name?: string }) {
+function SIPCalculator({ name = "" }: { name?: string }) {
   const [monthly, setMonthly] = useState("");
   const [rate, setRate] = useState("");
   const [years, setYears] = useState("");
@@ -1759,7 +1759,7 @@ function SIPCalculator(({ name = "" }: { name?: string }) {
 }
 
 // ─── FD Calculator ────────────────────────────────────────────────────────────
-function FDCalculator(({ name = "" }: { name?: string }) {
+function FDCalculator({ name = "" }: { name?: string }) {
   const [principal, setPrincipal] = useState("");
   const [rate, setRate] = useState("");
   const [years, setYears] = useState("");
@@ -1823,7 +1823,7 @@ function FDCalculator(({ name = "" }: { name?: string }) {
 }
 
 // ─── PPF Calculator ───────────────────────────────────────────────────────────
-function PPFCalculator(({ name = "" }: { name?: string }) {
+function PPFCalculator({ name = "" }: { name?: string }) {
   const [yearly, setYearly] = useState("");
   const [rate, setRate] = useState("7.1");
   const [years, setYears] = useState("15");
@@ -1881,7 +1881,7 @@ function PPFCalculator(({ name = "" }: { name?: string }) {
 }
 
 // ─── HRA Calculator ───────────────────────────────────────────────────────────
-function HRACalculator(({ name = "" }: { name?: string }) {
+function HRACalculator({ name = "" }: { name?: string }) {
   const [basic, setBasic] = useState("");
   const [hra, setHra] = useState("");
   const [rent, setRent] = useState("");
@@ -2048,7 +2048,7 @@ function IncomeTaxCalculator() {
 }
 
 // ─── Compound Interest Calculator ─────────────────────────────────────────────
-function CompoundInterestCalculator(({ name = "" }: { name?: string }) {
+function CompoundInterestCalculator({ name = "" }: { name?: string }) {
   const [principal, setPrincipal] = useState("");
   const [rate, setRate] = useState("");
   const [years, setYears] = useState("");
