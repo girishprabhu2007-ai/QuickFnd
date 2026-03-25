@@ -7,9 +7,9 @@ import { getTopicCollections } from "@/lib/programmatic-seo";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "Topics | QuickFnd",
+  title: "Browse Tools by Topic | QuickFnd",
   description:
-    "Explore QuickFnd topic pages for YouTube, SEO, developer tools, converters, text tools, and other niche clusters.",
+    "Browse 170+ free tools, calculators, and AI utilities by category. Developer tools, finance calculators, text tools, SEO tools, and more — all free, no signup.",
 };
 
 export default async function TopicsIndexPage() {
@@ -30,12 +30,12 @@ export default async function TopicsIndexPage() {
           </p>
 
           <h1 className="mt-4 text-3xl font-bold md:text-5xl">
-            Programmatic SEO Topic Pages
+            Browse Tools by Topic
           </h1>
 
           <p className="mt-4 max-w-4xl text-base leading-7 text-q-muted md:text-lg md:leading-8">
-            Explore niche-focused category pages that group related QuickFnd tools,
-            calculators, and AI utilities into stronger topical clusters.
+            Find the right tool faster. Browse QuickFnd by category — developer tools,
+            finance calculators, AI writing tools, text utilities, and more.
           </p>
         </div>
 

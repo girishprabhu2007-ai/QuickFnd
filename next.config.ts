@@ -11,8 +11,11 @@ const nextConfig: NextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Cross-Origin-Embedder-Policy", value: "require-corp" },
-          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+          // REMOVED: Cross-Origin-Embedder-Policy: require-corp
+          // Reason: breaks Google AdSense scripts in all browsers
+          // SOFTENED: COOP to same-origin-allow-popups
+          // Reason: strict same-origin blocks AdSense click-through popups
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
         ],
       },
       {

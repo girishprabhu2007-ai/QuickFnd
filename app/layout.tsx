@@ -23,26 +23,34 @@ import { getSiteUrl } from "@/lib/site-url";
 import { createClient } from "@supabase/supabase-js";
 
 const siteUrl = getSiteUrl();
-const ADSENSE_CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT ?? "";
 
 // ─── Load site settings from DB at build/request time ────────────────────────
-async function getSiteSettings() {
+async function getSettings() {
   try {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-    if (!url || !key) return null;
+    if (!url || !key) return { site: null, ads: null };
 
     const supabase = createClient(url, key, { auth: { persistSession: false } });
-    const { data } = await supabase
-      .from("site_settings")
-      .select("value")
-      .eq("key", "site_settings")
-      .maybeSingle();
 
-    return data?.value ?? null;
+    // Fetch both site_settings and ad_settings in a single round-trip
+    const [siteRes, adsRes] = await Promise.all([
+      supabase.from("site_settings").select("value").eq("key", "site_settings").maybeSingle(),
+      supabase.from("site_settings").select("value").eq("key", "ad_settings").maybeSingle(),
+    ]);
+
+    return {
+      site: siteRes.data?.value ?? null,
+      ads:  adsRes.data?.value  ?? null,
+    };
   } catch {
-    return null;
+    return { site: null, ads: null };
   }
+}
+
+// Keep old name as alias so nothing else breaks
+async function getSiteSettings() {
+  return (await getSettings()).site;
 }
 
 export const viewport: Viewport = {
@@ -121,7 +129,13 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   // Load site settings from DB — drives verification codes, analytics, custom scripts
-  const siteSettings = await getSiteSettings();
+  const { site: siteSettings, ads: adSettings } = await getSettings();
+
+  // AdSense client: prefer DB value (set via admin), fallback to env var
+  const ADSENSE_CLIENT =
+    (adSettings as Record<string, unknown> | null)?.adsense_client as string | undefined
+    ?? process.env.NEXT_PUBLIC_ADSENSE_CLIENT
+    ?? "";
 
   const googleVerification = siteSettings?.google_site_verification ?? "";
   const bingVerification = siteSettings?.bing_site_verification ?? "";
