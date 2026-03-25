@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 
@@ -18,12 +19,129 @@ const accentColors: Record<string, string> = {
   orange: "text-orange-500",
 };
 
+// ─── Language Selector ───────────────────────────────────────────────────────
+// Uses Google Translate widget for instant global language support
+// No API key needed — free, supports 100+ languages
+
+const LANGUAGES = [
+  { code: "en", label: "English", flag: "🇺🇸" },
+  { code: "es", label: "Español", flag: "🇪🇸" },
+  { code: "hi", label: "हिन्दी", flag: "🇮🇳" },
+  { code: "zh-CN", label: "中文", flag: "🇨🇳" },
+  { code: "ar", label: "العربية", flag: "🇸🇦" },
+  { code: "pt", label: "Português", flag: "🇧🇷" },
+  { code: "fr", label: "Français", flag: "🇫🇷" },
+  { code: "de", label: "Deutsch", flag: "🇩🇪" },
+  { code: "ja", label: "日本語", flag: "🇯🇵" },
+  { code: "ko", label: "한국어", flag: "🇰🇷" },
+  { code: "ru", label: "Русский", flag: "🇷🇺" },
+  { code: "id", label: "Indonesia", flag: "🇮🇩" },
+];
+
+function LanguageSelector() {
+  const [open, setOpen] = useState(false);
+  const [current, setCurrent] = useState("en");
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  function selectLanguage(code: string) {
+    setCurrent(code);
+    setOpen(false);
+
+    if (code === "en") {
+      // Reset to English — remove Google Translate cookie
+      document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=" + location.hostname;
+      window.location.reload();
+      return;
+    }
+
+    // Set Google Translate cookie
+    const val = `/en/${code}`;
+    document.cookie = `googtrans=${val}; path=/`;
+    document.cookie = `googtrans=${val}; path=/; domain=${location.hostname}`;
+
+    // Trigger Google Translate if loaded
+    const select = document.querySelector(".goog-te-combo") as HTMLSelectElement;
+    if (select) {
+      select.value = code;
+      select.dispatchEvent(new Event("change"));
+    } else {
+      // Load Google Translate script if not loaded yet
+      if (!document.getElementById("google-translate-script")) {
+        const script = document.createElement("script");
+        script.id = "google-translate-script";
+        script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+        script.async = true;
+        document.head.appendChild(script);
+        (window as unknown as Record<string,unknown>).googleTranslateElementInit = () => {
+          new (window as unknown as Record<string,unknown>).google.translate.TranslateElement(
+            { pageLanguage: "en", includedLanguages: LANGUAGES.map(l => l.code).join(",") },
+            "google_translate_element"
+          );
+          setTimeout(() => {
+            const sel = document.querySelector(".goog-te-combo") as HTMLSelectElement;
+            if (sel) { sel.value = code; sel.dispatchEvent(new Event("change")); }
+          }, 1000);
+        };
+      }
+    }
+  }
+
+  const currentLang = LANGUAGES.find(l => l.code === current) || LANGUAGES[0];
+
+  return (
+    <div ref={ref} className="relative">
+      {/* Hidden Google Translate element */}
+      <div id="google_translate_element" className="hidden" />
+
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 rounded-lg border border-q-border bg-q-bg px-2.5 py-2 text-xs font-medium text-q-muted transition hover:border-blue-400/50 hover:text-q-text"
+        aria-label="Select language"
+      >
+        <span className="text-base leading-none">{currentLang.flag}</span>
+        <span className="hidden sm:inline">{currentLang.label}</span>
+        <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
+          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full z-50 mt-2 w-44 rounded-2xl border border-q-border bg-q-card shadow-xl overflow-hidden">
+          <div className="py-1">
+            {LANGUAGES.map(lang => (
+              <button
+                key={lang.code}
+                onClick={() => selectLanguage(lang.code)}
+                className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm transition hover:bg-q-card-hover ${current === lang.code ? "text-q-primary font-medium" : "text-q-text"}`}
+              >
+                <span className="text-base">{lang.flag}</span>
+                <span>{lang.label}</span>
+                {current === lang.code && <span className="ml-auto text-q-primary">✓</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SiteHeader() {
   const pathname = usePathname();
 
   return (
     <header
-      className="sticky top-0 z-50 border-b border-q-border bg-q-card"
+      className="sticky top-0 z-50 border-b border-q-border bg-q-card/95 backdrop-blur-xl"
       style={{ boxShadow: "0 1px 0 var(--q-border), 0 4px 24px rgba(0,0,0,0.05)" }}
     >
       <div className="mx-auto flex max-w-7xl items-center gap-6 px-4 py-3 sm:px-6 lg:px-8">
@@ -76,6 +194,7 @@ export default function SiteHeader() {
             <span className="text-blue-500">+</span>
             Request a Tool
           </Link>
+          <LanguageSelector />
           <ThemeToggle />
         </div>
       </div>
