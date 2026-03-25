@@ -82,8 +82,10 @@ function LanguageSelector() {
         script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
         script.async = true;
         document.head.appendChild(script);
-        (window as unknown as Record<string,unknown>).googleTranslateElementInit = () => {
-          new (window as unknown as Record<string,unknown>).google.translate.TranslateElement(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (window as any).googleTranslateElementInit = () => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          new (window as any).google.translate.TranslateElement(
             { pageLanguage: "en", includedLanguages: LANGUAGES.map(l => l.code).join(",") },
             "google_translate_element"
           );
