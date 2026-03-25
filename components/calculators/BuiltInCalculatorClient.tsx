@@ -424,7 +424,7 @@ function getUnixTimestampNotes() {
   ];
 }
 
-function AgeCalculator() {
+function AgeCalculator({ name = "" }: { name?: string }) {
   const [birthDate, setBirthDate] = useState("");
 
   const result = useMemo(() => {
@@ -475,7 +475,7 @@ function AgeCalculator() {
   }, [birthDate]);
 
   return (
-    <Workspace title="Age Calculator">
+    <Workspace title={name || "Age Calculator"}>
       <CalculatorGrid
         left={
           <InputPanel
@@ -501,7 +501,7 @@ function AgeCalculator() {
   );
 }
 
-function BMICalculator() {
+function BMICalculator({ name = "" }: { name?: string }) {
   const [heightCm, setHeightCm] = useState("");
   const [weightKg, setWeightKg] = useState("");
 
@@ -527,7 +527,7 @@ function BMICalculator() {
   }, [heightCm, weightKg]);
 
   return (
-    <Workspace title="BMI Calculator">
+    <Workspace title={name || "BMI Calculator"}>
       <CalculatorGrid
         left={
           <InputPanel subtitle="Enter height and weight to estimate body mass index.">
@@ -561,7 +561,7 @@ function BMICalculator() {
   );
 }
 
-function LoanCalculator() {
+function LoanCalculator({ name = "" }: { name?: string }) {
   const [principal, setPrincipal] = useState("");
   const [annualRate, setAnnualRate] = useState("");
   const [years, setYears] = useState("");
@@ -605,7 +605,7 @@ function LoanCalculator() {
   }, [principal, annualRate, years]);
 
   return (
-    <Workspace title="Loan Calculator">
+    <Workspace title={name || "Loan Calculator"}>
       <CalculatorGrid
         left={
           <InputPanel subtitle="Estimate monthly repayment and total borrowing cost.">
@@ -646,7 +646,7 @@ function LoanCalculator() {
   );
 }
 
-function EMICalculator() {
+function EMICalculator({ name = "" }: { name?: string }) {
   const [principal, setPrincipal] = useState("");
   const [annualRate, setAnnualRate] = useState("");
   const [months, setMonths] = useState("");
@@ -691,7 +691,7 @@ function EMICalculator() {
   }, [principal, annualRate, months]);
 
   return (
-    <Workspace title="EMI Calculator">
+    <Workspace title={name || "EMI Calculator"}>
       <CalculatorGrid
         left={
           <InputPanel subtitle="Estimate monthly EMI for a loan tenure in months.">
@@ -732,7 +732,7 @@ function EMICalculator() {
   );
 }
 
-function PercentageCalculator({ config = {} }: { config?: Record<string, unknown> }) {
+function PercentageCalculator({ config = {}, name = "" }: { config?: Record<string, unknown>; name?: string }) {
   const [mode, setMode] = useState<"of" | "whatPercent" | "change">("of");
   const [a, setA] = useState("");
   const [b, setB] = useState("");
@@ -822,7 +822,7 @@ function PercentageCalculator({ config = {} }: { config?: Record<string, unknown
   }, [mode, a, b]);
 
   return (
-    <Workspace title="Percentage Calculator">
+    <Workspace title={name || "Percentage Calculator"}>
       <CalculatorGrid
         left={
           <InputPanel subtitle={customMode ? `Enter values to calculate ${resultLabel.toLowerCase()}.` : "Compare values as percentages, portions, or relative change."}>
@@ -1704,7 +1704,7 @@ function GenericCalculator({ name }: { name?: string }) {
 
 
 // ─── SIP Calculator ───────────────────────────────────────────────────────────
-function SIPCalculator() {
+function SIPCalculator(({ name = "" }: { name?: string }) {
   const [monthly, setMonthly] = useState("");
   const [rate, setRate] = useState("");
   const [years, setYears] = useState("");
@@ -1732,7 +1732,7 @@ function SIPCalculator() {
   }, [monthly, rate, years]);
 
   return (
-    <Workspace title="SIP Calculator">
+    <Workspace title={name || "SIP Calculator"}>
       <CalculatorGrid
         left={
           <InputPanel subtitle="Calculate returns on a monthly Systematic Investment Plan (SIP) in mutual funds.">
@@ -1759,7 +1759,7 @@ function SIPCalculator() {
 }
 
 // ─── FD Calculator ────────────────────────────────────────────────────────────
-function FDCalculator() {
+function FDCalculator(({ name = "" }: { name?: string }) {
   const [principal, setPrincipal] = useState("");
   const [rate, setRate] = useState("");
   const [years, setYears] = useState("");
@@ -1787,7 +1787,7 @@ function FDCalculator() {
   }, [principal, rate, years, compounding]);
 
   return (
-    <Workspace title="FD Calculator">
+    <Workspace title={name || "FD Calculator"}>
       <CalculatorGrid
         left={
           <InputPanel subtitle="Calculate the maturity amount for a Fixed Deposit with compound interest.">
@@ -1823,7 +1823,7 @@ function FDCalculator() {
 }
 
 // ─── PPF Calculator ───────────────────────────────────────────────────────────
-function PPFCalculator() {
+function PPFCalculator(({ name = "" }: { name?: string }) {
   const [yearly, setYearly] = useState("");
   const [rate, setRate] = useState("7.1");
   const [years, setYears] = useState("15");
@@ -1853,7 +1853,7 @@ function PPFCalculator() {
   }, [yearly, rate, years]);
 
   return (
-    <Workspace title="PPF Calculator">
+    <Workspace title={name || "PPF Calculator"}>
       <CalculatorGrid
         left={
           <InputPanel subtitle="Calculate Public Provident Fund maturity with India's EEE tax-free government scheme.">
@@ -1881,7 +1881,7 @@ function PPFCalculator() {
 }
 
 // ─── HRA Calculator ───────────────────────────────────────────────────────────
-function HRACalculator() {
+function HRACalculator(({ name = "" }: { name?: string }) {
   const [basic, setBasic] = useState("");
   const [hra, setHra] = useState("");
   const [rent, setRent] = useState("");
@@ -1917,7 +1917,7 @@ function HRACalculator() {
   }, [basic, hra, rent, metro]);
 
   return (
-    <Workspace title="HRA Calculator">
+    <Workspace title={name || "HRA Calculator"}>
       <CalculatorGrid
         left={
           <InputPanel subtitle="Calculate your House Rent Allowance (HRA) exemption under Indian income tax rules.">
@@ -2048,7 +2048,7 @@ function IncomeTaxCalculator() {
 }
 
 // ─── Compound Interest Calculator ─────────────────────────────────────────────
-function CompoundInterestCalculator() {
+function CompoundInterestCalculator(({ name = "" }: { name?: string }) {
   const [principal, setPrincipal] = useState("");
   const [rate, setRate] = useState("");
   const [years, setYears] = useState("");
@@ -2085,7 +2085,7 @@ function CompoundInterestCalculator() {
   }, [principal, rate, years, compounding]);
 
   return (
-    <Workspace title="Compound Interest Calculator">
+    <Workspace title={name || "Compound Interest Calculator"}>
       <CalculatorGrid
         left={
           <InputPanel subtitle="Calculate compound interest and compare it against simple interest over any period.">
@@ -2124,12 +2124,13 @@ function CompoundInterestCalculator() {
 export default function BuiltInCalculatorClient({ item }: Props) {
   const engine = String(item.engine_type || inferEngineType("calculator", item.slug) || "");
   const config = item.engine_config || {};
+  const name = item.name || "";
 
-  if (engine === "age-calculator") return <AgeCalculator />;
-  if (engine === "bmi-calculator") return <BMICalculator />;
-  if (engine === "loan-calculator") return <LoanCalculator />;
-  if (engine === "emi-calculator") return <EMICalculator />;
-  if (engine === "percentage-calculator") return <PercentageCalculator config={config} />;
+  if (engine === "age-calculator") return <AgeCalculator name={name} />;
+  if (engine === "bmi-calculator") return <BMICalculator name={name} />;
+  if (engine === "loan-calculator") return <LoanCalculator name={name} />;
+  if (engine === "emi-calculator") return <EMICalculator name={name} />;
+  if (engine === "percentage-calculator") return <PercentageCalculator config={config} name={name} />;
   if (engine === "simple-interest-calculator") {
     return <SimpleInterestCalculator config={config} />;
   }
@@ -2139,12 +2140,12 @@ export default function BuiltInCalculatorClient({ item }: Props) {
   if (engine === "formula-calculator") {
     return <FormulaCalculator config={config} name={item.name} />;
   }
-  if (engine === "sip-calculator") return <SIPCalculator />;
-  if (engine === "fd-calculator") return <FDCalculator />;
-  if (engine === "ppf-calculator") return <PPFCalculator />;
-  if (engine === "hra-calculator") return <HRACalculator />;
+  if (engine === "sip-calculator") return <SIPCalculator name={name} />;
+  if (engine === "fd-calculator") return <FDCalculator name={name} />;
+  if (engine === "ppf-calculator") return <PPFCalculator name={name} />;
+  if (engine === "hra-calculator") return <HRACalculator name={name} />;
   if (engine === "income-tax-calculator") return <IncomeTaxCalculator />;
-  if (engine === "compound-interest-calculator") return <CompoundInterestCalculator />;
+  if (engine === "compound-interest-calculator") return <CompoundInterestCalculator name={name} />;
 
   return <GenericCalculator name={item.name} />;
 }
