@@ -35,6 +35,18 @@ export type ToolEngineType =
   | "csv-to-json"
   | "ip-lookup"
   | "json-unescape"
+  | "cron-builder"
+  | "diff-checker"
+  | "jwt-decoder"
+  | "lorem-ipsum-generator"
+  | "number-base-converter"
+  | "html-entity-encoder"
+  | "string-escape-tool"
+  | "yaml-json-converter"
+  | "json-to-csv"
+  | "color-contrast-checker"
+  | "robots-txt-generator"
+  | "open-graph-tester"
   | "generic-directory";
 
 // ─── FIXED: Added all calculator engines that exist in calculator-runtime.ts ──
@@ -455,6 +467,128 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
     title: "IP Address Lookup",
     description: "Look up location, ISP and timezone for any IP address.",
     keywords: ["ip-lookup", "ip lookup", "ip address lookup"],
+    defaultConfig: {},
+  }),
+
+  // ─── NEW DEVELOPER / UTILITY TOOLS ───────────────────────────────────────
+
+  "cron-builder": createDefinition({
+    type: "cron-builder",
+    category: "tool",
+    family: "cron-builder",
+    title: "Cron Expression Builder",
+    description: "Build, validate and understand cron schedule expressions with a visual editor.",
+    keywords: ["cron-builder", "cron expression", "cron schedule", "cron-expression-builder", "cron generator"],
+    defaultConfig: {},
+  }),
+
+  "diff-checker": createDefinition({
+    type: "diff-checker",
+    category: "tool",
+    family: "diff-checker",
+    title: "Text Diff Checker",
+    description: "Compare two texts side-by-side and highlight added or removed lines.",
+    keywords: ["diff-checker", "text diff", "compare text", "diff tool"],
+    defaultConfig: {},
+  }),
+
+  "jwt-decoder": createDefinition({
+    type: "jwt-decoder",
+    category: "tool",
+    family: "jwt-decoder",
+    title: "JWT Decoder",
+    description: "Decode and inspect JSON Web Tokens — view header, payload and expiry instantly.",
+    keywords: ["jwt-decoder", "jwt decode", "json web token", "jwt inspector"],
+    defaultConfig: {},
+  }),
+
+  "lorem-ipsum-generator": createDefinition({
+    type: "lorem-ipsum-generator",
+    category: "tool",
+    family: "lorem-ipsum-generator",
+    title: "Lorem Ipsum Generator",
+    description: "Generate placeholder lorem ipsum text by paragraphs, sentences or words.",
+    keywords: ["lorem-ipsum", "lorem ipsum generator", "placeholder text", "dummy text"],
+    defaultConfig: {},
+  }),
+
+  "number-base-converter": createDefinition({
+    type: "number-base-converter",
+    category: "tool",
+    family: "number-base-converter",
+    title: "Number Base Converter",
+    description: "Convert numbers between decimal, binary, hexadecimal and octal instantly.",
+    keywords: ["number-base-converter", "binary converter", "hex converter", "base converter", "decimal to binary"],
+    defaultConfig: {},
+  }),
+
+  "html-entity-encoder": createDefinition({
+    type: "html-entity-encoder",
+    category: "tool",
+    family: "html-entity-encoder",
+    title: "HTML Entity Encoder",
+    description: "Encode and decode HTML entities like &amp; &lt; &gt; for safe use in web pages.",
+    keywords: ["html-entity-encoder", "html entities", "html encode", "html decode"],
+    defaultConfig: {},
+  }),
+
+  "string-escape-tool": createDefinition({
+    type: "string-escape-tool",
+    category: "tool",
+    family: "string-escape-tool",
+    title: "String Escape Tool",
+    description: "Escape and unescape strings for JSON, JavaScript, HTML and SQL formats.",
+    keywords: ["string-escape", "escape string", "json escape", "string escaper"],
+    defaultConfig: {},
+  }),
+
+  "yaml-json-converter": createDefinition({
+    type: "yaml-json-converter",
+    category: "tool",
+    family: "yaml-json-converter",
+    title: "YAML ↔ JSON Converter",
+    description: "Convert YAML to JSON and JSON to YAML instantly in the browser.",
+    keywords: ["yaml-to-json", "json-to-yaml", "yaml json converter", "yaml converter"],
+    defaultConfig: {},
+  }),
+
+  "json-to-csv": createDefinition({
+    type: "json-to-csv",
+    category: "tool",
+    family: "json-to-csv",
+    title: "JSON to CSV Converter",
+    description: "Convert JSON arrays to CSV format with configurable delimiters and copy-ready output.",
+    keywords: ["json-to-csv", "json csv", "convert json to csv"],
+    defaultConfig: {},
+  }),
+
+  "robots-txt-generator": createDefinition({
+    type: "robots-txt-generator",
+    category: "tool",
+    family: "robots-txt-generator",
+    title: "Robots.txt Generator",
+    description: "Generate a valid robots.txt file for your website with a visual builder.",
+    keywords: ["robots-txt", "robots.txt generator", "robotstxt", "seo robots"],
+    defaultConfig: {},
+  }),
+
+  "open-graph-tester": createDefinition({
+    type: "open-graph-tester",
+    category: "tool",
+    family: "open-graph-tester",
+    title: "Open Graph Preview",
+    description: "Preview how your page looks when shared on social media. Check OG tags instantly.",
+    keywords: ["open-graph", "og-preview", "og tester", "opengraph", "social preview"],
+    defaultConfig: {},
+  }),
+
+  "color-contrast-checker": createDefinition({
+    type: "color-contrast-checker",
+    category: "tool",
+    family: "color-contrast-checker",
+    title: "Color Contrast Checker",
+    description: "Check WCAG AA and AAA color contrast ratios for accessible web design.",
+    keywords: ["color-contrast-checker", "contrast ratio", "wcag contrast", "accessibility contrast"],
     defaultConfig: {},
   }),
 
@@ -881,6 +1015,20 @@ export function inferEngineType(category: EngineCategory, slug: string): EngineT
     if (value.includes("binary-to-text")) return "binary-to-text";
     if (value.includes("json-escape")) return "json-escape";
     if (value.includes("json-unescape")) return "json-unescape";
+
+    // ─── New tool engines ─────────────────────────────────────────────────────
+    if (value.includes("cron-expression") || value.includes("cron-builder") || value === "cron-expression-builder") return "cron-builder";
+    if (value.includes("diff-checker") || value.includes("text-diff") || value.includes("compare-text")) return "diff-checker";
+    if (value.includes("jwt-decoder") || value.includes("jwt-decode") || value.includes("json-web-token")) return "jwt-decoder";
+    if (value.includes("lorem-ipsum") || value.includes("placeholder-text") || value.includes("dummy-text")) return "lorem-ipsum-generator";
+    if (value.includes("number-base") || value.includes("base-converter") || (value.includes("binary") && value.includes("converter")) || value.includes("hex-converter")) return "number-base-converter";
+    if (value.includes("html-entity") || value.includes("html-encode") || value.includes("html-decode")) return "html-entity-encoder";
+    if (value.includes("string-escape") || value.includes("escape-tool") || value.includes("string-escaper")) return "string-escape-tool";
+    if (value.includes("yaml-to-json") || value.includes("json-to-yaml") || value.includes("yaml-json") || value.includes("yaml-converter")) return "yaml-json-converter";
+    if (value === "json-to-csv" || value.includes("json-to-csv") || value.includes("json-csv")) return "json-to-csv";
+    if (value.includes("color-contrast") || value.includes("contrast-checker") || value.includes("contrast-ratio") || value.includes("wcag-contrast")) return "color-contrast-checker";
+    if (value.includes("robots-txt") || value.includes("robots-txt-generator") || value.includes("robotstxt")) return "robots-txt-generator";
+    if (value.includes("open-graph") || value.includes("og-preview") || value.includes("og-tester") || value.includes("opengraph")) return "open-graph-tester";
 
     for (const engineType of TOOL_ENGINE_ORDER) {
       if (engineType === "generic-directory") continue;

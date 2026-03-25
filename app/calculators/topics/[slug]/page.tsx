@@ -14,6 +14,8 @@ type Props = {
 };
 
 export const revalidate = 300;
+// Allow unknown slugs to be built on-demand via ISR — prevents build timeout
+export const dynamicParams = true;
 
 export async function generateStaticParams() {
   const items = await getContentItems("calculators");
