@@ -2065,6 +2065,443 @@ function renderByFamily({
   return <GenericTool title={title} description={description} />;
 }
 
+// ─── Diff Checker ─────────────────────────────────────────────────────────────
+function DiffChecker({ title }: { title: string }) {
+  const [textA, setTextA] = useState("");
+  const [textB, setTextB] = useState("");
+  const [diffs, setDiffs] = useState<{ type: "equal"|"add"|"remove"; text: string }[]>([]);
+
+  function computeDiff() {
+    const linesA = textA.split("\n");
+    const linesB = textB.split("\n");
+    const result: { type: "equal"|"add"|"remove"; text: string }[] = [];
+    const maxLen = Math.max(linesA.length, linesB.length);
+    for (let i = 0; i < maxLen; i++) {
+      const a = linesA[i]; const b = linesB[i];
+      if (a === b) result.push({ type: "equal", text: a ?? "" });
+      else {
+        if (a !== undefined) result.push({ type: "remove", text: a });
+        if (b !== undefined) result.push({ type: "add", text: b });
+      }
+    }
+    setDiffs(result);
+  }
+  const added = diffs.filter(d => d.type === "add").length;
+  const removed = diffs.filter(d => d.type === "remove").length;
+  return (
+    <Workspace title={title}>
+      <div className="grid gap-4 md:grid-cols-2 mb-4">
+        {[["Original", textA, setTextA],["Modified", textB, setTextB]].map(([label, val, setter]) => (
+          <div key={String(label)}>
+            <label className="text-xs font-semibold uppercase tracking-widest text-q-muted mb-2 block">{String(label)}</label>
+            <textarea value={String(val)} onChange={e => (setter as (v:string)=>void)(e.target.value)} rows={8}
+              placeholder={`Paste ${String(label).toLowerCase()} text...`}
+              className="w-full rounded-2xl border border-q-border bg-q-bg px-4 py-3 text-sm font-mono text-q-text resize-y focus:outline-none focus:ring-2 focus:ring-q-primary/40" />
+          </div>
+        ))}
+      </div>
+      <button onClick={computeDiff} className="rounded-2xl bg-q-primary px-6 py-3 text-sm font-semibold text-white hover:opacity-90 transition">Compare Texts</button>
+      {diffs.length > 0 && (
+        <div className="mt-4">
+          <div className="flex gap-4 text-xs mb-3"><span className="text-emerald-600">+ {added} added</span><span className="text-red-500">- {removed} removed</span></div>
+          <div className="rounded-2xl border border-q-border bg-q-bg p-4 font-mono text-sm overflow-auto max-h-80">
+            {diffs.map((d, i) => (
+              <div key={i} className={`px-2 py-0.5 rounded ${d.type==="add"?"bg-emerald-50 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300":d.type==="remove"?"bg-red-50 text-red-800 dark:bg-red-500/10 dark:text-red-300":"text-q-muted"}`}>
+                {d.type==="add"?"+ ":d.type==="remove"?"- ":"  "}{d.text||" "}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </Workspace>
+  );
+}
+
+// ─── JWT Decoder ──────────────────────────────────────────────────────────────
+function JWTDecoder({ title }: { title: string }) {
+  const [token, setToken] = useState("");
+  const [header, setHeader] = useState<Record<string,unknown>|null>(null);
+  const [payload, setPayload] = useState<Record<string,unknown>|null>(null);
+  const [err, setErr] = useState("");
+
+  function decode() {
+    setErr(""); setHeader(null); setPayload(null);
+    try {
+      const parts = token.trim().split(".");
+      if (parts.length !== 3) { setErr("Invalid JWT — must have 3 parts separated by dots"); return; }
+      const dec = (s: string) => JSON.parse(atob(s.replace(/-/g,"+").replace(/_/g,"/")));
+      setHeader(dec(parts[0])); setPayload(dec(parts[1]));
+    } catch { setErr("Could not decode — check the token format"); }
+  }
+
+  const exp = payload && typeof payload === "object" ? (payload as Record<string,unknown>).exp : null;
+  const expDate = exp ? new Date(Number(exp)*1000) : null;
+  const isExpired = expDate ? expDate < new Date() : false;
+
+  return (
+    <Workspace title={title}>
+      <textarea value={token} onChange={e => setToken(e.target.value)} rows={3}
+        placeholder="Paste your JWT token here... eyJhbGciOiJIUzI1NiJ9..."
+        className="w-full rounded-2xl border border-q-border bg-q-bg px-4 py-3 text-xs font-mono text-q-text resize-none focus:outline-none focus:ring-2 focus:ring-q-primary/40 mb-4" />
+      <button onClick={decode} className="rounded-2xl bg-q-primary px-6 py-3 text-sm font-semibold text-white hover:opacity-90 transition mb-4">Decode JWT</button>
+      {err && <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-500/10 dark:border-red-500/20 p-4 text-sm text-red-700 dark:text-red-400 mb-3">{err}</div>}
+      {expDate && (
+        <div className={`rounded-xl border px-4 py-3 text-sm mb-3 ${isExpired?"border-red-200 bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400":"border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"}`}>
+          {isExpired ? "⚠ Token expired:" : "✓ Token valid until:"} {expDate.toLocaleString()}
+        </div>
+      )}
+      {header && payload && (
+        <div className="grid gap-4">
+          {[["Header", header],["Payload", payload]].map(([label, data]) => (
+            <div key={String(label)}>
+              <div className="text-xs font-semibold uppercase tracking-widest text-q-muted mb-2">{String(label)}</div>
+              <pre className="rounded-xl border border-q-border bg-q-bg p-4 text-xs font-mono text-q-text overflow-auto">{JSON.stringify(data, null, 2)}</pre>
+            </div>
+          ))}
+        </div>
+      )}
+    </Workspace>
+  );
+}
+
+// ─── Lorem Ipsum Generator ────────────────────────────────────────────────────
+const LOREM_WORDS = "lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua enim ad minim veniam quis nostrud exercitation ullamco laboris nisi aliquip ex ea commodo consequat duis aute irure reprehenderit voluptate velit esse cillum eu fugiat nulla pariatur excepteur sint occaecat cupidatat non proident culpa officia deserunt mollit anim est laborum".split(" ");
+function LoremIpsumGenerator({ title }: { title: string }) {
+  const [count, setCount] = useState("3");
+  const [unit, setUnit] = useState<"paragraphs"|"sentences"|"words">("paragraphs");
+  const [output, setOutput] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  function generate() {
+    const n = Math.max(1, Math.min(Number(count)||3, 20));
+    const rw = () => LOREM_WORDS[Math.floor(Math.random()*LOREM_WORDS.length)];
+    const words = (len: number) => Array.from({length:len}, rw).join(" ");
+    const sentence = () => { const w = words(Math.floor(Math.random()*10)+8); return w.charAt(0).toUpperCase()+w.slice(1)+"."; };
+    const para = () => Array.from({length:Math.floor(Math.random()*4)+4}, sentence).join(" ");
+    const result = unit==="words" ? words(n) : unit==="sentences" ? Array.from({length:n}, sentence).join(" ") : Array.from({length:n}, para).join("\n\n");
+    setOutput(result);
+  }
+  function copy() { navigator.clipboard.writeText(output); setCopied(true); setTimeout(()=>setCopied(false),2000); }
+
+  return (
+    <Workspace title={title}>
+      <div className="flex flex-wrap gap-3 mb-4">
+        <input type="number" value={count} onChange={e=>setCount(e.target.value)} min="1" max="20"
+          className="w-24 rounded-xl border border-q-border bg-q-bg px-3 py-2 text-sm text-q-text focus:outline-none focus:ring-2 focus:ring-q-primary/40" />
+        <select value={unit} onChange={e=>setUnit(e.target.value as typeof unit)} className="rounded-xl border border-q-border bg-q-bg px-3 py-2 text-sm text-q-text">
+          <option value="paragraphs">Paragraphs</option>
+          <option value="sentences">Sentences</option>
+          <option value="words">Words</option>
+        </select>
+        <button onClick={generate} className="rounded-xl bg-q-primary px-5 py-2 text-sm font-semibold text-white hover:opacity-90 transition">Generate</button>
+      </div>
+      {output && (
+        <div className="relative">
+          <textarea value={output} readOnly rows={8} className="w-full rounded-2xl border border-q-border bg-q-bg px-4 py-3 text-sm text-q-muted resize-y" />
+          <button onClick={copy} className="absolute top-3 right-3 rounded-lg border border-q-border bg-q-card px-3 py-1.5 text-xs font-medium text-q-text hover:bg-q-card-hover transition">{copied?"Copied!":"Copy"}</button>
+        </div>
+      )}
+    </Workspace>
+  );
+}
+
+// ─── Number Base Converter ────────────────────────────────────────────────────
+function NumberBaseConverter({ title }: { title: string }) {
+  const [input, setInput] = useState("");
+  const [fromBase, setFromBase] = useState("10");
+  const conv = (val: string, base: number) => {
+    try { const n = parseInt(val.trim(), base); if (isNaN(n)) return null;
+      return { decimal: n.toString(10), binary: n.toString(2), hex: n.toString(16).toUpperCase(), octal: n.toString(8) };
+    } catch { return null; }
+  };
+  const result = input.trim() ? conv(input, Number(fromBase)) : null;
+  return (
+    <Workspace title={title}>
+      <div className="flex flex-wrap gap-3 mb-4">
+        <input value={input} onChange={e=>setInput(e.target.value)} placeholder="Enter number..."
+          className="flex-1 rounded-xl border border-q-border bg-q-bg px-4 py-2.5 text-sm font-mono text-q-text focus:outline-none focus:ring-2 focus:ring-q-primary/40" />
+        <select value={fromBase} onChange={e=>setFromBase(e.target.value)} className="rounded-xl border border-q-border bg-q-bg px-3 py-2 text-sm text-q-text">
+          <option value="10">Decimal (10)</option>
+          <option value="2">Binary (2)</option>
+          <option value="16">Hexadecimal (16)</option>
+          <option value="8">Octal (8)</option>
+        </select>
+      </div>
+      {result ? (
+        <div className="grid grid-cols-2 gap-3">
+          {([["Decimal","decimal","10"],["Binary","binary","2"],["Hexadecimal","hex","16"],["Octal","octal","8"]] as const).map(([label, key, base]) => (
+            <div key={label} className={`rounded-xl border p-4 ${base===fromBase?"border-q-primary bg-q-primary/5":"border-q-border bg-q-bg"}`}>
+              <div className="text-xs font-semibold text-q-muted mb-1">{label} (base {base})</div>
+              <div className="font-mono text-lg font-bold text-q-text">{result[key]}</div>
+            </div>
+          ))}
+        </div>
+      ) : input.trim() ? <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">Invalid number for base {fromBase}</div> : null}
+    </Workspace>
+  );
+}
+
+// ─── HTML Entity Encoder ──────────────────────────────────────────────────────
+function HTMLEntityEncoder({ title }: { title: string }) {
+  const [input, setInput] = useState("");
+  const [mode, setMode] = useState<"encode"|"decode">("encode");
+  const [copied, setCopied] = useState(false);
+  const encode = (s: string) => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+  const decode = (s: string) => s.replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'");
+  const output = input ? (mode==="encode" ? encode(input) : decode(input)) : "";
+  function copy() { navigator.clipboard.writeText(output); setCopied(true); setTimeout(()=>setCopied(false),2000); }
+  return (
+    <Workspace title={title}>
+      <div className="flex gap-2 mb-4">
+        {(["encode","decode"] as const).map(m=>(
+          <button key={m} onClick={()=>setMode(m)} className={`rounded-xl px-4 py-2 text-sm font-medium capitalize transition ${mode===m?"bg-q-primary text-white":"border border-q-border bg-q-bg text-q-muted hover:bg-q-card-hover"}`}>{m}</button>
+        ))}
+      </div>
+      <textarea value={input} onChange={e=>setInput(e.target.value)} rows={5}
+        placeholder={mode==="encode"?"Enter text with < > & \" characters...":"Enter HTML entities like &lt; &gt; &amp;..."}
+        className="w-full rounded-2xl border border-q-border bg-q-bg px-4 py-3 text-sm font-mono text-q-text resize-y focus:outline-none focus:ring-2 focus:ring-q-primary/40 mb-4" />
+      {output && (
+        <div className="relative">
+          <textarea value={output} readOnly rows={5} className="w-full rounded-2xl border border-emerald-200 bg-emerald-50/40 dark:border-emerald-500/20 dark:bg-emerald-500/5 px-4 py-3 text-sm font-mono text-q-text resize-y" />
+          <button onClick={copy} className="absolute top-3 right-3 rounded-lg border border-q-border bg-q-card px-3 py-1.5 text-xs font-medium text-q-text hover:bg-q-card-hover transition">{copied?"Copied!":"Copy"}</button>
+        </div>
+      )}
+    </Workspace>
+  );
+}
+
+// ─── String Escape Tool ───────────────────────────────────────────────────────
+function StringEscapeTool({ title }: { title: string }) {
+  const [input, setInput] = useState("");
+  const [format, setFormat] = useState<"json"|"js"|"html"|"sql">("json");
+  const [mode, setMode] = useState<"escape"|"unescape">("escape");
+  const [copied, setCopied] = useState(false);
+  const esc: Record<string,(s:string)=>string> = {
+    json: s=>JSON.stringify(s).slice(1,-1),
+    js: s=>s.replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/\n/g,"\\n").replace(/\t/g,"\\t"),
+    html: s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"),
+    sql: s=>s.replace(/'/g,"''"),
+  };
+  const unesc: Record<string,(s:string)=>string> = {
+    json: s=>{ try { return JSON.parse(`"${s}"`); } catch { return s; } },
+    js: s=>s.replace(/\\n/g,"\n").replace(/\\t/g,"\t").replace(/\\'/g,"'").replace(/\\\\/g,"\\"),
+    html: s=>s.replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"'),
+    sql: s=>s.replace(/''/g,"'"),
+  };
+  const output = input ? (mode==="escape" ? esc[format]?.(input) : unesc[format]?.(input)) ?? input : "";
+  function copy() { navigator.clipboard.writeText(output); setCopied(true); setTimeout(()=>setCopied(false),2000); }
+  return (
+    <Workspace title={title}>
+      <div className="flex flex-wrap gap-2 mb-4">
+        {(["escape","unescape"] as const).map(m=>(
+          <button key={m} onClick={()=>setMode(m)} className={`rounded-xl px-4 py-2 text-sm font-medium capitalize transition ${mode===m?"bg-q-primary text-white":"border border-q-border bg-q-bg text-q-muted hover:bg-q-card-hover"}`}>{m}</button>
+        ))}
+        <select value={format} onChange={e=>setFormat(e.target.value as typeof format)} className="rounded-xl border border-q-border bg-q-bg px-3 py-2 text-sm text-q-text">
+          {["json","js","html","sql"].map(f=><option key={f} value={f}>{f.toUpperCase()}</option>)}
+        </select>
+      </div>
+      <textarea value={input} onChange={e=>setInput(e.target.value)} rows={4} placeholder="Enter string..."
+        className="w-full rounded-2xl border border-q-border bg-q-bg px-4 py-3 text-sm font-mono text-q-text resize-y focus:outline-none focus:ring-2 focus:ring-q-primary/40 mb-4" />
+      {output && (
+        <div className="relative">
+          <textarea value={output} readOnly rows={4} className="w-full rounded-2xl border border-emerald-200 bg-emerald-50/40 dark:border-emerald-500/20 dark:bg-emerald-500/5 px-4 py-3 text-sm font-mono text-q-text resize-y" />
+          <button onClick={copy} className="absolute top-3 right-3 rounded-lg border border-q-border bg-q-card px-3 py-1.5 text-xs font-medium text-q-text hover:bg-q-card-hover transition">{copied?"Copied!":"Copy"}</button>
+        </div>
+      )}
+    </Workspace>
+  );
+}
+
+// ─── YAML ↔ JSON Converter ────────────────────────────────────────────────────
+function YAMLJSONConverter({ title }: { title: string }) {
+  const [input, setInput] = useState("");
+  const [mode, setMode] = useState<"yaml-to-json"|"json-to-yaml">("yaml-to-json");
+  const [output, setOutput] = useState("");
+  const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  function convert() {
+    setError(""); setOutput("");
+    try {
+      if (mode==="json-to-yaml") {
+        const obj = JSON.parse(input);
+        const toYaml = (o: unknown, indent=0): string => {
+          const pad = " ".repeat(indent);
+          if (Array.isArray(o)) return o.map(v=>`${pad}- ${toYaml(v,indent+2).trimStart()}`).join("\n");
+          if (o!==null && typeof o==="object") return Object.entries(o as Record<string,unknown>).map(([k,v])=>typeof v==="object"&&v!==null?`${pad}${k}:\n${toYaml(v,indent+2)}`:`${pad}${k}: ${v}`).join("\n");
+          return String(o);
+        };
+        setOutput(toYaml(obj));
+      } else {
+        const lines = input.split("\n");
+        const result: Record<string,unknown> = {};
+        for (const line of lines) {
+          const m = line.match(/^([\w\s-]+?):\s*(.*)$/);
+          if (m) { const v=m[2].trim(); result[m[1].trim()] = v==="true"?true:v==="false"?false:!isNaN(Number(v))&&v!==""?Number(v):v; }
+        }
+        setOutput(JSON.stringify(result,null,2));
+      }
+    } catch(e) { setError(e instanceof Error ? e.message : "Invalid format"); }
+  }
+  function copy() { navigator.clipboard.writeText(output); setCopied(true); setTimeout(()=>setCopied(false),2000); }
+
+  return (
+    <Workspace title={title}>
+      <div className="flex gap-2 mb-4">
+        {([["yaml-to-json","YAML → JSON"],["json-to-yaml","JSON → YAML"]] as const).map(([m,label])=>(
+          <button key={m} onClick={()=>setMode(m)} className={`rounded-xl px-4 py-2 text-sm font-medium transition ${mode===m?"bg-q-primary text-white":"border border-q-border bg-q-bg text-q-muted hover:bg-q-card-hover"}`}>{label}</button>
+        ))}
+      </div>
+      <textarea value={input} onChange={e=>setInput(e.target.value)} rows={6}
+        placeholder={mode==="yaml-to-json"?"name: John\nage: 30\ncity: London":'{"name":"John","age":30}'}
+        className="w-full rounded-2xl border border-q-border bg-q-bg px-4 py-3 text-sm font-mono text-q-text resize-y focus:outline-none focus:ring-2 focus:ring-q-primary/40 mb-3" />
+      <button onClick={convert} className="rounded-xl bg-q-primary px-5 py-2 text-sm font-semibold text-white hover:opacity-90 transition mb-4">Convert</button>
+      {error && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-600 mb-3">{error}</div>}
+      {output && (
+        <div className="relative">
+          <textarea value={output} readOnly rows={6} className="w-full rounded-2xl border border-emerald-200 bg-emerald-50/40 dark:border-emerald-500/20 dark:bg-emerald-500/5 px-4 py-3 text-sm font-mono text-q-text resize-y" />
+          <button onClick={copy} className="absolute top-3 right-3 rounded-lg border border-q-border bg-q-card px-3 py-1.5 text-xs font-medium text-q-text hover:bg-q-card-hover transition">{copied?"Copied!":"Copy"}</button>
+        </div>
+      )}
+    </Workspace>
+  );
+}
+
+// ─── JSON to CSV ──────────────────────────────────────────────────────────────
+function JSONtoCSV({ title }: { title: string }) {
+  const [input, setInput] = useState("");
+  const [delimiter, setDelimiter] = useState(",");
+  const [output, setOutput] = useState("");
+  const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  function convert() {
+    setError(""); setOutput("");
+    try {
+      const data = JSON.parse(input);
+      const arr = Array.isArray(data) ? data : [data];
+      const keys = Array.from(new Set(arr.flatMap((o: unknown) => Object.keys((o as Record<string,unknown>)||{}))));
+      const escape = (v: string) => v.includes(delimiter)||v.includes('"')||v.includes('\n') ? `"${v.replace(/"/g,'""')}"` : v;
+      const rows = [keys.join(delimiter), ...arr.map((o: unknown) => keys.map(k=>escape(String(((o as Record<string,unknown>)[k])??''))).join(delimiter))];
+      setOutput(rows.join("\n"));
+    } catch(e) { setError("Invalid JSON: "+(e instanceof Error?e.message:"parse error")); }
+  }
+  function copy() { navigator.clipboard.writeText(output); setCopied(true); setTimeout(()=>setCopied(false),2000); }
+
+  return (
+    <Workspace title={title}>
+      <textarea value={input} onChange={e=>setInput(e.target.value)} rows={6}
+        placeholder={'[{"name":"Alice","age":30},{"name":"Bob","age":25}]'}
+        className="w-full rounded-2xl border border-q-border bg-q-bg px-4 py-3 text-sm font-mono text-q-text resize-y focus:outline-none focus:ring-2 focus:ring-q-primary/40 mb-3" />
+      <div className="flex gap-3 mb-4">
+        <select value={delimiter} onChange={e=>setDelimiter(e.target.value)} className="rounded-xl border border-q-border bg-q-bg px-3 py-2 text-sm text-q-text">
+          <option value=",">Comma (,)</option>
+          <option value=";">Semicolon (;)</option>
+          <option value="|">Pipe (|)</option>
+        </select>
+        <button onClick={convert} className="rounded-xl bg-q-primary px-5 py-2 text-sm font-semibold text-white hover:opacity-90 transition">Convert to CSV</button>
+      </div>
+      {error && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-600 mb-3">{error}</div>}
+      {output && (
+        <div className="relative">
+          <textarea value={output} readOnly rows={6} className="w-full rounded-2xl border border-emerald-200 bg-emerald-50/40 dark:border-emerald-500/20 dark:bg-emerald-500/5 px-4 py-3 text-sm font-mono text-q-text resize-y" />
+          <button onClick={copy} className="absolute top-3 right-3 rounded-lg border border-q-border bg-q-card px-3 py-1.5 text-xs font-medium text-q-text hover:bg-q-card-hover transition">{copied?"Copied!":"Copy"}</button>
+        </div>
+      )}
+    </Workspace>
+  );
+}
+
+// ─── Color Contrast Checker ───────────────────────────────────────────────────
+function ColorContrastChecker({ title }: { title: string }) {
+  const [fg, setFg] = useState("#000000");
+  const [bg, setBg] = useState("#ffffff");
+  function lum(hex: string) {
+    const r=parseInt(hex.slice(1,3),16)/255, g=parseInt(hex.slice(3,5),16)/255, b=parseInt(hex.slice(5,7),16)/255;
+    const l=(c: number)=>c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);
+    return 0.2126*l(r)+0.7152*l(g)+0.0722*l(b);
+  }
+  const safeHex = (h: string) => /^#[0-9A-Fa-f]{6}$/.test(h) ? h : "#000000";
+  const L1=lum(safeHex(fg)), L2=lum(safeHex(bg));
+  const ratio=(Math.max(L1,L2)+0.05)/(Math.min(L1,L2)+0.05);
+  return (
+    <Workspace title={title}>
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        {([["Foreground (text)",fg,setFg],["Background",bg,setBg]] as const).map(([label,val,setter])=>(
+          <div key={label}>
+            <label className="text-xs font-semibold uppercase tracking-widest text-q-muted mb-2 block">{label}</label>
+            <div className="flex gap-2 items-center">
+              <input type="color" value={val} onChange={e=>setter(e.target.value)} className="h-10 w-16 rounded-lg border border-q-border cursor-pointer" />
+              <input type="text" value={val} onChange={e=>setter(e.target.value)} className="flex-1 rounded-xl border border-q-border bg-q-bg px-3 py-2 text-sm font-mono text-q-text" />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="rounded-2xl border border-q-border overflow-hidden mb-4" style={{backgroundColor:bg,color:fg,padding:"2rem",textAlign:"center"}}>
+        <div style={{fontSize:"1.5rem",fontWeight:700}}>Sample Heading Text</div>
+        <div style={{fontSize:"1rem",marginTop:"0.5rem"}}>Sample body text at normal size</div>
+        <div style={{fontSize:"0.75rem",marginTop:"0.25rem"}}>Small text sample for accessibility testing</div>
+      </div>
+      <div className="grid grid-cols-3 gap-3 mb-3">
+        {([["AA Normal",ratio>=4.5,"4.5:1"],["AA Large",ratio>=3,"3:1"],["AAA Normal",ratio>=7,"7:1"]] as const).map(([label,pass,req])=>(
+          <div key={label} className={`rounded-xl border p-4 text-center ${pass?"border-emerald-200 bg-emerald-50 dark:border-emerald-500/20 dark:bg-emerald-500/5":"border-red-200 bg-red-50 dark:border-red-500/20 dark:bg-red-500/5"}`}>
+            <div className={`text-xl font-bold ${pass?"text-emerald-600 dark:text-emerald-400":"text-red-500"}`}>{pass?"Pass":"Fail"}</div>
+            <div className="text-xs font-semibold text-q-text mt-1">{label}</div>
+            <div className="text-xs text-q-muted">{req} required</div>
+          </div>
+        ))}
+      </div>
+      <div className="text-center text-sm text-q-muted">Contrast ratio: <span className="font-bold text-q-text">{ratio.toFixed(2)}:1</span></div>
+    </Workspace>
+  );
+}
+
+// ─── Cron Expression Builder ──────────────────────────────────────────────────
+function CronBuilder({ title }: { title: string }) {
+  const [expr, setExpr] = useState("0 9 * * 1-5");
+  const PRESETS = [["Every minute","* * * * *"],["Every hour","0 * * * *"],["Daily 9am","0 9 * * *"],["Weekdays 9am","0 9 * * 1-5"],["Every Sunday","0 0 * * 0"],["1st of month","0 0 1 * *"]];
+  function explain(cron: string) {
+    const p = cron.trim().split(/\s+/);
+    if (p.length!==5) return "Needs 5 fields: minute hour day month weekday";
+    const [min,hr,dom,mon,dow]=p;
+    const dowMap: Record<string,string> = {"0":"Sunday","1":"Monday","2":"Tuesday","3":"Wednesday","4":"Thursday","5":"Friday","6":"Saturday"};
+    const fHr = hr==="*"?"every hour":`${hr}:00`;
+    const fMin = min==="*"?"every minute":`minute ${min}`;
+    const fDow = dow==="*"?"":dow.includes("-")?`on ${dow.split("-").map(d=>dowMap[d]||d).join(" to ")}`:` on ${dow.split(",").map(d=>dowMap[d]||d).join(" & ")}`;
+    const fDom = dom==="*"?"every day":`day ${dom}`;
+    const fMon = mon==="*"?"":"in month "+mon;
+    return [fHr,fMin,fDow||fDom,fMon].filter(Boolean).join(", ")+".";
+  }
+  const explanation = expr.trim().split(/\s+/).length===5 ? explain(expr) : "Enter a valid 5-part cron expression";
+  return (
+    <Workspace title={title}>
+      <input value={expr} onChange={e=>setExpr(e.target.value)} placeholder="0 9 * * 1-5"
+        className="w-full rounded-2xl border border-q-border bg-q-bg px-4 py-3 text-lg font-mono text-q-text focus:outline-none focus:ring-2 focus:ring-q-primary/40 mb-4" />
+      <div className="rounded-xl border border-q-border bg-q-bg p-4 text-sm text-q-muted mb-4">
+        <span className="font-semibold text-q-text">Runs: </span>{explanation}
+      </div>
+      <div className="grid grid-cols-5 gap-2 mb-4">
+        {["Minute\n0-59","Hour\n0-23","Day\n1-31","Month\n1-12","Weekday\n0-6"].map((label,i)=>{
+          const parts=expr.trim().split(/\s+/);
+          return (<div key={i} className="rounded-xl border border-q-border bg-q-bg p-2 text-center">
+            <div className="font-mono text-sm font-bold text-q-primary">{parts[i]||"?"}</div>
+            <div className="text-xs text-q-muted whitespace-pre-line mt-1">{label}</div>
+          </div>);
+        })}
+      </div>
+      <div className="text-xs font-semibold uppercase tracking-widest text-q-muted mb-2">Presets</div>
+      <div className="grid grid-cols-2 gap-2">
+        {PRESETS.map(([label,val])=>(
+          <button key={val} onClick={()=>setExpr(val)} className="rounded-xl border border-q-border bg-q-bg px-3 py-2.5 text-left hover:bg-q-card-hover transition">
+            <div className="text-xs font-medium text-q-text">{label}</div>
+            <div className="text-xs font-mono text-q-muted">{val}</div>
+          </button>
+        ))}
+      </div>
+    </Workspace>
+  );
+}
+
 export default function UniversalToolEngineRenderer({ item }: Props) {
   const preset = getToolEnginePreset(item);
 
