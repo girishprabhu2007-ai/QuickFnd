@@ -10,13 +10,16 @@ const navItems = [
   { href: "/calculators", label: "Calculators", accent: "purple" },
   { href: "/ai-tools",    label: "AI Tools",    accent: "green"  },
   { href: "/topics",      label: "Topics",      accent: "orange" },
+  { href: "/blog",        label: "Blog",        accent: "rose"   },
 ];
+
 
 const accentColors: Record<string, string> = {
   blue:   "text-blue-500",
   purple: "text-purple-500",
   green:  "text-green-500",
   orange: "text-orange-500",
+  rose:   "text-rose-500",
 };
 
 // ─── Language Selector ───────────────────────────────────────────────────────

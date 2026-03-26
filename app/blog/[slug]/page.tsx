@@ -25,6 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const url = `${siteUrl}/blog/${post.slug}`;
   const title = post.og_title || post.title;
   const description = post.og_description || post.excerpt;
+  const authorForOG = post.author_id ? getAuthorById(post.author_id) : null;
 
   return {
     title: `${title} | QuickFnd`,
@@ -38,8 +39,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: "article",
       publishedTime: post.published_at || undefined,
       tags: post.tags,
+      images: [{
+        url: `https://quickfnd.com/api/og?title=${encodeURIComponent(post.og_title || post.title)}&category=${post.category}&author=${encodeURIComponent(authorForOG?.name || "QuickFnd")}&reading_time=${post.reading_time_minutes}`,
+        width: 1200,
+        height: 630,
+        alt: post.title,
+      }],
     },
-    twitter: { card: "summary_large_image", title, description },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [`https://quickfnd.com/api/og?title=${encodeURIComponent(post.og_title || post.title)}&category=${post.category}&author=${encodeURIComponent(authorForOG?.name || "QuickFnd")}&reading_time=${post.reading_time_minutes}`],
+    },
     keywords: [post.target_keyword || "", ...post.secondary_keywords]
       .filter(Boolean)
       .join(", "),
