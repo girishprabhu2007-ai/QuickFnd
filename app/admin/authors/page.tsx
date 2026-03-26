@@ -35,6 +35,8 @@ export default function AdminAuthorsPage() {
   const [seedResult, setSeedResult] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFakeLikes, setEditFakeLikes] = useState("");
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [uploadResult, setUploadResult] = useState<Record<string, string>>({});
   const [confirmRemoveAll, setConfirmRemoveAll] = useState(false);
 
   const load = useCallback(async () => {
@@ -95,6 +97,20 @@ export default function AdminAuthorsPage() {
     await fetch("/api/admin/authors", { method: "DELETE" });
     setConfirmRemoveAll(false);
     load();
+  }
+
+  async function uploadAvatar(authorId: string, file: File) {
+    setUploadingId(authorId);
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("author_id", authorId);
+    try {
+      const res = await fetch("/api/admin/authors/upload-avatar", { method: "POST", body: fd });
+      const data = await res.json();
+      setUploadResult(prev => ({ ...prev, [authorId]: data.success ? `✓ Uploaded` : `✗ ${data.error}` }));
+      if (data.success) load();
+    } catch { setUploadResult(prev => ({ ...prev, [authorId]: "✗ Upload failed" })); }
+    finally { setUploadingId(null); }
   }
 
   async function removeAuthorFakeLikes(author_id: string) {
@@ -291,6 +307,16 @@ export default function AdminAuthorsPage() {
                     >
                       Remove Fake
                     </button>
+
+                    {/* Upload real photo */}
+                    <label className={`cursor-pointer rounded-lg border border-q-border bg-q-bg px-3 py-1.5 text-xs text-q-muted hover:text-q-text transition ${uploadingId === author.id ? "opacity-60" : ""}`}>
+                      {uploadingId === author.id ? "Uploading..." : "Upload Photo"}
+                      <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
+                        onChange={e => { const f = e.target.files?.[0]; if (f) uploadAvatar(author.id, f); }} />
+                    </label>
+                    {uploadResult[author.id] && (
+                      <span className="text-xs text-emerald-600 dark:text-emerald-400">{uploadResult[author.id]}</span>
+                    )}
 
                     {/* View author page */}
                     <a href={`/blog/authors/${author.slug}`} target="_blank" rel="noopener"

@@ -10,6 +10,8 @@ const tabs = [
   { href: "/admin/tools", label: "Tools" },
   { href: "/admin/blog", label: "Blog" },
   { href: "/admin/authors", label: "Authors" },
+  { href: "/admin/applications", label: "Applications" },
+  { href: "/admin/guest-posts", label: "Guest Posts" },
   { href: "/admin/topics", label: "Topics" },
   { href: "/admin/requests", label: "Requests" },
   { href: "/admin/placeholders", label: "Placeholders" },
