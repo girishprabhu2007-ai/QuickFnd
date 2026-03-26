@@ -2330,6 +2330,28 @@ function renderByFamily({
     return <RobotsTxtGenerator title={title} />;
   }
 
+  if (family === "html-minifier") {
+    const mode = String(config.mode || "html") as "html" | "css" | "js";
+    return <HtmlCssMinifier title={title} mode={mode} />;
+  }
+  if (family === "css-minifier") {
+    return <HtmlCssMinifier title={title} mode="css" />;
+  }
+  if (family === "js-minifier") {
+    return <HtmlCssMinifier title={title} mode="js" />;
+  }
+  if (family === "email-validator") {
+    return <EmailValidatorEngine title={title} />;
+  }
+  if (family === "line-sorter") {
+    return <LineSorterEngine title={title} />;
+  }
+  if (family === "box-shadow-generator") {
+    return <BoxShadowGeneratorEngine title={title} />;
+  }
+  if (family === "css-gradient-generator") {
+    return <CssGradientGeneratorEngine title={title} />;
+  }
   if (family === "open-graph-tester") {
     return <OpenGraphTester title={title} />;
   }
@@ -2769,6 +2791,345 @@ function CronBuilder({ title }: { title: string }) {
             <div className="text-xs font-mono text-q-muted">{val}</div>
           </button>
         ))}
+      </div>
+    </Workspace>
+  );
+}
+
+
+// ─── HTML / CSS MINIFIER ─────────────────────────────────────────────────────
+function HtmlCssMinifier({ title, mode }: { title: string; mode: "html" | "css" | "js" }) {
+  const [input, setInput] = useState("");
+  const [output, setOutput] = useState("");
+  const [savings, setSavings] = useState<string | null>(null);
+
+  function minify() {
+    if (!input.trim()) return;
+    let result = input;
+    if (mode === "html") {
+      result = input
+        .replace(/<!--[\s\S]*?-->/g, "")           // remove comments
+        .replace(/\s+/g, " ")                       // collapse whitespace
+        .replace(/>\s+</g, "><")                    // remove space between tags
+        .replace(/\s+>/g, ">")
+        .replace(/<\s+/g, "<")
+        .trim();
+    } else if (mode === "css") {
+      result = input
+        .replace(/\/\*[\s\S]*?\*\//g, "")          // remove comments
+        .replace(/\s+/g, " ")
+        .replace(/\s*{\s*/g, "{")
+        .replace(/\s*}\s*/g, "}")
+        .replace(/\s*:\s*/g, ":")
+        .replace(/\s*;\s*/g, ";")
+        .replace(/\s*,\s*/g, ",")
+        .trim();
+    } else {
+      result = input
+        .replace(/\/\/[^\n]*/g, "")                // remove // comments
+        .replace(/\/\*[\s\S]*?\*\//g, "")          // remove /* */ comments
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+    const pct = input.length > 0 ? Math.round((1 - result.length / input.length) * 100) : 0;
+    setOutput(result);
+    setSavings(`${input.length} → ${result.length} bytes (${pct}% reduction)`);
+  }
+
+  return (
+    <Workspace title={title}>
+      <div className="space-y-4">
+        <div>
+          <div className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-q-muted">Input {mode.toUpperCase()}</div>
+          <textarea value={input} onChange={e => setInput(e.target.value)} rows={8} placeholder={`Paste your ${mode.toUpperCase()} here...`}
+            className="w-full rounded-2xl border border-q-border bg-q-card px-4 py-3 font-mono text-sm text-q-text outline-none transition focus:border-blue-400/60 resize-y" />
+        </div>
+        <button onClick={minify} className="w-full rounded-2xl bg-q-primary px-4 py-3 text-sm font-semibold text-white hover:bg-q-primary-hover transition">
+          Minify {mode.toUpperCase()} →
+        </button>
+        {output && (
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <div className="text-xs font-semibold uppercase tracking-widest text-q-muted">Minified Output</div>
+              <div className="flex items-center gap-2">
+                {savings && <span className="text-xs text-emerald-600 font-medium">{savings}</span>}
+                <button onClick={() => navigator.clipboard.writeText(output)}
+                  className="rounded-lg border border-q-border bg-q-bg px-3 py-1 text-xs font-medium text-q-text hover:bg-q-card transition">
+                  Copy
+                </button>
+              </div>
+            </div>
+            <textarea value={output} readOnly rows={8}
+              className="w-full rounded-2xl border border-emerald-200 bg-emerald-50/40 px-4 py-3 font-mono text-sm text-q-text outline-none resize-y dark:border-emerald-500/20 dark:bg-emerald-500/5" />
+          </div>
+        )}
+      </div>
+    </Workspace>
+  );
+}
+
+// ─── EMAIL VALIDATOR ──────────────────────────────────────────────────────────
+function EmailValidatorEngine({ title }: { title: string }) {
+  const [input, setInput] = useState("");
+  const [results, setResults] = useState<{ email: string; valid: boolean; reason: string }[]>([]);
+
+  function validate() {
+    const lines = input.split("\n").map(l => l.trim()).filter(Boolean);
+    const checked = lines.map(email => {
+      const basic = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+      const hasConsecutiveDots = /\.\./.test(email);
+      const localPart = email.split("@")[0] || "";
+      const domain = email.split("@")[1] || "";
+      const validLocal = localPart.length > 0 && localPart.length <= 64;
+      const validDomain = domain.length > 0 && domain.includes(".") && domain.length <= 253;
+      const valid = basic && !hasConsecutiveDots && validLocal && validDomain;
+      let reason = valid ? "Valid format" : "";
+      if (!basic) reason = "Invalid email format";
+      else if (hasConsecutiveDots) reason = "Contains consecutive dots";
+      else if (!validLocal) reason = "Local part too long or empty";
+      else if (!validDomain) reason = "Invalid domain";
+      return { email, valid, reason };
+    });
+    setResults(checked);
+  }
+
+  const validCount = results.filter(r => r.valid).length;
+
+  return (
+    <Workspace title={title}>
+      <div className="space-y-4">
+        <div>
+          <div className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-q-muted">Email addresses (one per line)</div>
+          <textarea value={input} onChange={e => setInput(e.target.value)} rows={6}
+            placeholder={"user@example.com\nhello@domain.org\nbad-email@"}
+            className="w-full rounded-2xl border border-q-border bg-q-card px-4 py-3 font-mono text-sm text-q-text outline-none transition focus:border-blue-400/60 resize-y" />
+        </div>
+        <button onClick={validate} className="w-full rounded-2xl bg-q-primary px-4 py-3 text-sm font-semibold text-white hover:bg-q-primary-hover transition">
+          Validate Emails →
+        </button>
+        {results.length > 0 && (
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-xs font-semibold uppercase tracking-widest text-q-muted">Results</div>
+              <div className="text-xs text-q-muted">{validCount}/{results.length} valid</div>
+            </div>
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {results.map((r, i) => (
+                <div key={i} className={`flex items-center justify-between rounded-xl border px-4 py-2.5 ${r.valid ? "border-emerald-200 bg-emerald-50/40 dark:border-emerald-500/20 dark:bg-emerald-500/5" : "border-red-200 bg-red-50/40 dark:border-red-500/20 dark:bg-red-500/5"}`}>
+                  <span className="font-mono text-sm text-q-text break-all">{r.email}</span>
+                  <div className="ml-3 shrink-0 flex items-center gap-2">
+                    <span className="text-xs text-q-muted">{r.reason}</span>
+                    <span className={`text-sm font-bold ${r.valid ? "text-emerald-600" : "text-red-600"}`}>{r.valid ? "✓" : "✗"}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </Workspace>
+  );
+}
+
+// ─── LINE SORTER / COUNTER ────────────────────────────────────────────────────
+function LineSorterEngine({ title }: { title: string }) {
+  const [input, setInput] = useState("");
+  const [output, setOutput] = useState("");
+  const [stats, setStats] = useState<{ total: number; blank: number; nonBlank: number; unique: number } | null>(null);
+
+  function analyze() {
+    const lines = input.split("\n");
+    const blank = lines.filter(l => l.trim() === "").length;
+    const nonBlank = lines.length - blank;
+    const unique = new Set(lines.map(l => l.trim())).size;
+    setStats({ total: lines.length, blank, nonBlank, unique });
+    setOutput(input);
+  }
+
+  function sortLines(direction: "asc" | "desc") {
+    const lines = input.split("\n");
+    const sorted = [...lines].sort((a, b) => direction === "asc" ? a.localeCompare(b) : b.localeCompare(a));
+    setOutput(sorted.join("\n"));
+  }
+
+  function removeDuplicates() {
+    const lines = input.split("\n");
+    const seen = new Set<string>();
+    const unique = lines.filter(l => { const t = l.trim(); if (seen.has(t)) return false; seen.add(t); return true; });
+    setOutput(unique.join("\n"));
+  }
+
+  function removeBlank() {
+    const lines = input.split("\n").filter(l => l.trim() !== "");
+    setOutput(lines.join("\n"));
+  }
+
+  return (
+    <Workspace title={title}>
+      <div className="space-y-4">
+        <div>
+          <div className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-q-muted">Input text</div>
+          <textarea value={input} onChange={e => { setInput(e.target.value); setStats(null); }} rows={7}
+            placeholder="Paste your text here — one item per line..."
+            className="w-full rounded-2xl border border-q-border bg-q-card px-4 py-3 text-sm text-q-text outline-none transition focus:border-blue-400/60 resize-y" />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button onClick={analyze} className="rounded-xl bg-q-primary px-4 py-2 text-sm font-semibold text-white hover:bg-q-primary-hover transition">Analyse</button>
+          <button onClick={() => sortLines("asc")} className="rounded-xl border border-q-border bg-q-card px-4 py-2 text-sm font-medium text-q-text hover:bg-q-card-hover transition">Sort A→Z</button>
+          <button onClick={() => sortLines("desc")} className="rounded-xl border border-q-border bg-q-card px-4 py-2 text-sm font-medium text-q-text hover:bg-q-card-hover transition">Sort Z→A</button>
+          <button onClick={removeDuplicates} className="rounded-xl border border-q-border bg-q-card px-4 py-2 text-sm font-medium text-q-text hover:bg-q-card-hover transition">Remove Duplicates</button>
+          <button onClick={removeBlank} className="rounded-xl border border-q-border bg-q-card px-4 py-2 text-sm font-medium text-q-text hover:bg-q-card-hover transition">Remove Blank Lines</button>
+        </div>
+        {stats && (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[["Total lines", stats.total], ["Non-blank", stats.nonBlank], ["Blank", stats.blank], ["Unique", stats.unique]].map(([label, val]) => (
+              <div key={label} className="rounded-xl border border-q-border bg-q-bg p-3 text-center">
+                <div className="text-2xl font-bold text-q-primary">{val}</div>
+                <div className="text-xs text-q-muted mt-0.5">{label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        {output && output !== input && (
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <div className="text-xs font-semibold uppercase tracking-widest text-q-muted">Output</div>
+              <button onClick={() => navigator.clipboard.writeText(output)}
+                className="rounded-lg border border-q-border bg-q-bg px-3 py-1 text-xs font-medium text-q-text hover:bg-q-card transition">Copy</button>
+            </div>
+            <textarea value={output} readOnly rows={7}
+              className="w-full rounded-2xl border border-q-border bg-q-bg px-4 py-3 text-sm text-q-text outline-none resize-y" />
+          </div>
+        )}
+      </div>
+    </Workspace>
+  );
+}
+
+// ─── BOX SHADOW GENERATOR ─────────────────────────────────────────────────────
+function BoxShadowGeneratorEngine({ title }: { title: string }) {
+  const [hOffset, setHOffset] = useState(4);
+  const [vOffset, setVOffset] = useState(4);
+  const [blur, setBlur] = useState(10);
+  const [spread, setSpread] = useState(0);
+  const [color, setColor] = useState("#00000040");
+  const [inset, setInset] = useState(false);
+
+  const shadowVal = `${inset ? "inset " : ""}${hOffset}px ${vOffset}px ${blur}px ${spread}px ${color}`;
+  const css = `box-shadow: ${shadowVal};`;
+
+  return (
+    <Workspace title={title}>
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="space-y-4">
+          {[
+            ["Horizontal offset (px)", hOffset, setHOffset, -50, 50],
+            ["Vertical offset (px)", vOffset, setVOffset, -50, 50],
+            ["Blur radius (px)", blur, setBlur, 0, 100],
+            ["Spread radius (px)", spread, setSpread, -50, 50],
+          ].map(([label, val, set, min, max]) => (
+            <div key={String(label)}>
+              <div className="mb-1.5 flex justify-between">
+                <label className="text-xs font-semibold uppercase tracking-widest text-q-muted">{String(label)}</label>
+                <span className="text-xs font-mono text-q-text">{String(val)}px</span>
+              </div>
+              <input type="range" min={Number(min)} max={Number(max)} value={Number(val)}
+                onChange={e => (set as (v: number) => void)(Number(e.target.value))}
+                className="w-full accent-blue-500" />
+            </div>
+          ))}
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Shadow Color</label>
+            <input type="color" value={color.slice(0, 7)} onChange={e => setColor(e.target.value + color.slice(7))}
+              className="h-10 w-full rounded-xl border border-q-border cursor-pointer" />
+          </div>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" checked={inset} onChange={e => setInset(e.target.checked)} className="h-4 w-4 rounded accent-blue-500" />
+            <span className="text-sm font-medium text-q-text">Inset shadow</span>
+          </label>
+        </div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-center rounded-2xl border border-q-border bg-q-bg p-8 min-h-[200px]">
+            <div className="h-24 w-40 rounded-2xl bg-q-card" style={{ boxShadow: shadowVal }} />
+          </div>
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <div className="text-xs font-semibold uppercase tracking-widest text-q-muted">CSS Output</div>
+              <button onClick={() => navigator.clipboard.writeText(css)}
+                className="rounded-lg border border-q-border bg-q-bg px-3 py-1 text-xs font-medium text-q-text hover:bg-q-card transition">Copy CSS</button>
+            </div>
+            <pre className="rounded-xl border border-q-border bg-q-bg px-4 py-3 text-sm font-mono text-q-text overflow-x-auto">{css}</pre>
+          </div>
+        </div>
+      </div>
+    </Workspace>
+  );
+}
+
+// ─── CSS GRADIENT GENERATOR ───────────────────────────────────────────────────
+function CssGradientGeneratorEngine({ title }: { title: string }) {
+  const [type, setType] = useState<"linear" | "radial">("linear");
+  const [angle, setAngle] = useState(135);
+  const [color1, setColor1] = useState("#667eea");
+  const [color2, setColor2] = useState("#764ba2");
+  const [stop1, setStop1] = useState(0);
+  const [stop2, setStop2] = useState(100);
+
+  const gradient = type === "linear"
+    ? `linear-gradient(${angle}deg, ${color1} ${stop1}%, ${color2} ${stop2}%)`
+    : `radial-gradient(circle, ${color1} ${stop1}%, ${color2} ${stop2}%)`;
+  const css = `background: ${gradient};`;
+
+  return (
+    <Workspace title={title}>
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Gradient Type</label>
+            <div className="flex gap-2">
+              {(["linear", "radial"] as const).map(t => (
+                <button key={t} onClick={() => setType(t)}
+                  className={`flex-1 rounded-xl border px-4 py-2 text-sm font-medium capitalize transition ${type === t ? "border-blue-400 bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400" : "border-q-border bg-q-card text-q-text hover:bg-q-card-hover"}`}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+          {type === "linear" && (
+            <div>
+              <div className="mb-1.5 flex justify-between">
+                <label className="text-xs font-semibold uppercase tracking-widest text-q-muted">Angle</label>
+                <span className="text-xs font-mono text-q-text">{angle}°</span>
+              </div>
+              <input type="range" min={0} max={360} value={angle} onChange={e => setAngle(Number(e.target.value))} className="w-full accent-blue-500" />
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Color 1</label>
+              <input type="color" value={color1} onChange={e => setColor1(e.target.value)} className="h-10 w-full rounded-xl border border-q-border cursor-pointer" />
+              <input type="range" min={0} max={100} value={stop1} onChange={e => setStop1(Number(e.target.value))} className="mt-2 w-full accent-blue-500" />
+              <span className="text-xs text-q-muted">{stop1}%</span>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Color 2</label>
+              <input type="color" value={color2} onChange={e => setColor2(e.target.value)} className="h-10 w-full rounded-xl border border-q-border cursor-pointer" />
+              <input type="range" min={0} max={100} value={stop2} onChange={e => setStop2(Number(e.target.value))} className="mt-2 w-full accent-blue-500" />
+              <span className="text-xs text-q-muted">{stop2}%</span>
+            </div>
+          </div>
+        </div>
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-q-border overflow-hidden min-h-[180px]" style={{ background: gradient }} />
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <div className="text-xs font-semibold uppercase tracking-widest text-q-muted">CSS Output</div>
+              <button onClick={() => navigator.clipboard.writeText(css)}
+                className="rounded-lg border border-q-border bg-q-bg px-3 py-1 text-xs font-medium text-q-text hover:bg-q-card transition">Copy CSS</button>
+            </div>
+            <pre className="rounded-xl border border-q-border bg-q-bg px-4 py-3 text-sm font-mono text-q-text overflow-x-auto whitespace-pre-wrap">{css}</pre>
+          </div>
+        </div>
       </div>
     </Workspace>
   );

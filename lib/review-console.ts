@@ -21,6 +21,7 @@ const LIVE_TOOL_ENGINES = new Set([
   "number-base-converter", "html-entity-encoder", "string-escape-tool",
   "yaml-json-converter", "json-to-csv", "color-contrast-checker",
   "robots-txt-generator", "open-graph-tester",
+  "html-minifier", "css-minifier", "js-minifier", "email-validator", "line-sorter", "box-shadow-generator", "css-gradient-generator",
 ]);
 
 const LIVE_CALC_ENGINES = new Set([
@@ -31,6 +32,7 @@ const LIVE_CALC_ENGINES = new Set([
   "discount-calculator", "tip-calculator", "roi-calculator", "savings-calculator",
   "retirement-calculator", "calorie-calculator", "fuel-cost-calculator",
   "cagr-calculator", "gratuity-calculator", "rd-calculator",
+  "mortgage-calculator", "sales-tax-calculator", "vat-calculator",
 ]);
 
 const LIVE_AI_ENGINES = new Set([

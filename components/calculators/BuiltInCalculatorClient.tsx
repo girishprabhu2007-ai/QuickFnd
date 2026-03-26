@@ -2611,6 +2611,123 @@ function RDCalculator({ name }: { name: string }) {
   );
 }
 
+
+// ─── MORTGAGE CALCULATOR ─────────────────────────────────────────────────────
+function MortgageCalculator({ name }: { name: string }) {
+  const [price, setPrice] = useState("");
+  const [down, setDown] = useState("");
+  const [rate, setRate] = useState("");
+  const [years, setYears] = useState("");
+  const [result, setResult] = useState<InterpretedResult | null>(null);
+
+  function calculate() {
+    const p = parseFloat(price);
+    const d = parseFloat(down) || 0;
+    const r = parseFloat(rate) / 100 / 12;
+    const n = parseFloat(years) * 12;
+    const principal = p - d;
+    if (!isFinite(p) || p <= 0 || !isFinite(n) || n <= 0 || !isFinite(r) || r < 0) {
+      setResult({ primary: "Invalid input", secondary: "", insight: "Enter valid property price, rate and years.", recommendation: "" });
+      return;
+    }
+    const emi = r > 0 ? principal * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1) : principal / n;
+    const total = emi * n;
+    const interest = total - principal;
+    setResult({
+      primary: `₹${formatCurrency(emi)}`,
+      secondary: `Monthly mortgage payment`,
+      extra: `Total: ₹${formatCurrency(total)} · Interest: ₹${formatCurrency(interest)} · Loan: ₹${formatCurrency(principal)}`,
+      insight: `On a ₹${formatCurrency(principal)} loan at ${rate}% for ${years} years, monthly payment is ₹${formatCurrency(emi)}.`,
+      recommendation: interest > principal ? "High interest cost — consider a larger down payment or shorter term." : "Interest is below the principal — healthy loan structure.",
+    });
+  }
+
+  return (
+    <Workspace title={name || "Mortgage Calculator"}>
+      <CalculatorGrid
+        left={
+          <InputPanel subtitle="Calculate monthly mortgage payments for any property.">
+            <div className="grid gap-4">
+              <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Property Price (₹)</label><input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="e.g. 5000000" className={fieldClass()} /></div>
+              <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Down Payment (₹)</label><input type="number" value={down} onChange={e => setDown(e.target.value)} placeholder="e.g. 1000000" className={fieldClass()} /></div>
+              <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Annual Interest Rate (%)</label><input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="e.g. 8.5" className={fieldClass()} /></div>
+              <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Loan Term (Years)</label><input type="number" value={years} onChange={e => setYears(e.target.value)} placeholder="e.g. 20" className={fieldClass()} /></div>
+              <button onClick={calculate} className="w-full rounded-2xl bg-q-primary px-4 py-3 text-sm font-semibold text-white hover:bg-q-primary-hover transition">Calculate →</button>
+            </div>
+          </InputPanel>
+        }
+        right={<ResultsStage title="Mortgage result" result={result} emptyText="Enter property details to calculate monthly payment." />}
+      />
+    </Workspace>
+  );
+}
+
+// ─── SALES TAX / VAT CALCULATOR ──────────────────────────────────────────────
+function SalesTaxCalculator({ name, label = "Tax" }: { name: string; label?: string }) {
+  const [price, setPrice] = useState("");
+  const [rate, setRate] = useState("");
+  const [mode, setMode] = useState<"add" | "extract">("add");
+  const [result, setResult] = useState<InterpretedResult | null>(null);
+
+  function calculate() {
+    const p = parseFloat(price);
+    const r = parseFloat(rate) / 100;
+    if (!isFinite(p) || !isFinite(r) || p <= 0 || r < 0) {
+      setResult({ primary: "Invalid input", secondary: "", insight: "Enter valid price and tax rate.", recommendation: "" });
+      return;
+    }
+    if (mode === "add") {
+      const tax = p * r;
+      const total = p + tax;
+      setResult({
+        primary: `${formatCurrency(total)}`,
+        secondary: `Total price including ${rate}% ${label}`,
+        extra: `${label} amount: ${formatCurrency(tax)} · Pre-tax: ${formatCurrency(p)}`,
+        insight: `Adding ${rate}% ${label} to ${formatCurrency(p)} gives a total of ${formatCurrency(total)}.`,
+        recommendation: `${label} amount payable: ${formatCurrency(tax)}`,
+      });
+    } else {
+      const preTax = p / (1 + r);
+      const tax = p - preTax;
+      setResult({
+        primary: `${formatCurrency(preTax)}`,
+        secondary: `Pre-tax price extracted from ${formatCurrency(p)}`,
+        extra: `${label} portion: ${formatCurrency(tax)} · Rate: ${rate}%`,
+        insight: `The ${label}-inclusive price of ${formatCurrency(p)} at ${rate}% contains ${formatCurrency(tax)} in ${label}.`,
+        recommendation: `Net price before ${label}: ${formatCurrency(preTax)}`,
+      });
+    }
+  }
+
+  return (
+    <Workspace title={name || `${label} Calculator`}>
+      <CalculatorGrid
+        left={
+          <InputPanel subtitle={`Add ${label} to a price or extract ${label} from an inclusive amount.`}>
+            <div className="grid gap-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Mode</label>
+                <div className="flex gap-2">
+                  {([["add", `Add ${label}`], ["extract", `Extract ${label}`]] as const).map(([val, lbl]) => (
+                    <button key={val} onClick={() => setMode(val)}
+                      className={`flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition ${mode === val ? "border-blue-400 bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400" : "border-q-border bg-q-card text-q-text hover:bg-q-card-hover"}`}>
+                      {lbl}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">{mode === "add" ? "Pre-tax Price" : `${label}-inclusive Price`}</label><input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="e.g. 1000" className={fieldClass()} /></div>
+              <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">{label} Rate (%)</label><input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="e.g. 18" className={fieldClass()} /></div>
+              <button onClick={calculate} className="w-full rounded-2xl bg-q-primary px-4 py-3 text-sm font-semibold text-white hover:bg-q-primary-hover transition">Calculate →</button>
+            </div>
+          </InputPanel>
+        }
+        right={<ResultsStage title={`${label} result`} result={result} emptyText={`Enter price and ${label} rate.`} />}
+      />
+    </Workspace>
+  );
+}
+
 export default function BuiltInCalculatorClient({ item }: Props) {
   const engine = String(item.engine_type || inferEngineType("calculator", item.slug) || "");
   const config = item.engine_config || {};
@@ -2646,6 +2763,9 @@ export default function BuiltInCalculatorClient({ item }: Props) {
   if (engine === "cagr-calculator") return <CAGRCalculator name={name} />;
   if (engine === "gratuity-calculator") return <GratuityCalculator name={name} />;
   if (engine === "rd-calculator") return <RDCalculator name={name} />;
+  if (engine === "mortgage-calculator") return <MortgageCalculator name={name} />;
+  if (engine === "sales-tax-calculator") return <SalesTaxCalculator name={name} label="Sales Tax" />;
+  if (engine === "vat-calculator") return <SalesTaxCalculator name={name} label="VAT" />;
 
   return <GenericCalculator name={item.name} />;
 }

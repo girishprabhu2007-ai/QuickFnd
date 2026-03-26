@@ -175,6 +175,13 @@ function getSuggestedToolEngineType(slug: string): string {
   if (value.includes("json-escape")) return "json-escape";
   if (value.includes("json-unescape")) return "json-unescape";
   if (value.includes("converter")) return "unit-converter";
+  if (value.includes("html-minifier") || value.includes("minify-html") || value.includes("html-compress")) return "html-minifier";
+  if (value.includes("css-minifier") || value.includes("minify-css") || value.includes("css-compress")) return "css-minifier";
+  if (value.includes("js-minifier") || value.includes("javascript-minifier") || value.includes("minify-js")) return "js-minifier";
+  if (value.includes("email-validator") || value.includes("email-checker") || value.includes("validate-email")) return "email-validator";
+  if (value.includes("line-counter") || value.includes("line-sorter") || value.includes("sort-lines")) return "line-sorter";
+  if (value.includes("box-shadow") || value.includes("shadow-generator")) return "box-shadow-generator";
+  if (value.includes("css-gradient") || value.includes("gradient-generator")) return "css-gradient-generator";
 
   return "generic-directory";
 }

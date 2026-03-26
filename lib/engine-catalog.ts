@@ -47,6 +47,13 @@ export type ToolEngineType =
   | "color-contrast-checker"
   | "robots-txt-generator"
   | "open-graph-tester"
+  | "html-minifier"
+  | "css-minifier"
+  | "js-minifier"
+  | "email-validator"
+  | "line-sorter"
+  | "box-shadow-generator"
+  | "css-gradient-generator"
   | "generic-directory";
 
 // ─── FIXED: Added all calculator engines that exist in calculator-runtime.ts ──
@@ -78,6 +85,9 @@ export type CalculatorEngineType =
   | "cagr-calculator"
   | "gratuity-calculator"
   | "rd-calculator"
+  | "mortgage-calculator"
+  | "sales-tax-calculator"
+  | "vat-calculator"
   | "generic-directory";
 
 export type AIToolEngineType =
@@ -871,6 +881,96 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
     keywords: ["rd-calculator", "rd calculator", "recurring deposit"],
     defaultConfig: {},
   }),
+  "html-minifier": createDefinition({
+    type: "html-minifier",
+    category: "tool",
+    family: "html-minifier",
+    title: "HTML Minifier",
+    description: "Minify HTML by removing comments, whitespace and optional tags.",
+    keywords: ["html-minifier", "minify html", "html minify", "html compressor", "html-compress"],
+    defaultConfig: { mode: "html" },
+  }),
+  "css-minifier": createDefinition({
+    type: "css-minifier",
+    category: "tool",
+    family: "css-minifier",
+    title: "CSS Minifier",
+    description: "Minify CSS by removing whitespace and comments.",
+    keywords: ["css-minifier", "minify css", "css minify", "css compressor", "css-compress"],
+    defaultConfig: { mode: "css" },
+  }),
+  "js-minifier": createDefinition({
+    type: "js-minifier",
+    category: "tool",
+    family: "js-minifier",
+    title: "JavaScript Minifier",
+    description: "Minify JavaScript by removing whitespace and comments.",
+    keywords: ["js-minifier", "javascript-minifier", "minify js", "minify javascript", "js-compress"],
+    defaultConfig: { mode: "js" },
+  }),
+  "email-validator": createDefinition({
+    type: "email-validator",
+    category: "tool",
+    family: "email-validator",
+    title: "Email Validator",
+    description: "Validate email addresses instantly. Bulk validate a list at once.",
+    keywords: ["email-validator", "email validator", "validate email", "email-checker", "email-verify"],
+    defaultConfig: {},
+  }),
+  "line-sorter": createDefinition({
+    type: "line-sorter",
+    category: "tool",
+    family: "line-sorter",
+    title: "Line Counter & Sorter",
+    description: "Count lines, sort text, remove duplicates and blank lines.",
+    keywords: ["line-counter", "line-sorter", "line counter", "sort lines", "remove duplicates", "text-sorter"],
+    defaultConfig: {},
+  }),
+  "box-shadow-generator": createDefinition({
+    type: "box-shadow-generator",
+    category: "tool",
+    family: "box-shadow-generator",
+    title: "Box Shadow Generator",
+    description: "Generate CSS box-shadow effects visually with live preview.",
+    keywords: ["box-shadow-generator", "box shadow", "css shadow", "drop shadow", "shadow-generator"],
+    defaultConfig: {},
+  }),
+  "css-gradient-generator": createDefinition({
+    type: "css-gradient-generator",
+    category: "tool",
+    family: "css-gradient-generator",
+    title: "CSS Gradient Generator",
+    description: "Generate linear and radial CSS gradients visually.",
+    keywords: ["css-gradient-generator", "gradient generator", "css gradient", "linear-gradient", "radial-gradient"],
+    defaultConfig: {},
+  }),
+  "mortgage-calculator": createDefinition({
+    type: "mortgage-calculator",
+    category: "calculator",
+    family: "finance-calculator",
+    title: "Mortgage Calculator",
+    description: "Calculate monthly mortgage payments, total interest and repayment schedule.",
+    keywords: ["mortgage-calculator", "mortgage calculator", "home-loan", "home loan calculator"],
+    defaultConfig: {},
+  }),
+  "sales-tax-calculator": createDefinition({
+    type: "sales-tax-calculator",
+    category: "calculator",
+    family: "math-calculator",
+    title: "Sales Tax Calculator",
+    description: "Calculate sales tax for any rate. Add tax or extract it from inclusive price.",
+    keywords: ["sales-tax-calculator", "sales tax", "tax calculator", "sales-tax"],
+    defaultConfig: {},
+  }),
+  "vat-calculator": createDefinition({
+    type: "vat-calculator",
+    category: "calculator",
+    family: "math-calculator",
+    title: "VAT Calculator",
+    description: "Calculate VAT for any rate. Add VAT to a price or extract it from a VAT-inclusive amount.",
+    keywords: ["vat-calculator", "vat calculator", "value added tax", "vat"],
+    defaultConfig: {},
+  }),
   "generic-directory": createDefinition({
     type: "generic-directory",
     category: "tool",
@@ -917,6 +1017,13 @@ const TOOL_ENGINE_ORDER: ToolEngineType[] = [
   "markdown-editor",
   "csv-to-json",
   "ip-lookup",
+  "html-minifier",
+  "css-minifier",
+  "js-minifier",
+  "email-validator",
+  "line-sorter",
+  "box-shadow-generator",
+  "css-gradient-generator",
   "generic-directory",
 ];
 
@@ -945,6 +1052,9 @@ const CALCULATOR_ENGINE_ORDER: CalculatorEngineType[] = [
   "cagr-calculator",
   "gratuity-calculator",
   "rd-calculator",
+  "mortgage-calculator",
+  "sales-tax-calculator",
+  "vat-calculator",
   "generic-directory",
 ];
 
@@ -1140,6 +1250,15 @@ export function inferEngineType(category: EngineCategory, slug: string): EngineT
     if (value.includes("robots-txt") || value.includes("robots-txt-generator") || value.includes("robotstxt")) return "robots-txt-generator";
     if (value.includes("open-graph") || value.includes("og-preview") || value.includes("og-tester") || value.includes("opengraph")) return "open-graph-tester";
 
+    // ─── New dedicated engines ───────────────────────────────────────────────────
+    if (value.includes("html-minifier") || value.includes("minify-html") || value.includes("html-compress")) return "html-minifier";
+    if (value.includes("css-minifier") || value.includes("minify-css") || value.includes("css-compress")) return "css-minifier";
+    if (value.includes("js-minifier") || value.includes("javascript-minifier") || value.includes("minify-js") || value.includes("minify-javascript")) return "js-minifier";
+    if (value.includes("email-validator") || value.includes("email-checker") || value.includes("validate-email") || value.includes("email-verify")) return "email-validator";
+    if (value.includes("line-counter") || value.includes("line-sorter") || value.includes("line-count") || value.includes("sort-lines") || value.includes("text-sorter")) return "line-sorter";
+    if (value.includes("box-shadow") || value.includes("shadow-generator") || value.includes("drop-shadow")) return "box-shadow-generator";
+    if (value.includes("css-gradient") || value.includes("gradient-generator") || value.includes("linear-gradient") || value.includes("gradient-maker")) return "css-gradient-generator";
+
     // ─── Extended slug coverage for auto-generated tools ──────────────────────
     if (value.includes("email-validator") || value.includes("email-checker") || value.includes("email-verify")) return "regex-tester";
     if (value.includes("line-counter") || value.includes("line-count") || value.includes("word-frequency") || value.includes("text-statistics")) return "word-counter";
@@ -1210,6 +1329,9 @@ export function inferEngineType(category: EngineCategory, slug: string): EngineT
     if (value.includes("break-even") || value.includes("profit-margin") || value.includes("markup")) return "percentage-calculator";
     if (value.includes("net-worth") || value.includes("time-duration") || value.includes("time-value")) return "compound-interest-calculator";
     if (value.includes("rent-vs-buy") || value.includes("rent-calculator")) return "loan-calculator";
+    if (value.includes("mortgage") || value.includes("home-loan")) return "mortgage-calculator";
+    if (value.includes("sales-tax") || value.includes("sales-tax-calculator")) return "sales-tax-calculator";
+    if (value.includes("vat-calculator") || value.includes("value-added-tax") || (value.includes("vat") && value.includes("calculator"))) return "vat-calculator";
     if (value.includes("tax-bracket") || value.includes("tds") || value.includes("professional-tax")) return "income-tax-calculator";
     return "generic-directory";
   }
