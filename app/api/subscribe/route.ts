@@ -2,7 +2,7 @@
  * app/api/subscribe/route.ts
  * Handles email newsletter subscriptions.
  * Saves to Supabase email_subscribers table.
- * Optionally sends a welcome email via Resend if RESEND_API_KEY is set.
+ * Sends a beautiful branded welcome email via Resend if RESEND_API_KEY is set.
  */
 
 import { NextResponse } from "next/server";
@@ -16,6 +16,122 @@ function getSupabase() {
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
+function buildWelcomeEmail(email: string): string {
+  const unsubUrl = `https://quickfnd.com/unsubscribe?email=${encodeURIComponent(email)}`;
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Welcome to QuickFnd</title>
+</head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:#0f0f23;border-radius:16px 16px 0 0;padding:32px 40px;text-align:center;">
+              <div style="font-size:28px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">
+                Quick<span style="color:#3b82f6;">Fnd</span>
+              </div>
+              <div style="margin-top:6px;font-size:12px;color:#6b7280;letter-spacing:0.15em;text-transform:uppercase;">
+                Free Tools · Calculators · AI Utilities
+              </div>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="background:#ffffff;padding:40px 40px 32px;">
+              <div style="font-size:22px;font-weight:700;color:#0f0f23;margin-bottom:12px;">
+                You&#39;re in! 🎉
+              </div>
+              <p style="color:#4b5563;font-size:15px;line-height:1.7;margin:0 0 20px;">
+                Thanks for subscribing to QuickFnd. You&#39;ll get a short email
+                when new tools, calculators, and AI utilities go live — max once a week,
+                no spam, straight to the point.
+              </p>
+
+              <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin:24px 0;">
+                <div style="font-size:13px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px;">
+                  What&#39;s live right now
+                </div>
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td width="33%" style="text-align:center;padding:8px 0;">
+                      <div style="font-size:22px;font-weight:800;color:#3b82f6;">62+</div>
+                      <div style="font-size:12px;color:#6b7280;margin-top:2px;">Dev Tools</div>
+                    </td>
+                    <td width="33%" style="text-align:center;padding:8px 0;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;">
+                      <div style="font-size:22px;font-weight:800;color:#8b5cf6;">49+</div>
+                      <div style="font-size:12px;color:#6b7280;margin-top:2px;">Calculators</div>
+                    </td>
+                    <td width="33%" style="text-align:center;padding:8px 0;">
+                      <div style="font-size:22px;font-weight:800;color:#10b981;">21+</div>
+                      <div style="font-size:12px;color:#6b7280;margin-top:2px;">AI Tools</div>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              <p style="color:#4b5563;font-size:15px;line-height:1.7;margin:0 0 28px;">
+                Everything runs directly in your browser — no install, no account, no paywall.
+              </p>
+
+              <!-- CTA buttons -->
+              <table cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td style="padding-bottom:10px;">
+                    <a href="https://quickfnd.com/tools"
+                      style="display:block;background:#3b82f6;color:#ffffff;text-decoration:none;text-align:center;padding:14px 24px;border-radius:12px;font-weight:600;font-size:14px;">
+                      Browse Developer Tools →
+                    </a>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding-bottom:10px;">
+                    <a href="https://quickfnd.com/calculators"
+                      style="display:block;background:#f8f9fa;border:1px solid #e5e7eb;color:#374151;text-decoration:none;text-align:center;padding:14px 24px;border-radius:12px;font-weight:600;font-size:14px;">
+                      Try the Calculators →
+                    </a>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <a href="https://quickfnd.com/ai-tools"
+                      style="display:block;background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;text-decoration:none;text-align:center;padding:14px 24px;border-radius:12px;font-weight:600;font-size:14px;">
+                      ✦ Explore AI Tools →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#f9fafb;border-top:1px solid #e5e7eb;border-radius:0 0 16px 16px;padding:20px 40px;text-align:center;">
+              <p style="color:#9ca3af;font-size:12px;margin:0 0 6px;">
+                You subscribed at <a href="https://quickfnd.com" style="color:#3b82f6;text-decoration:none;">quickfnd.com</a>
+              </p>
+              <p style="color:#9ca3af;font-size:12px;margin:0;">
+                <a href="${unsubUrl}" style="color:#9ca3af;">Unsubscribe</a>
+                &nbsp;·&nbsp; No spam, ever.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 }
 
 export async function POST(req: Request) {
@@ -39,7 +155,6 @@ export async function POST(req: Request) {
 
     if (existing) {
       if (existing.status === "unsubscribed") {
-        // Re-subscribe
         await supabase
           .from("email_subscribers")
           .update({ status: "active", resubscribed_at: new Date().toISOString() })
@@ -71,31 +186,15 @@ export async function POST(req: Request) {
         body: JSON.stringify({
           from: "QuickFnd <hello@quickfnd.com>",
           to: [email],
-          subject: "You're subscribed to QuickFnd 🎉",
-          html: `
-            <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 24px; color: #1a1a2e;">
-              <h1 style="font-size: 24px; font-weight: 700; margin-bottom: 12px;">Welcome to QuickFnd! 👋</h1>
-              <p style="color: #666; line-height: 1.6; margin-bottom: 16px;">
-                You're now subscribed. We'll let you know when new tools, calculators, and AI utilities launch — 
-                no spam, just useful updates.
-              </p>
-              <p style="color: #666; line-height: 1.6; margin-bottom: 24px;">
-                In the meantime, explore what's already live:
-              </p>
-              <a href="https://quickfnd.com/tools" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 10px; text-decoration: none; font-weight: 600; margin-bottom: 8px;">Browse Tools →</a>
-              <p style="color: #999; font-size: 12px; margin-top: 32px;">
-                You subscribed via quickfnd.com. 
-                <a href="https://quickfnd.com/unsubscribe?email=${encodeURIComponent(email)}" style="color: #999;">Unsubscribe</a>
-              </p>
-            </div>
-          `,
+          subject: "Welcome to QuickFnd — you're in! 🎉",
+          html: buildWelcomeEmail(email),
         }),
-      }).catch(() => {}); // Don't fail if email fails
+      }).catch(() => {}); // Don't fail subscription if email sending fails
     }
 
     return NextResponse.json({
       success: true,
-      message: "Subscribed! We'll notify you when new tools launch.",
+      message: "Subscribed! Check your inbox for a welcome email.",
     });
 
   } catch (error) {

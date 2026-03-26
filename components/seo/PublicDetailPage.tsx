@@ -6,6 +6,7 @@ import ShareMenu from "@/components/seo/ShareMenu";
 import AdSlot from "@/components/ads/AdSlot";
 import type { ReactNode } from "react";
 import AffiliateCard from "@/components/monetisation/AffiliateCard";
+import EmailCapture from "@/components/email/EmailCapture";
 import type { PublicContentItem } from "@/lib/content-pages";
 import { getDisplayDescription } from "@/lib/display-content";
 import { getSiteUrl } from "@/lib/site-url";
@@ -342,6 +343,7 @@ export default function PublicDetailPage({
                   <AdSlot type="rectangle" />
                 </div>
                 <AffiliateCard slug={item.slug} />
+                <EmailCapture variant="inline" source="tool-sidebar" />
                 <DetailSidebar section={section} item={item} />
               </div>
             </div>
