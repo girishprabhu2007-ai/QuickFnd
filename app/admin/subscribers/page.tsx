@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import AdminTabs from "@/components/admin/AdminTabs";
 
 type Subscriber = {
   id: number;
@@ -165,7 +164,6 @@ export default function SubscribersPage() {
           </button>
         </div>
 
-        <AdminTabs />
 
         {/* Toast */}
         {toast && (

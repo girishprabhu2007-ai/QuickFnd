@@ -188,6 +188,11 @@ export async function POST(req: Request) {
           to: [email],
           subject: "Welcome to QuickFnd — you're in! 🎉",
           html: buildWelcomeEmail(email),
+          headers: {
+            "List-Unsubscribe": `<https://quickfnd.com/unsubscribe?email=${encodeURIComponent(email)}>`,
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+            "X-Entity-Ref-ID": `quickfnd-welcome-${Date.now()}`,
+          },
         }),
       }).catch(() => {}); // Don't fail subscription if email sending fails
     }
