@@ -8,6 +8,7 @@ const tabs = [
   { href: "/admin/generate", label: "Generate" },
   { href: "/admin/bulk-generate", label: "Bulk Generate" },
   { href: "/admin/tools", label: "Tools" },
+  { href: "/admin/blog", label: "Blog" },
   { href: "/admin/topics", label: "Topics" },
   { href: "/admin/requests", label: "Requests" },
   { href: "/admin/placeholders", label: "Placeholders" },
@@ -17,6 +18,9 @@ const tabs = [
   { href: "/admin/site-settings", label: "Site Settings" },
   { href: "/admin/seo-content", label: "SEO Content" },
   { href: "/admin/intelligence", label: "Intelligence" },
+  { href: "/admin/diagnostics", label: "Diagnostics" },
+  { href: "/admin/operations", label: "Operations" },
+  { href: "/admin/ai-tools", label: "AI Tools" },
 ];
 
 export default function AdminTabs() {

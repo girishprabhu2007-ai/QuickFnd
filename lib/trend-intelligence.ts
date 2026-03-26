@@ -478,12 +478,22 @@ export async function collectTrendSignals(options: {
   // ── Source 2: Serper.dev (if API key provided) ──
   if (options.serperApiKey) {
     const serperSeeds = [
+      // Tool discovery
       "free online tools",
       "best online calculator",
       "online tools for developers",
       "free ai tools online",
       "text tools online",
       "converter tools free",
+      // Blog / how-to discovery (people also ask)
+      "how to format json online",
+      "how to calculate emi",
+      "how to validate email",
+      "how to generate qr code free",
+      "how to check password strength",
+      "how to convert base64",
+      "best free developer tools 2025",
+      "how to calculate gst india",
     ];
 
     for (const seed of serperSeeds) {

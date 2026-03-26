@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { getAllContentForSitemap } from "@/lib/db";
 import { buildProgrammaticPages } from "@/lib/programmatic-pages";
 import { getSiteUrl } from "@/lib/site-url";
+import { getAllPublishedSlugs } from "@/lib/blog";
 import {
   filterVisibleTools,
   filterVisibleCalculators,
@@ -18,6 +19,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const tools = filterVisibleTools(raw.tools);
   const calculators = filterVisibleCalculators(raw.calculators);
   const aiTools = filterVisibleAITools(raw.aiTools);
+
+  // Blog posts — graceful fallback if table doesn't exist yet
+  const blogSlugs = await getAllPublishedSlugs().catch(() => []);
 
   const now = new Date();
 
@@ -42,6 +46,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     {
       url: `${siteUrl}/ai-tools`,
+      changeFrequency: "daily",
+      priority: 0.9,
+      lastModified: now,
+    },
+    {
+      url: `${siteUrl}/blog`,
       changeFrequency: "daily",
       priority: 0.9,
       lastModified: now,
@@ -73,6 +83,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.3,
     },
   ];
+
+  const blogPages: MetadataRoute.Sitemap = blogSlugs.map((item) => ({
+    url: `${siteUrl}/blog/${item.slug}`,
+    changeFrequency: "monthly",
+    priority: 0.85,
+    lastModified: item.updated_at ? new Date(item.updated_at) : now,
+  }));
 
   const toolPages: MetadataRoute.Sitemap = tools.map((item) => ({
     url: `${siteUrl}/tools/${item.slug}`,
@@ -127,6 +144,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     ...mainPages,
+    ...blogPages,
     ...toolPages,
     ...calculatorPages,
     ...aiToolPages,
