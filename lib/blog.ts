@@ -31,6 +31,7 @@ export type BlogPost = {
   created_at: string;
   updated_at: string;
   source: "auto-pipeline" | "manual" | "gsc-opportunity";
+  author_id: string | null;
 };
 
 export type BlogPostSummary = Omit<BlogPost, "content">;
@@ -58,7 +59,7 @@ export async function getPublishedPosts(options: {
 
   let query = supabase
     .from("blog_posts")
-    .select("id,slug,title,excerpt,category,status,tags,tool_slug,reading_time_minutes,og_title,og_description,target_keyword,secondary_keywords,published_at,created_at,updated_at,source", { count: "exact" })
+    .select("id,slug,title,excerpt,category,status,tags,tool_slug,reading_time_minutes,og_title,og_description,target_keyword,secondary_keywords,published_at,created_at,updated_at,source,author_id", { count: "exact" })
     .eq("status", "published")
     .order("published_at", { ascending: false })
     .range(offset, offset + limit - 1);
@@ -86,7 +87,7 @@ export async function getRelatedPosts(post: BlogPost, limit = 3): Promise<BlogPo
   const supabase = getSupabase();
   const { data } = await supabase
     .from("blog_posts")
-    .select("id,slug,title,excerpt,category,status,tags,tool_slug,reading_time_minutes,og_title,og_description,target_keyword,secondary_keywords,published_at,created_at,updated_at,source")
+    .select("id,slug,title,excerpt,category,status,tags,tool_slug,reading_time_minutes,og_title,og_description,target_keyword,secondary_keywords,published_at,created_at,updated_at,source,author_id")
     .eq("status", "published")
     .eq("category", post.category)
     .neq("slug", post.slug)
@@ -116,7 +117,7 @@ export async function adminGetAllPosts(options: {
   const offset = options.offset ?? 0;
   let query = supabase
     .from("blog_posts")
-    .select("id,slug,title,excerpt,category,status,tags,tool_slug,reading_time_minutes,og_title,og_description,target_keyword,secondary_keywords,published_at,created_at,updated_at,source", { count: "exact" })
+    .select("id,slug,title,excerpt,category,status,tags,tool_slug,reading_time_minutes,og_title,og_description,target_keyword,secondary_keywords,published_at,created_at,updated_at,source,author_id", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
   if (options.status) query = query.eq("status", options.status);

@@ -7,9 +7,10 @@ import SiteFooter from "@/components/site/SiteFooter";
 import AdSlot from "@/components/ads/AdSlot";
 import AffiliateCard from "@/components/monetisation/AffiliateCard";
 import EmailCapture from "@/components/email/EmailCapture";
+import BlogInteractions from "@/components/blog/BlogInteractions";
+import { getAuthorById, CATEGORY_LABELS as AUTHOR_CATEGORY_LABELS } from "@/lib/authors";
 
-export const revalidate = 0;
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 export const dynamicParams = true;
 
 type Props = { params: Promise<{ slug: string }> };
@@ -122,15 +123,32 @@ export default async function BlogDetailPage({ params }: Props) {
                   <p className="text-sm uppercase tracking-[0.2em] text-blue-500">
                     QuickFnd Blog
                   </p>
-                  <div className="mt-3 flex flex-wrap items-center gap-3">
-                    <span className="rounded-full border border-q-border bg-q-bg px-3 py-1 text-xs font-medium text-q-muted uppercase tracking-wider">
-                      {CATEGORY_LABELS[post.category]}
-                    </span>
-                    <span className="text-xs text-q-muted">{post.reading_time_minutes} min read</span>
-                    {post.published_at && (
-                      <span className="text-xs text-q-muted">{formatDate(post.published_at)}</span>
-                    )}
-                  </div>
+                  {/* Author row */}
+                  {(() => {
+                    const author = post.author_id ? getAuthorById(post.author_id) : null;
+                    return (
+                      <div className="mt-4 flex flex-wrap items-center gap-3">
+                        {author && (
+                          <a href={`/blog/authors/${author.slug}`} className="flex items-center gap-2 group">
+                            <span className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${author.avatar_color} ${author.avatar_text_color}`}>
+                              {author.avatar_initials}
+                            </span>
+                            <div>
+                              <span className="text-sm font-medium text-q-text group-hover:text-blue-500 transition">{author.name}</span>
+                              <span className="ml-1 text-xs text-q-muted">· {author.title}</span>
+                            </div>
+                          </a>
+                        )}
+                        <div className="flex items-center gap-3 text-xs text-q-muted">
+                          {post.published_at && <span>{formatDate(post.published_at)}</span>}
+                          <span>·</span>
+                          <span>{post.reading_time_minutes} min read</span>
+                          <span>·</span>
+                          <span className="rounded-full border border-q-border bg-q-bg px-2.5 py-0.5 uppercase tracking-wider">{CATEGORY_LABELS[post.category]}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                   <h1 className="mt-4 text-3xl font-bold md:text-5xl">{post.title}</h1>
                   <p className="mt-4 max-w-3xl text-base leading-7 text-q-muted md:text-lg md:leading-8">
                     {post.excerpt}
@@ -178,6 +196,52 @@ export default async function BlogDetailPage({ params }: Props) {
                   </div>
                 )}
 
+                {/* Author bio card */}
+                {(() => {
+                  const author = post.author_id ? getAuthorById(post.author_id) : null;
+                  if (!author) return null;
+                  return (
+                    <div className="rounded-2xl border border-q-border bg-q-card p-6 shadow-sm">
+                      <div className="flex items-start gap-4">
+                        <span className={`inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-lg font-bold ${author.avatar_color} ${author.avatar_text_color}`}>
+                          {author.avatar_initials}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <a href={`/blog/authors/${author.slug}`} className="font-semibold text-q-text hover:text-blue-500 transition">
+                              {author.name}
+                            </a>
+                            <span className="text-xs text-q-muted">{author.title}</span>
+                            <span className="text-xs text-q-muted">· {author.location}</span>
+                          </div>
+                          <p className="mt-2 text-sm leading-6 text-q-muted">{author.bio}</p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {author.expertise.slice(0, 5).map(exp => (
+                              <span key={exp} className="rounded-full bg-q-bg border border-q-border px-2.5 py-0.5 text-xs text-q-muted">
+                                {exp}
+                              </span>
+                            ))}
+                          </div>
+                          {(author.twitter || author.linkedin) && (
+                            <div className="mt-3 flex gap-4 text-xs text-blue-500">
+                              {author.twitter && (
+                                <a href={`https://twitter.com/${author.twitter}`} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400">
+                                  @{author.twitter}
+                                </a>
+                              )}
+                              {author.linkedin && (
+                                <a href={`https://linkedin.com/in/${author.linkedin}`} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400">
+                                  LinkedIn
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Tool CTA — below article on mobile */}
                 {post.tool_slug && (
                   <div className="xl:hidden rounded-2xl border border-blue-200/60 bg-blue-50/40 p-5 dark:border-blue-500/20 dark:bg-blue-500/5">
@@ -200,6 +264,9 @@ export default async function BlogDetailPage({ params }: Props) {
                     </Link>
                   </div>
                 )}
+
+                {/* Likes + Comments */}
+                <BlogInteractions postSlug={post.slug} authorId={post.author_id} />
 
                 {/* Ad slot 3 — before related */}
                 {related.length > 0 && (

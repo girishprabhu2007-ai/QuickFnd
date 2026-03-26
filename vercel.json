@@ -10,7 +10,23 @@
     },
     {
       "path": "/api/cron/blog-publish",
-      "schedule": "0 4 * * *"
+      "schedule": "17 4 * * *"
+    },
+    {
+      "path": "/api/cron/blog-publish",
+      "schedule": "43 8 * * *"
+    },
+    {
+      "path": "/api/cron/blog-publish",
+      "schedule": "7 12 * * *"
+    },
+    {
+      "path": "/api/cron/blog-publish",
+      "schedule": "31 16 * * *"
+    },
+    {
+      "path": "/api/cron/blog-publish",
+      "schedule": "53 20 * * *"
     }
   ]
 }

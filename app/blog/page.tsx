@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getPublishedPosts, CATEGORY_LABELS, type BlogCategory } from "@/lib/blog";
+import { getAuthorById } from "@/lib/authors";
 import { getSiteUrl } from "@/lib/site-url";
 import SiteFooter from "@/components/site/SiteFooter";
 import AdSlot from "@/components/ads/AdSlot";
 import EmailCapture from "@/components/email/EmailCapture";
 
-export const revalidate = 0;
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Blog — Free Tool Guides & How-To Articles | QuickFnd",
@@ -89,12 +89,23 @@ export default async function BlogPage() {
                       <p className="mt-2 flex-1 text-sm leading-6 text-q-muted line-clamp-3">
                         {post.excerpt}
                       </p>
-                      <div className="mt-4 flex items-center justify-between">
-                        <span className="text-xs text-q-muted">
-                          {post.published_at ? formatDate(post.published_at) : ""}
-                        </span>
-                        <span className="text-xs font-medium text-blue-500 group-hover:text-blue-400">
-                          Read article →
+                      <div className="mt-4 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {(() => {
+                            const author = post.author_id ? getAuthorById(post.author_id) : null;
+                            if (!author) return null;
+                            return (
+                              <>
+                                <span className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${author.avatar_color} ${author.avatar_text_color}`}>
+                                  {author.avatar_initials}
+                                </span>
+                                <span className="text-xs text-q-muted truncate">{author.name}</span>
+                              </>
+                            );
+                          })()}
+                        </div>
+                        <span className="text-xs font-medium text-blue-500 group-hover:text-blue-400 shrink-0">
+                          {post.reading_time_minutes}min →
                         </span>
                       </div>
                     </Link>
@@ -145,6 +156,12 @@ export default async function BlogPage() {
                 className="rounded-xl border border-q-border bg-q-bg px-5 py-2.5 text-sm font-medium text-q-text hover:bg-q-card-hover transition"
               >
                 AI Tools
+              </Link>
+              <Link
+                href="/blog/authors"
+                className="rounded-xl border border-q-border bg-q-bg px-5 py-2.5 text-sm font-medium text-q-text hover:bg-q-card-hover transition"
+              >
+                Our Writers
               </Link>
             </div>
           </div>

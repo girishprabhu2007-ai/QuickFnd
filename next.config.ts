@@ -3,6 +3,12 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   poweredByHeader: false,
 
+  // Increase worker memory for large builds (145+ dynamic pages)
+  experimental: {
+    workerThreads: false,
+    cpus: 2,
+  },
+
   async headers() {
     return [
       {

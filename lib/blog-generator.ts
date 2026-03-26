@@ -23,6 +23,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { getOpenAIClient } from "@/lib/openai-server";
 import { estimateReadingTime, type BlogCategory } from "@/lib/blog";
+import { selectAuthorForTopic, randomPublishTime, getAuthorById, type Author } from "@/lib/authors";
 import { indexNewPage } from "@/lib/index-now";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -36,6 +37,8 @@ export type BlogGenerationInput = {
   related_questions?: string[];
   secondary_keywords?: string[];
   related_tool_slugs?: string[];
+  author_id?: string;         // override auto-selection
+  publish_hour?: number;      // UTC hour for publish time randomisation
 };
 
 export type BlogGenerationResult = {
@@ -356,6 +359,21 @@ export async function generateBlogPost(input: BlogGenerationInput): Promise<Blog
   const slug = keywordToSlug(input.keyword);
   const category = input.category ?? inferCategory(input.keyword, input.tool_slug);
 
+  // Select author — match expertise to topic, penalise recent posters for variety
+  let author: Author;
+  if (input.author_id) {
+    author = getAuthorById(input.author_id) ?? await selectAuthorForTopic(input.keyword, category, []);
+  } else {
+    // Fetch the last 5 author IDs from the DB to avoid repetition
+    const { data: recentPosts } = await supabase
+      .from("blog_posts")
+      .select("author_id")
+      .order("published_at", { ascending: false })
+      .limit(5);
+    const recentIds = (recentPosts || []).map(p => p.author_id as string).filter(Boolean);
+    author = await selectAuthorForTopic(input.keyword, category, recentIds);
+  }
+
   // Duplicate check
   const { data: existing } = await supabase.from("blog_posts").select("id").eq("slug", slug).maybeSingle();
   if (existing) return { success: false, error: "Slug already exists: " + slug };
@@ -383,7 +401,17 @@ export async function generateBlogPost(input: BlogGenerationInput): Promise<Blog
   // Vary temperature slightly each call so articles don't sound identical
   const temperature = 0.7 + Math.random() * 0.2; // 0.7-0.9
 
-  const prompt = `You are an experienced content writer with 10 years of SEO expertise. You write for QuickFnd.com — a free browser-based tools platform for developers, students, and professionals.
+  const authorSection = `
+
+AUTHOR PERSONA — write entirely in this person's voice:
+Name: ${author.name}
+Title: ${author.title}
+Location: ${author.location}
+Experience: ${author.years_experience} years
+Expertise: ${author.expertise.join(", ")}
+Writing style instruction: ${author.writing_style}`;
+
+  const prompt = `You are ${author.name}, ${author.title}. You write for QuickFnd.com — a free browser-based tools platform for developers, students, and professionals.${authorSection}
 
 TARGET KEYWORD: "${input.keyword}"
 ARTICLE TYPE: ${category}
@@ -392,7 +420,7 @@ ${paaSection}
 ${secondarySection}
 
 WRITING REQUIREMENTS:
-1. Title: Contains the exact keyword. Compelling and specific. 55-70 characters. No clickbait.
+1. Title: Contains the exact keyword. Compelling and specific. 55-70 characters. No clickbait. Written from ${author.name}'s perspective where natural.
 2. Excerpt: 2 punchy sentences, 140-160 chars. Includes keyword. Makes reader want to read more.
 3. Content requirements:
    - MINIMUM 950 words (aim for 1100-1300)
@@ -454,7 +482,10 @@ Return ONLY valid JSON (no markdown fences, no explanation):
     }
 
     const readingTime = estimateReadingTime(generated.content);
-    const now = new Date().toISOString();
+    const publishHour = input.publish_hour ?? new Date().getUTCHours();
+    const publishTime = randomPublishTime(publishHour);
+    const now = publishTime.toISOString();
+    const createdAt = new Date().toISOString();
 
     const { error: insertError } = await supabase.from("blog_posts").insert({
       slug,
@@ -470,9 +501,10 @@ Return ONLY valid JSON (no markdown fences, no explanation):
       og_description: generated.og_description || generated.excerpt,
       target_keyword: input.keyword,
       secondary_keywords: generated.secondary_keywords || [],
+      author_id: author.id,
       published_at: now,
-      created_at: now,
-      updated_at: now,
+      created_at: createdAt,
+      updated_at: createdAt,
       source: input.source || "auto-pipeline",
     });
 
@@ -509,7 +541,7 @@ export async function selectTopicsForToday(count = 2): Promise<BlogGenerationInp
 
   // Get seed candidates — rotate through bank, skip published
   const candidates: BlogGenerationInput[] = [];
-  for (let i = 0; i < SEED_BANK.length && candidates.length < count * 5; i++) {
+  for (let i = 0; i < SEED_BANK.length && candidates.length < count * 8; i++) {
     const topic = SEED_BANK[(startIdx + i) % SEED_BANK.length];
     const slug = keywordToSlug(topic.keyword);
     if (publishedKeywords.has(topic.keyword.toLowerCase()) || publishedSlugs.has(slug)) continue;
@@ -528,12 +560,14 @@ export async function selectTopicsForToday(count = 2): Promise<BlogGenerationInp
         return !publishedKeywords.has(t.keyword.toLowerCase()) && !publishedSlugs.has(slug);
       });
       // GSC topics go first (highest priority — real search data)
-      candidates.unshift(...freshGsc.slice(0, 3));
+      candidates.unshift(...freshGsc.slice(0, 5));
     } catch { /* optional */ }
   }
 
   // Enrich top candidates with PAA from Serper
   const serperKey = process.env.SERPER_API_KEY;
+  // Sort by score — highest first, then pick top N
+  candidates.sort((a, b) => scoreTopic(b.keyword, publishedKeywords) - scoreTopic(a.keyword, publishedKeywords));
   const selected = candidates.slice(0, count);
 
   if (serperKey) {

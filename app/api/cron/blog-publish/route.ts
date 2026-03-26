@@ -45,7 +45,10 @@ export async function GET(req: Request) {
   const runId = run?.id;
 
   try {
-    // Step 1: Research + select best 2 topics for today
+    // Step 1: Research + select 2 topics per run
+    // 5 cron runs × 2 articles = 10 posts/day
+    // Each run fires at a different hour so publish times are spread across the day
+    const publishHour = new Date().getUTCHours();
     const topics = await selectTopicsForToday(2);
 
     if (!topics.length) {
@@ -73,6 +76,7 @@ export async function GET(req: Request) {
       const result = await generateBlogPost({
         ...topic,
         source: "auto-pipeline",
+        publish_hour: publishHour,
       });
       results.push({ keyword: topic.keyword, ...result });
       // Rate limit between generations
