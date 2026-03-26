@@ -211,20 +211,24 @@ export function buildBlogSchemas(
   author: Author | null,
   paaQuestions: string[] = []
 ): string {
-  const url = `${SITE_URL}/blog/${post.slug}`;
-  
-  const faqs = extractFAQsFromContent(post.content, paaQuestions);
-  const steps = post.category === "how-to" ? extractHowToSteps(post.content) : [];
+  try {
+    const url = `${SITE_URL}/blog/${post.slug}`;
+    
+    const faqs = extractFAQsFromContent(post.content, paaQuestions);
+    const steps = post.category === "how-to" ? extractHowToSteps(post.content) : [];
 
-  const schemas = [
-    buildArticleSchema(post, author, url),
-    buildBreadcrumbSchema(post, url),
-    faqs.length > 0 ? buildFAQSchema(faqs) : null,
-    steps.length >= 3 ? buildHowToSchema(post, steps) : null,
-  ].filter(Boolean);
+    const schemas = [
+      buildArticleSchema(post, author, url),
+      buildBreadcrumbSchema(post, url),
+      faqs.length > 0 ? buildFAQSchema(faqs) : null,
+      steps.length >= 3 ? buildHowToSchema(post, steps) : null,
+    ].filter(Boolean);
 
-  // Return as individual script tags (Google prefers separate blocks)
-  return schemas
-    .map(schema => `<script type="application/ld+json">${JSON.stringify(schema)}</script>`)
-    .join("\n");
+    return schemas
+      .map(s => `<script type="application/ld+json">${JSON.stringify(s)}</script>`)
+      .join("\n");
+  } catch {
+    // Never let schema crash the page
+    return "";
+  }
 }

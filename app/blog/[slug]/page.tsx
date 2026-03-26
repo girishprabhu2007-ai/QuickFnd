@@ -109,7 +109,8 @@ export default async function BlogDetailPage({ params }: Props) {
   if (!postOrNull) notFound();
   const post = postOrNull!;
 
-  const related = await getRelatedPosts(post, 3);
+  let related: Awaited<ReturnType<typeof getRelatedPosts>> = [];
+  try { related = await getRelatedPosts(post, 3); } catch { /* non-critical */ }
   const htmlContent = renderMarkdown(post.content);
 
   return (
@@ -387,8 +388,6 @@ export default async function BlogDetailPage({ params }: Props) {
         </div>
       </section>
 
-      <SiteFooter />
-
       {/* JSON-LD Schema — Article + FAQ + HowTo + Breadcrumb */}
       <div
         dangerouslySetInnerHTML={{
@@ -399,6 +398,8 @@ export default async function BlogDetailPage({ params }: Props) {
           ),
         }}
       />
+
+      <SiteFooter />
     </main>
   );
 }
