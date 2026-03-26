@@ -92,6 +92,9 @@ export default function SiteFooter() {
             <div className="mt-3 space-y-2">
               {[
                 { href: "/about", label: "About QuickFnd" },
+                { href: "/blog", label: "Blog" },
+                { href: "/blog/authors", label: "Our Writers" },
+                { href: "/write-for-us", label: "Write for Us" },
                 { href: "/contact", label: "Contact" },
                 { href: "/privacy", label: "Privacy Policy" },
                 { href: "/terms", label: "Terms of Use" },
@@ -105,6 +108,30 @@ export default function SiteFooter() {
             </div>
           </div>
 
+        </div>
+
+        {/* Write for Us banner */}
+        <div className="mt-10 rounded-2xl border border-q-border bg-q-bg px-6 py-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-semibold text-q-text text-sm">Write for QuickFnd</p>
+            <p className="text-xs text-q-muted mt-0.5">
+              Share your expertise with our audience of developers, finance professionals &amp; students.
+            </p>
+          </div>
+          <div className="flex gap-3 shrink-0">
+            <Link
+              href="/write-for-us"
+              className="rounded-xl bg-q-primary px-4 py-2 text-xs font-semibold text-white hover:bg-q-primary-hover transition"
+            >
+              Apply to Write →
+            </Link>
+            <Link
+              href="/submit-article"
+              className="rounded-xl border border-q-border bg-q-card px-4 py-2 text-xs font-medium text-q-text hover:bg-q-card-hover transition"
+            >
+              Submit Article
+            </Link>
+          </div>
         </div>
 
         {/* Bottom bar */}
