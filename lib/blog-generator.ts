@@ -24,6 +24,7 @@ import { createClient } from "@supabase/supabase-js";
 import { getOpenAIClient } from "@/lib/openai-server";
 import { estimateReadingTime, type BlogCategory } from "@/lib/blog";
 import { selectAuthorForTopic, randomPublishTime, getAuthorById, type Author } from "@/lib/authors";
+import { getTopTopicsForToday, type ScoredTopic, type SERPAnalysis } from "@/lib/seo-intelligence";
 import { indexNewPage } from "@/lib/index-now";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -39,6 +40,7 @@ export type BlogGenerationInput = {
   related_tool_slugs?: string[];
   author_id?: string;         // override auto-selection
   publish_hour?: number;      // UTC hour for publish time randomisation
+  serp_analysis?: SERPAnalysis | null;  // competitor analysis for uniqueness
 };
 
 export type BlogGenerationResult = {
@@ -49,16 +51,7 @@ export type BlogGenerationResult = {
   error?: string;
 };
 
-export type ScoredTopic = {
-  keyword: string;
-  tool_slug?: string;
-  tool_name?: string;
-  score: number;
-  source: string;
-  related_questions: string[];
-  secondary_keywords: string[];
-  related_tool_slugs: string[];
-};
+// ScoredTopic imported from @/lib/seo-intelligence
 
 // ─── Tool map — all 54 live tools with their slugs ───────────────────────────
 // Used to build rich internal linking context per article
@@ -411,7 +404,19 @@ Experience: ${author.years_experience} years
 Expertise: ${author.expertise.join(", ")}
 Writing style instruction: ${author.writing_style}`;
 
-  const prompt = `You are ${author.name}, ${author.title}. You write for QuickFnd.com — a free browser-based tools platform for developers, students, and professionals.${authorSection}
+  // Build competitor context — what top pages cover and what they miss
+  let serpContext = "";
+  if (input.serp_analysis) {
+    const sa = input.serp_analysis;
+    const topPages = sa.top_results.slice(0, 3)
+      .map((r, i) => `${i + 1}. "${r.title}" (${r.url})\n   Snippet: ${r.snippet}`)
+      .join("\n");
+    const gaps = sa.content_gaps.map(g => `- ${g}`).join("\n");
+    const diffLabel = sa.difficulty_score <= 4 ? "low competition, be thorough" : "competitive, be exceptional";
+    serpContext = `\n\nCOMPETITOR INTELLIGENCE (do NOT copy — use this to write something BETTER):\nTop ranking pages for this keyword:\n${topPages}\n\nWhat these pages are MISSING (your article MUST cover these gaps):\n${gaps}\n\nTarget word count: ${sa.recommended_word_count}+ words (beat the current top result)\nDifficulty: ${sa.difficulty_score}/10 — ${diffLabel}`;
+  }
+
+  const prompt = `You are ${author.name}, ${author.title}. You write for QuickFnd.com — a free browser-based tools platform for developers, students, and professionals.${authorSection}${serpContext}
 
 TARGET KEYWORD: "${input.keyword}"
 ARTICLE TYPE: ${category}
@@ -420,10 +425,10 @@ ${paaSection}
 ${secondarySection}
 
 WRITING REQUIREMENTS:
-1. Title: Contains the exact keyword. Compelling and specific. 55-70 characters. No clickbait. Written from ${author.name}'s perspective where natural.
+1. Title: Contains the exact keyword. Compelling and specific. 55-70 characters. No clickbait. Written from ${author.name}'s perspective where natural. Must be DIFFERENT from the competitor titles above.
 2. Excerpt: 2 punchy sentences, 140-160 chars. Includes keyword. Makes reader want to read more.
 3. Content requirements:
-   - MINIMUM 950 words (aim for 1100-1300)
+   - MINIMUM ${input.serp_analysis ? input.serp_analysis.recommended_word_count : 950} words — must be longer and better than the current top result
    - Write like a knowledgeable friend explaining this — conversational but authoritative
    - Use first person sparingly ("In my experience...", "I find that...")
    - Include at least ONE concrete real-world example with actual numbers or specifics
@@ -552,7 +557,7 @@ Return ONLY valid JSON (no markdown fences, no explanation):
 export async function selectTopicsForToday(count = 2): Promise<BlogGenerationInput[]> {
   const supabase = getSupabaseAdmin();
 
-  // Get already published keywords
+  // Get already published keywords + slugs
   const { data: published } = await supabase
     .from("blog_posts")
     .select("target_keyword,slug")
@@ -563,52 +568,36 @@ export async function selectTopicsForToday(count = 2): Promise<BlogGenerationInp
   );
   const publishedSlugs = new Set<string>((published || []).map(p => String(p.slug || "")));
 
-  // Rotate through seed bank based on day-of-year so we cover all topics over time
-  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
-  const startIdx = (dayOfYear * count) % SEED_BANK.length;
+  // Build seed keyword list — map from SEED_BANK (keyword → tool info)
+  const seedKeywordList = SEED_BANK
+    .filter(t => {
+      const slug = keywordToSlug(t.keyword);
+      return !publishedKeywords.has(t.keyword.toLowerCase()) && !publishedSlugs.has(slug);
+    })
+    .map(t => t.keyword);
 
-  // Get seed candidates — rotate through bank, skip published
-  const candidates: BlogGenerationInput[] = [];
-  for (let i = 0; i < SEED_BANK.length && candidates.length < count * 8; i++) {
-    const topic = SEED_BANK[(startIdx + i) % SEED_BANK.length];
-    const slug = keywordToSlug(topic.keyword);
-    if (publishedKeywords.has(topic.keyword.toLowerCase()) || publishedSlugs.has(slug)) continue;
-    const score = scoreTopic(topic.keyword, publishedKeywords);
-    if (score > 0) candidates.push(topic);
-  }
+  // Use the full SEO intelligence engine — GSC + Serper SERP analysis
+  const scoredTopics = await getTopTopicsForToday(count, seedKeywordList, publishedKeywords);
 
-  // Add GSC opportunities if configured
-  const gscToken = process.env.SEARCH_CONSOLE_ACCESS_TOKEN;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://quickfnd.com";
-  if (gscToken) {
-    try {
-      const gscTopics = await fetchGSCOpportunities(siteUrl, gscToken);
-      const freshGsc = gscTopics.filter(t => {
-        const slug = keywordToSlug(t.keyword);
-        return !publishedKeywords.has(t.keyword.toLowerCase()) && !publishedSlugs.has(slug);
-      });
-      // GSC topics go first (highest priority — real search data)
-      candidates.unshift(...freshGsc.slice(0, 5));
-    } catch { /* optional */ }
-  }
+  // Map scored topics back to BlogGenerationInput with tool context from SEED_BANK
+  const seedMap = new Map(SEED_BANK.map(t => [t.keyword.toLowerCase(), t]));
 
-  // Enrich top candidates with PAA from Serper
-  const serperKey = process.env.SERPER_API_KEY;
-  // Sort by score — highest first, then pick top N
-  candidates.sort((a, b) => scoreTopic(b.keyword, publishedKeywords) - scoreTopic(a.keyword, publishedKeywords));
-  const selected = candidates.slice(0, count);
+  return scoredTopics.map((topic: ScoredTopic): BlogGenerationInput => {
+    const seedMatch = seedMap.get(topic.keyword.toLowerCase());
+    const paa = topic.serp_analysis?.people_also_ask || [];
+    const related = topic.serp_analysis?.related_searches || [];
 
-  if (serperKey) {
-    for (const topic of selected) {
-      try {
-        const paa = await fetchPeopleAlsoAsk(topic.keyword, serperKey);
-        if (paa.length > 0) topic.related_questions = paa;
-        await new Promise(r => setTimeout(r, 500));
-      } catch { /* optional */ }
-    }
-  }
-
-  return selected;
+    return {
+      keyword: topic.keyword,
+      tool_slug: seedMatch?.tool_slug,
+      tool_name: seedMatch?.tool_name,
+      related_questions: paa,
+      secondary_keywords: related,
+      related_tool_slugs: seedMatch?.related_tool_slugs || [],
+      source: topic.source === "gsc" ? "gsc-opportunity" : "auto-pipeline",
+      serp_analysis: topic.serp_analysis,
+    };
+  });
 }
 
 // ─── Legacy exports (keep for admin manual generation) ────────────────────────
