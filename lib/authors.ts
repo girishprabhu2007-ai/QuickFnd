@@ -26,6 +26,8 @@ export type Author = {
   linkedin?: string;
   categories: string[];
   posting_weight: number;   // 1-10, higher = posts more often
+  avatar_url: string;       // /avatars/[slug].svg — ethnicity-matched illustrated portrait
+  seed_likes: number;       // initial credibility likes seeded at launch
 };
 
 export const AUTHORS: Author[] = [
@@ -46,6 +48,8 @@ export const AUTHORS: Author[] = [
     twitter: "arjunsharma_dev",
     categories: ["developer-guide", "how-to", "comparison"],
     posting_weight: 9,
+    avatar_url: "/avatars/arjun-sharma.svg",
+    seed_likes: 6840,
   },
   {
     id: "priya-mehta",
@@ -63,6 +67,8 @@ export const AUTHORS: Author[] = [
     linkedin: "priya-mehta-finance",
     categories: ["finance-guide", "calculator-guide", "how-to"],
     posting_weight: 10,
+    avatar_url: "/avatars/priya-mehta.svg",
+    seed_likes: 7920,
   },
   {
     id: "rajesh-kumar",
@@ -80,6 +86,8 @@ export const AUTHORS: Author[] = [
     twitter: "rajeshkumar_seo",
     categories: ["seo-guide", "pillar", "comparison"],
     posting_weight: 7,
+    avatar_url: "/avatars/rajesh-kumar.svg",
+    seed_likes: 5430,
   },
   {
     id: "neha-gupta",
@@ -97,6 +105,8 @@ export const AUTHORS: Author[] = [
     linkedin: "neha-gupta-wellness",
     categories: ["tools-guide", "how-to", "pillar"],
     posting_weight: 6,
+    avatar_url: "/avatars/neha-gupta.svg",
+    seed_likes: 4210,
   },
   {
     id: "vikram-nair",
@@ -114,6 +124,8 @@ export const AUTHORS: Author[] = [
     linkedin: "vikram-nair-analyst",
     categories: ["finance-guide", "calculator-guide", "comparison"],
     posting_weight: 8,
+    avatar_url: "/avatars/vikram-nair.svg",
+    seed_likes: 6150,
   },
   {
     id: "ananya-iyer",
@@ -131,6 +143,8 @@ export const AUTHORS: Author[] = [
     twitter: "ananya_taxca",
     categories: ["finance-guide", "how-to", "calculator-guide"],
     posting_weight: 9,
+    avatar_url: "/avatars/ananya-iyer.svg",
+    seed_likes: 7340,
   },
   // ── International tech/dev authors ──────────────────────────────────────────
   {
@@ -149,6 +163,8 @@ export const AUTHORS: Author[] = [
     twitter: "danielokonkwo_sec",
     categories: ["developer-guide", "how-to", "pillar"],
     posting_weight: 7,
+    avatar_url: "/avatars/daniel-okonkwo.svg",
+    seed_likes: 4890,
   },
   {
     id: "sarah-chen",
@@ -166,6 +182,8 @@ export const AUTHORS: Author[] = [
     linkedin: "sarah-chen-ux",
     categories: ["tools-guide", "how-to", "developer-guide"],
     posting_weight: 7,
+    avatar_url: "/avatars/sarah-chen.svg",
+    seed_likes: 5720,
   },
   {
     id: "tom-wilson",
@@ -183,6 +201,8 @@ export const AUTHORS: Author[] = [
     twitter: "tomwilson_devops",
     categories: ["developer-guide", "how-to", "tools-guide"],
     posting_weight: 7,
+    avatar_url: "/avatars/tom-wilson.svg",
+    seed_likes: 4560,
   },
   {
     id: "carlos-reyes",
@@ -200,6 +220,8 @@ export const AUTHORS: Author[] = [
     twitter: "carlosreyes_arch",
     categories: ["developer-guide", "comparison", "pillar"],
     posting_weight: 6,
+    avatar_url: "/avatars/carlos-reyes.svg",
+    seed_likes: 3980,
   },
   {
     id: "amara-osei",
@@ -217,6 +239,8 @@ export const AUTHORS: Author[] = [
     linkedin: "amara-osei-finance",
     categories: ["finance-guide", "calculator-guide", "comparison"],
     posting_weight: 6,
+    avatar_url: "/avatars/amara-osei.svg",
+    seed_likes: 4120,
   },
   // ── Additional specialist authors ────────────────────────────────────────────
   {
@@ -235,6 +259,8 @@ export const AUTHORS: Author[] = [
     linkedin: "sofia-martinez-pm",
     categories: ["tools-guide", "how-to", "comparison"],
     posting_weight: 6,
+    avatar_url: "/avatars/sofia-martinez.svg",
+    seed_likes: 3640,
   },
   {
     id: "james-okafor",
@@ -252,6 +278,8 @@ export const AUTHORS: Author[] = [
     twitter: "jamesokafor_dev",
     categories: ["developer-guide", "how-to", "tools-guide"],
     posting_weight: 7,
+    avatar_url: "/avatars/james-okafor.svg",
+    seed_likes: 5280,
   },
   {
     id: "mei-tanaka",
@@ -269,6 +297,8 @@ export const AUTHORS: Author[] = [
     linkedin: "mei-tanaka-data",
     categories: ["developer-guide", "how-to", "tools-guide"],
     posting_weight: 5,
+    avatar_url: "/avatars/mei-tanaka.svg",
+    seed_likes: 2950,
   },
   {
     id: "lucas-brown",
@@ -286,6 +316,8 @@ export const AUTHORS: Author[] = [
     twitter: "lucasbrown_sec",
     categories: ["developer-guide", "how-to", "comparison"],
     posting_weight: 6,
+    avatar_url: "/avatars/lucas-brown.svg",
+    seed_likes: 3810,
   },
   {
     id: "fatima-al-rashid",
@@ -303,6 +335,8 @@ export const AUTHORS: Author[] = [
     linkedin: "fatima-alrashid-marketing",
     categories: ["seo-guide", "how-to", "tools-guide"],
     posting_weight: 7,
+    avatar_url: "/avatars/fatima-al-rashid.svg",
+    seed_likes: 5540,
   },
   {
     id: "ethan-clarke",
@@ -320,6 +354,8 @@ export const AUTHORS: Author[] = [
     linkedin: "ethan-clarke-eng",
     categories: ["developer-guide", "how-to", "comparison"],
     posting_weight: 7,
+    avatar_url: "/avatars/ethan-clarke.svg",
+    seed_likes: 4730,
   },
   {
     id: "riya-patel",
@@ -337,6 +373,8 @@ export const AUTHORS: Author[] = [
     linkedin: "riya-patel-finance",
     categories: ["finance-guide", "how-to", "calculator-guide"],
     posting_weight: 8,
+    avatar_url: "/avatars/riya-patel.svg",
+    seed_likes: 6620,
   },
   {
     id: "kwame-asante",
@@ -354,6 +392,8 @@ export const AUTHORS: Author[] = [
     twitter: "kwameasante_tech",
     categories: ["how-to", "tools-guide", "developer-guide"],
     posting_weight: 6,
+    avatar_url: "/avatars/kwame-asante.svg",
+    seed_likes: 3290,
   },
   {
     id: "aisha-ibrahim",
@@ -371,6 +411,8 @@ export const AUTHORS: Author[] = [
     linkedin: "aisha-ibrahim-finance",
     categories: ["finance-guide", "comparison", "pillar"],
     posting_weight: 5,
+    avatar_url: "/avatars/aisha-ibrahim.svg",
+    seed_likes: 2760,
   },
 ];
 

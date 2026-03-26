@@ -9,6 +9,7 @@ const tabs = [
   { href: "/admin/bulk-generate", label: "Bulk Generate" },
   { href: "/admin/tools", label: "Tools" },
   { href: "/admin/blog", label: "Blog" },
+  { href: "/admin/authors", label: "Authors" },
   { href: "/admin/topics", label: "Topics" },
   { href: "/admin/requests", label: "Requests" },
   { href: "/admin/placeholders", label: "Placeholders" },

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg_priya_mehta" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#065f46"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </radialGradient>
+    <clipPath id="circle_priya_mehta">
+      <circle cx="100" cy="100" r="100"/>
+    </clipPath>
+  </defs>
+  <circle cx="100" cy="100" r="100" fill="url(#bg_priya_mehta)"/>
+  <g clip-path="url(#circle_priya_mehta)">
+    <ellipse cx="100" cy="50" rx="45" ry="30" fill="#0d0000"/>
+        <path d="M55 65 L50 130 Q55 140 65 135 L68 90" fill="#0d0000"/>
+        <path d="M145 65 L150 130 Q145 140 135 135 L132 90" fill="#0d0000"/>
+    <ellipse cx="57" cy="100" rx="7" ry="9" fill="#C68642"/><ellipse cx="143" cy="100" rx="7" ry="9" fill="#C68642"/>
+    <ellipse cx="100" cy="100" rx="42" ry="50" fill="#C68642"/>
+    <circle cx="82" cy="90" r="7" fill="#1a0a00"/><circle cx="118" cy="90" r="7" fill="#1a0a00"/><circle cx="84" cy="88" r="2" fill="white"/><circle cx="120" cy="88" r="2" fill="white"/>
+    <path d="M97 100 L94 110 M103 100 L106 110 M94 110 Q100 113 106 110" fill="none" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+    <path d="M87 122 Q100 130 113 122" fill="none" stroke="rgba(0,0,0,0.2)" stroke-width="2" stroke-linecap="round"/>
+    <rect x="88" y="140" width="24" height="22" rx="5" fill="#C68642"/>
+    <path d="M38 185 Q52 158 100 155 Q148 158 162 185 L166 200 H34 Z" fill="#10b981"/>
+  </g>
+</svg>

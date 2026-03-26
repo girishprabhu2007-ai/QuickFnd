@@ -130,9 +130,13 @@ export default async function BlogDetailPage({ params }: Props) {
                       <div className="mt-4 flex flex-wrap items-center gap-3">
                         {author && (
                           <a href={`/blog/authors/${author.slug}`} className="flex items-center gap-2 group">
-                            <span className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${author.avatar_color} ${author.avatar_text_color}`}>
-                              {author.avatar_initials}
-                            </span>
+                            <img
+                              src={author.avatar_url}
+                              alt={author.name}
+                              width={32} height={32}
+                              className="h-8 w-8 shrink-0 rounded-full object-cover"
+                              onError={e => { (e.target as HTMLImageElement).src = ""; }}
+                            />
                             <div>
                               <span className="text-sm font-medium text-q-text group-hover:text-blue-500 transition">{author.name}</span>
                               <span className="ml-1 text-xs text-q-muted">· {author.title}</span>
@@ -203,9 +207,12 @@ export default async function BlogDetailPage({ params }: Props) {
                   return (
                     <div className="rounded-2xl border border-q-border bg-q-card p-6 shadow-sm">
                       <div className="flex items-start gap-4">
-                        <span className={`inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-lg font-bold ${author.avatar_color} ${author.avatar_text_color}`}>
-                          {author.avatar_initials}
-                        </span>
+                        <img
+                          src={author.avatar_url}
+                          alt={author.name}
+                          width={56} height={56}
+                          className="h-14 w-14 shrink-0 rounded-full object-cover"
+                        />
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <a href={`/blog/authors/${author.slug}`} className="font-semibold text-q-text hover:text-blue-500 transition">

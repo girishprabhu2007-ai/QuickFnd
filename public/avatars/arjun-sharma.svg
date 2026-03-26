@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg_arjun_sharma" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1e40af"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </radialGradient>
+    <clipPath id="circle_arjun_sharma">
+      <circle cx="100" cy="100" r="100"/>
+    </clipPath>
+  </defs>
+  <circle cx="100" cy="100" r="100" fill="url(#bg_arjun_sharma)"/>
+  <g clip-path="url(#circle_arjun_sharma)">
+    <ellipse cx="100" cy="50" rx="43" ry="26" fill="#1a0a00"/><path d="M57 65 L57 52 Q100 38 143 52 L143 65" fill="#1a0a00"/>
+    <ellipse cx="57" cy="100" rx="7" ry="9" fill="#C68642"/><ellipse cx="143" cy="100" rx="7" ry="9" fill="#C68642"/>
+    <ellipse cx="100" cy="100" rx="42" ry="50" fill="#C68642"/>
+    <circle cx="82" cy="90" r="7" fill="#1a0a00"/><circle cx="118" cy="90" r="7" fill="#1a0a00"/><circle cx="84" cy="88" r="2" fill="white"/><circle cx="120" cy="88" r="2" fill="white"/>
+    <path d="M97 100 L94 110 M103 100 L106 110 M94 110 Q100 113 106 110" fill="none" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+    <path d="M87 122 Q100 130 113 122" fill="none" stroke="rgba(0,0,0,0.2)" stroke-width="2" stroke-linecap="round"/>
+    <rect x="88" y="140" width="24" height="25" rx="5" fill="#C68642"/>
+    <path d="M40 185 Q50 160 100 155 Q150 160 160 185 L165 200 H35 Z" fill="#3b82f6"/>
+  </g>
+</svg>

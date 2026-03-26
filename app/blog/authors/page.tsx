@@ -34,9 +34,12 @@ export default function AuthorsPage() {
                 className="group flex flex-col gap-4 rounded-2xl border border-q-border bg-q-card p-6 transition hover:-translate-y-0.5 hover:border-blue-400/50 hover:shadow-sm"
               >
                 <div className="flex items-center gap-4">
-                  <span className={`inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-lg font-bold ${author.avatar_color} ${author.avatar_text_color}`}>
-                    {author.avatar_initials}
-                  </span>
+                  <img
+                    src={author.avatar_url}
+                    alt={author.name}
+                    width={56} height={56}
+                    className="h-14 w-14 shrink-0 rounded-full object-cover"
+                  />
                   <div>
                     <p className="font-semibold text-q-text group-hover:text-blue-500 transition">{author.name}</p>
                     <p className="text-xs text-q-muted">{author.title}</p>

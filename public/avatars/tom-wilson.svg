@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg_tom_wilson" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#64748b"/>
+    </radialGradient>
+    <clipPath id="circle_tom_wilson">
+      <circle cx="100" cy="100" r="100"/>
+    </clipPath>
+  </defs>
+  <circle cx="100" cy="100" r="100" fill="url(#bg_tom_wilson)"/>
+  <g clip-path="url(#circle_tom_wilson)">
+    <ellipse cx="100" cy="50" rx="43" ry="28" fill="#5C3317"/><path d="M57 65 Q65 42 100 40 Q135 42 143 65" fill="#5C3317"/>
+    <ellipse cx="57" cy="100" rx="7" ry="9" fill="#FDBCB4"/><ellipse cx="143" cy="100" rx="7" ry="9" fill="#FDBCB4"/>
+    <ellipse cx="100" cy="100" rx="42" ry="50" fill="#FDBCB4"/>
+    <circle cx="82" cy="90" r="7" fill="#1a0a00"/><circle cx="118" cy="90" r="7" fill="#1a0a00"/><circle cx="84" cy="88" r="2" fill="white"/><circle cx="120" cy="88" r="2" fill="white"/>
+    <path d="M97 100 L94 110 M103 100 L106 110 M94 110 Q100 113 106 110" fill="none" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+    <path d="M87 122 Q100 130 113 122" fill="none" stroke="rgba(0,0,0,0.2)" stroke-width="2" stroke-linecap="round"/>
+    <rect x="88" y="140" width="24" height="25" rx="5" fill="#FDBCB4"/>
+    <path d="M40 185 Q50 160 100 155 Q150 160 160 185 L165 200 H35 Z" fill="#64748b"/>
+  </g>
+</svg>

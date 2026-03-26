@@ -54,9 +54,12 @@ export default async function AuthorPage({ params }: Props) {
           {/* Author profile header */}
           <div className="rounded-3xl border border-q-border bg-q-card p-8 shadow-sm mb-10">
             <div className="flex flex-col gap-6 md:flex-row md:items-start">
-              <span className={`inline-flex h-24 w-24 shrink-0 items-center justify-center rounded-full text-3xl font-bold ${author.avatar_color} ${author.avatar_text_color}`}>
-                {author.avatar_initials}
-              </span>
+              <img
+                src={author.avatar_url}
+                alt={author.name}
+                width={96} height={96}
+                className="h-24 w-24 shrink-0 rounded-full object-cover"
+              />
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-3">
                   <h1 className="text-3xl font-bold text-q-text">{author.name}</h1>

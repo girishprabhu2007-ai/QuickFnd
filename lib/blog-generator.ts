@@ -510,6 +510,34 @@ Return ONLY valid JSON (no markdown fences, no explanation):
 
     if (insertError) return { success: false, error: insertError.message };
 
+    // Auto-seed likes on first post for each author
+    try {
+      const { data: prevPosts } = await supabase
+        .from("blog_posts")
+        .select("id")
+        .eq("author_id", author.id)
+        .eq("status", "published")
+        .neq("slug", slug)
+        .limit(1);
+      
+      const isFirstPost = !prevPosts || prevPosts.length === 0;
+      if (isFirstPost) {
+        // First post: seed 15-35% of author's total seed_likes with jitter
+        const pct = 0.15 + Math.random() * 0.20;
+        const jitter = Math.floor(Math.random() * 80) - 40;
+        const seedLikes = Math.max(200, Math.round(author.seed_likes * pct) + jitter);
+        await supabase.from("blog_posts")
+          .update({ likes_count: seedLikes })
+          .eq("slug", slug);
+      } else {
+        // Subsequent posts: smaller organic-looking seed (50-300 likes)
+        const organicSeed = 50 + Math.floor(Math.random() * 250);
+        await supabase.from("blog_posts")
+          .update({ likes_count: organicSeed })
+          .eq("slug", slug);
+      }
+    } catch { /* silent — likes seeding is best-effort */ }
+
     // Ping IndexNow (Bing + Yandex) + Google sitemap
     await indexNewPage(slug, "tools").catch(() => null);
 

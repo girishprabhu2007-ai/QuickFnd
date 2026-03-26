@@ -96,9 +96,12 @@ export default async function BlogPage() {
                             if (!author) return null;
                             return (
                               <>
-                                <span className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${author.avatar_color} ${author.avatar_text_color}`}>
-                                  {author.avatar_initials}
-                                </span>
+                                <img
+                                  src={author.avatar_url}
+                                  alt={author.name}
+                                  width={20} height={20}
+                                  className="h-5 w-5 shrink-0 rounded-full object-cover"
+                                />
                                 <span className="text-xs text-q-muted truncate">{author.name}</span>
                               </>
                             );
