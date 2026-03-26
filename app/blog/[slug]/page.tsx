@@ -9,6 +9,7 @@ import AffiliateCard from "@/components/monetisation/AffiliateCard";
 import EmailCapture from "@/components/email/EmailCapture";
 import BlogInteractions from "@/components/blog/BlogInteractions";
 import { getAuthorById, CATEGORY_LABELS as AUTHOR_CATEGORY_LABELS } from "@/lib/authors";
+import { buildBlogSchemas } from "@/lib/schema-markup";
 
 export const revalidate = 300;
 export const dynamicParams = true;
@@ -375,6 +376,17 @@ export default async function BlogDetailPage({ params }: Props) {
       </section>
 
       <SiteFooter />
+
+      {/* JSON-LD Schema — Article + FAQ + HowTo + Breadcrumb */}
+      <div
+        dangerouslySetInnerHTML={{
+          __html: buildBlogSchemas(
+            post,
+            post.author_id ? getAuthorById(post.author_id) || null : null,
+            post.secondary_keywords || []
+          ),
+        }}
+      />
     </main>
   );
 }
