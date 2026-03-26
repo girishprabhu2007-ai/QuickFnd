@@ -2268,6 +2268,349 @@ function CompoundInterestCalculator({ name = "" }: { name?: string }) {
   );
 }
 
+
+// ─── DISCOUNT CALCULATOR ─────────────────────────────────────────────────────
+function DiscountCalculator({ name }: { name: string }) {
+  const [original, setOriginal] = useState("");
+  const [discount, setDiscount] = useState("");
+  const [result, setResult] = useState<InterpretedResult | null>(null);
+  function calculate() {
+    const orig = parseFloat(original);
+    const disc = parseFloat(discount);
+    if (!isFinite(orig) || !isFinite(disc) || orig <= 0 || disc < 0 || disc > 100) {
+      setResult({ primary: "Invalid input", secondary: "Enter valid price and discount %", insight: "Original price must be > 0 and discount must be 0–100%.", recommendation: "" });
+      return;
+    }
+    const savings = (orig * disc) / 100;
+    const final = orig - savings;
+    setResult({ primary: `₹${formatCurrency(final)}`, secondary: `Final price after ${disc}% off`, extra: `You save ₹${formatCurrency(savings)} on ₹${formatCurrency(orig)}`, insight: `A ${disc}% discount on ₹${formatCurrency(orig)} saves you ₹${formatCurrency(savings)}.`, recommendation: disc >= 50 ? "Great deal! Over 50% off." : disc >= 20 ? "Good savings on this purchase." : "Modest discount — compare with other offers." });
+  }
+  return (
+    <Workspace title={name || "Discount Calculator"}>
+      <CalculatorGrid
+        left={<InputPanel subtitle="Enter original price and discount percentage.">
+          <div className="grid gap-4">
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Original Price (₹)</label><input type="number" value={original} onChange={e => setOriginal(e.target.value)} placeholder="e.g. 2999" className={fieldClass()} /></div>
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Discount (%)</label><input type="number" value={discount} onChange={e => setDiscount(e.target.value)} placeholder="e.g. 20" className={fieldClass()} /></div>
+            <button onClick={calculate} className="w-full rounded-2xl bg-q-primary px-4 py-3 text-sm font-semibold text-white hover:bg-q-primary-hover transition">Calculate →</button>
+          </div>
+        </InputPanel>}
+        right={<ResultsStage title="Discount result" result={result} emptyText="Enter price and discount to calculate savings." />}
+      />
+    </Workspace>
+  );
+}
+
+// ─── TIP CALCULATOR ──────────────────────────────────────────────────────────
+function TipCalculator({ name }: { name: string }) {
+  const [bill, setBill] = useState("");
+  const [tipPct, setTipPct] = useState("15");
+  const [people, setPeople] = useState("1");
+  const [result, setResult] = useState<InterpretedResult | null>(null);
+  function calculate() {
+    const b = parseFloat(bill);
+    const t = parseFloat(tipPct);
+    const p = Math.max(1, parseInt(people) || 1);
+    if (!isFinite(b) || b <= 0 || !isFinite(t) || t < 0) { setResult({ primary: "Invalid input", secondary: "", insight: "Enter a valid bill amount.", recommendation: "" }); return; }
+    const tip = (b * t) / 100;
+    const total = b + tip;
+    const perPerson = total / p;
+    setResult({ primary: `₹${formatCurrency(total)}`, secondary: `Total bill with ${t}% tip`, extra: `Tip: ₹${formatCurrency(tip)} · Per person: ₹${formatCurrency(perPerson)}`, insight: `On a ₹${formatCurrency(b)} bill, a ${t}% tip is ₹${formatCurrency(tip)}, making the total ₹${formatCurrency(total)}.`, recommendation: p > 1 ? `Split ${p} ways: ₹${formatCurrency(perPerson)} each.` : "Adjust the tip % to match service quality." });
+  }
+  return (
+    <Workspace title={name || "Tip Calculator"}>
+      <CalculatorGrid
+        left={<InputPanel subtitle="Calculate tip and split the bill among friends.">
+          <div className="grid gap-4">
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Bill Amount (₹)</label><input type="number" value={bill} onChange={e => setBill(e.target.value)} placeholder="e.g. 1200" className={fieldClass()} /></div>
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Tip (%)</label><select value={tipPct} onChange={e => setTipPct(e.target.value)} className={fieldClass()}><option value="5">5%</option><option value="10">10%</option><option value="15">15%</option><option value="18">18%</option><option value="20">20%</option><option value="25">25%</option></select></div>
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Number of People</label><input type="number" value={people} onChange={e => setPeople(e.target.value)} placeholder="1" min="1" className={fieldClass()} /></div>
+            <button onClick={calculate} className="w-full rounded-2xl bg-q-primary px-4 py-3 text-sm font-semibold text-white hover:bg-q-primary-hover transition">Calculate →</button>
+          </div>
+        </InputPanel>}
+        right={<ResultsStage title="Tip result" result={result} emptyText="Enter bill amount to calculate tip." />}
+      />
+    </Workspace>
+  );
+}
+
+// ─── ROI CALCULATOR ──────────────────────────────────────────────────────────
+function ROICalculator({ name }: { name: string }) {
+  const [initial, setInitial] = useState("");
+  const [finalVal, setFinalVal] = useState("");
+  const [years, setYears] = useState("");
+  const [result, setResult] = useState<InterpretedResult | null>(null);
+  function calculate() {
+    const i = parseFloat(initial);
+    const f = parseFloat(finalVal);
+    const y = parseFloat(years) || 0;
+    if (!isFinite(i) || !isFinite(f) || i <= 0) { setResult({ primary: "Invalid input", secondary: "", insight: "Enter valid investment values.", recommendation: "" }); return; }
+    const roi = ((f - i) / i) * 100;
+    const gain = f - i;
+    const annualised = y > 0 ? (Math.pow(f / i, 1 / y) - 1) * 100 : null;
+    setResult({ primary: `${formatNumber(roi, 2)}%`, secondary: `Total ROI on ₹${formatCurrency(i)}`, extra: `Gain: ₹${formatCurrency(gain)}${annualised !== null ? ` · Annualised: ${formatNumber(annualised, 2)}%` : ""}`, insight: `Your investment of ₹${formatCurrency(i)} returned ₹${formatCurrency(f)}, a ${roi >= 0 ? "gain" : "loss"} of ₹${formatCurrency(Math.abs(gain))} (${formatNumber(Math.abs(roi), 1)}%).`, recommendation: roi >= 15 ? "Excellent return — significantly above inflation." : roi >= 8 ? "Good return — beating typical fixed deposit rates." : roi >= 0 ? "Modest return — consider higher-yield options." : "Negative ROI — review the investment strategy." });
+  }
+  return (
+    <Workspace title={name || "ROI Calculator"}>
+      <CalculatorGrid
+        left={<InputPanel subtitle="Calculate return on investment and annualised growth.">
+          <div className="grid gap-4">
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Initial Investment (₹)</label><input type="number" value={initial} onChange={e => setInitial(e.target.value)} placeholder="e.g. 50000" className={fieldClass()} /></div>
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Final Value (₹)</label><input type="number" value={finalVal} onChange={e => setFinalVal(e.target.value)} placeholder="e.g. 75000" className={fieldClass()} /></div>
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Duration (Years, optional)</label><input type="number" value={years} onChange={e => setYears(e.target.value)} placeholder="e.g. 3" className={fieldClass()} /></div>
+            <button onClick={calculate} className="w-full rounded-2xl bg-q-primary px-4 py-3 text-sm font-semibold text-white hover:bg-q-primary-hover transition">Calculate →</button>
+          </div>
+        </InputPanel>}
+        right={<ResultsStage title="ROI result" result={result} emptyText="Enter initial and final investment values." />}
+      />
+    </Workspace>
+  );
+}
+
+// ─── SAVINGS CALCULATOR ───────────────────────────────────────────────────────
+function SavingsCalculator({ name }: { name: string }) {
+  const [initial, setInitial] = useState("");
+  const [monthly, setMonthly] = useState("");
+  const [rate, setRate] = useState("");
+  const [years, setYears] = useState("");
+  const [result, setResult] = useState<InterpretedResult | null>(null);
+  function calculate() {
+    const p = parseFloat(initial) || 0;
+    const m = parseFloat(monthly) || 0;
+    const r = parseFloat(rate) / 100 / 12;
+    const n = parseFloat(years) * 12;
+    if (!isFinite(n) || n <= 0 || !isFinite(r) || r < 0) { setResult({ primary: "Invalid input", secondary: "", insight: "Enter valid years and interest rate.", recommendation: "" }); return; }
+    const futureInitial = p * Math.pow(1 + r, n);
+    const futureMonthly = r > 0 ? m * ((Math.pow(1 + r, n) - 1) / r) : m * n;
+    const total = futureInitial + futureMonthly;
+    const invested = p + m * n;
+    const interest = total - invested;
+    setResult({ primary: `₹${formatCurrency(total)}`, secondary: `Projected savings after ${years} years`, extra: `Invested: ₹${formatCurrency(invested)} · Interest earned: ₹${formatCurrency(interest)}`, insight: `Starting with ₹${formatCurrency(p)} and saving ₹${formatCurrency(m)}/month at ${rate}% p.a., you'll accumulate ₹${formatCurrency(total)} in ${years} years.`, recommendation: interest > invested ? "Your interest earnings exceed contributions — excellent compounding!" : "Keep increasing monthly savings to accelerate wealth building." });
+  }
+  return (
+    <Workspace title={name || "Savings Calculator"}>
+      <CalculatorGrid
+        left={<InputPanel subtitle="Project your savings with monthly contributions and interest.">
+          <div className="grid gap-4">
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Initial Savings (₹)</label><input type="number" value={initial} onChange={e => setInitial(e.target.value)} placeholder="e.g. 10000" className={fieldClass()} /></div>
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Monthly Contribution (₹)</label><input type="number" value={monthly} onChange={e => setMonthly(e.target.value)} placeholder="e.g. 5000" className={fieldClass()} /></div>
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Annual Interest Rate (%)</label><input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="e.g. 7" className={fieldClass()} /></div>
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Time Period (Years)</label><input type="number" value={years} onChange={e => setYears(e.target.value)} placeholder="e.g. 10" className={fieldClass()} /></div>
+            <button onClick={calculate} className="w-full rounded-2xl bg-q-primary px-4 py-3 text-sm font-semibold text-white hover:bg-q-primary-hover transition">Calculate →</button>
+          </div>
+        </InputPanel>}
+        right={<ResultsStage title="Savings projection" result={result} emptyText="Enter savings details to project growth." />}
+      />
+    </Workspace>
+  );
+}
+
+// ─── RETIREMENT CALCULATOR ────────────────────────────────────────────────────
+function RetirementCalculator({ name }: { name: string }) {
+  const [currentAge, setCurrentAge] = useState("");
+  const [retireAge, setRetireAge] = useState("60");
+  const [monthlySavings, setMonthlySavings] = useState("");
+  const [rate, setRate] = useState("10");
+  const [result, setResult] = useState<InterpretedResult | null>(null);
+  function calculate() {
+    const ca = parseFloat(currentAge);
+    const ra = parseFloat(retireAge);
+    const ms = parseFloat(monthlySavings);
+    const r = parseFloat(rate) / 100 / 12;
+    if (!isFinite(ca) || !isFinite(ra) || ra <= ca || !isFinite(ms) || ms <= 0) { setResult({ primary: "Invalid input", secondary: "", insight: "Retirement age must be greater than current age.", recommendation: "" }); return; }
+    const n = (ra - ca) * 12;
+    const corpus = r > 0 ? ms * ((Math.pow(1 + r, n) - 1) / r) * (1 + r) : ms * n;
+    const invested = ms * n;
+    const growth = corpus - invested;
+    setResult({ primary: `₹${(corpus / 10000000).toFixed(2)} Cr`, secondary: `Estimated corpus at age ${ra}`, extra: `Invested: ₹${(invested / 100000).toFixed(1)}L · Growth: ₹${(growth / 100000).toFixed(1)}L`, insight: `Saving ₹${formatCurrency(ms)}/month for ${ra - ca} years at ${rate}% p.a. builds a corpus of ₹${(corpus / 10000000).toFixed(2)} crore.`, recommendation: corpus >= 10000000 ? "Strong retirement corpus — you're on track for a comfortable retirement." : "Consider increasing monthly savings or extending your investment horizon." });
+  }
+  return (
+    <Workspace title={name || "Retirement Calculator"}>
+      <CalculatorGrid
+        left={<InputPanel subtitle="Estimate your retirement corpus with monthly SIP investments.">
+          <div className="grid gap-4">
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Current Age</label><input type="number" value={currentAge} onChange={e => setCurrentAge(e.target.value)} placeholder="e.g. 30" className={fieldClass()} /></div>
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Retirement Age</label><input type="number" value={retireAge} onChange={e => setRetireAge(e.target.value)} placeholder="60" className={fieldClass()} /></div>
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Monthly Investment (₹)</label><input type="number" value={monthlySavings} onChange={e => setMonthlySavings(e.target.value)} placeholder="e.g. 10000" className={fieldClass()} /></div>
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Expected Annual Return (%)</label><input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="10" className={fieldClass()} /></div>
+            <button onClick={calculate} className="w-full rounded-2xl bg-q-primary px-4 py-3 text-sm font-semibold text-white hover:bg-q-primary-hover transition">Calculate →</button>
+          </div>
+        </InputPanel>}
+        right={<ResultsStage title="Retirement corpus" result={result} emptyText="Enter your age and savings to project retirement corpus." />}
+      />
+    </Workspace>
+  );
+}
+
+// ─── CALORIE CALCULATOR ───────────────────────────────────────────────────────
+function CalorieCalculator({ name }: { name: string }) {
+  const [age, setAge] = useState("");
+  const [gender, setGender] = useState("male");
+  const [weight, setWeight] = useState("");
+  const [height, setHeight] = useState("");
+  const [activity, setActivity] = useState("1.55");
+  const [result, setResult] = useState<InterpretedResult | null>(null);
+  function calculate() {
+    const a = parseFloat(age);
+    const w = parseFloat(weight);
+    const h = parseFloat(height);
+    const act = parseFloat(activity);
+    if (!isFinite(a) || !isFinite(w) || !isFinite(h) || a <= 0 || w <= 0 || h <= 0) { setResult({ primary: "Invalid input", secondary: "", insight: "Enter valid age, weight and height.", recommendation: "" }); return; }
+    // Mifflin-St Jeor equation
+    const bmr = gender === "male"
+      ? 10 * w + 6.25 * h - 5 * a + 5
+      : 10 * w + 6.25 * h - 5 * a - 161;
+    const tdee = bmr * act;
+    setResult({ primary: `${Math.round(tdee)} kcal/day`, secondary: `Total daily energy expenditure`, extra: `BMR: ${Math.round(bmr)} kcal · To lose 0.5kg/week: ${Math.round(tdee - 500)} kcal`, insight: `Your basal metabolic rate is ${Math.round(bmr)} kcal. With your activity level, you burn approximately ${Math.round(tdee)} calories daily.`, recommendation: `To lose weight: eat ${Math.round(tdee - 500)}–${Math.round(tdee - 300)} kcal/day. To gain: eat ${Math.round(tdee + 300)}–${Math.round(tdee + 500)} kcal/day.` });
+  }
+  return (
+    <Workspace title={name || "Calorie Calculator"}>
+      <CalculatorGrid
+        left={<InputPanel subtitle="Calculate daily calorie needs using the Mifflin-St Jeor equation.">
+          <div className="grid gap-4">
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Age (years)</label><input type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="e.g. 28" className={fieldClass()} /></div>
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Gender</label><select value={gender} onChange={e => setGender(e.target.value)} className={fieldClass()}><option value="male">Male</option><option value="female">Female</option></select></div>
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Weight (kg)</label><input type="number" value={weight} onChange={e => setWeight(e.target.value)} placeholder="e.g. 70" className={fieldClass()} /></div>
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Height (cm)</label><input type="number" value={height} onChange={e => setHeight(e.target.value)} placeholder="e.g. 170" className={fieldClass()} /></div>
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Activity Level</label><select value={activity} onChange={e => setActivity(e.target.value)} className={fieldClass()}><option value="1.2">Sedentary (desk job, no exercise)</option><option value="1.375">Light (1–3 days/week exercise)</option><option value="1.55">Moderate (3–5 days/week)</option><option value="1.725">Active (6–7 days/week)</option><option value="1.9">Very Active (physical job + exercise)</option></select></div>
+            <button onClick={calculate} className="w-full rounded-2xl bg-q-primary px-4 py-3 text-sm font-semibold text-white hover:bg-q-primary-hover transition">Calculate →</button>
+          </div>
+        </InputPanel>}
+        right={<ResultsStage title="Daily calories" result={result} emptyText="Enter your details to calculate daily calorie needs." />}
+      />
+    </Workspace>
+  );
+}
+
+// ─── FUEL COST CALCULATOR ─────────────────────────────────────────────────────
+function FuelCostCalculator({ name }: { name: string }) {
+  const [distance, setDistance] = useState("");
+  const [mileage, setMileage] = useState("");
+  const [fuelPrice, setFuelPrice] = useState("");
+  const [result, setResult] = useState<InterpretedResult | null>(null);
+  function calculate() {
+    const d = parseFloat(distance);
+    const m = parseFloat(mileage);
+    const fp = parseFloat(fuelPrice);
+    if (!isFinite(d) || !isFinite(m) || !isFinite(fp) || d <= 0 || m <= 0 || fp <= 0) { setResult({ primary: "Invalid input", secondary: "", insight: "Enter valid distance, mileage and fuel price.", recommendation: "" }); return; }
+    const litresNeeded = d / m;
+    const totalCost = litresNeeded * fp;
+    const costPerKm = totalCost / d;
+    setResult({ primary: `₹${formatCurrency(totalCost)}`, secondary: `Fuel cost for ${d} km trip`, extra: `Fuel needed: ${litresNeeded.toFixed(2)}L · Cost per km: ₹${costPerKm.toFixed(2)}`, insight: `For a ${d} km trip at ${m} km/L mileage and ₹${fp}/L fuel price, you need ${litresNeeded.toFixed(2)} litres costing ₹${formatCurrency(totalCost)}.`, recommendation: costPerKm < 5 ? "Very fuel efficient — great mileage for this trip." : costPerKm < 10 ? "Average fuel cost per km for Indian conditions." : "Consider a more fuel-efficient vehicle or route for long trips." });
+  }
+  return (
+    <Workspace title={name || "Fuel Cost Calculator"}>
+      <CalculatorGrid
+        left={<InputPanel subtitle="Calculate fuel cost for any trip based on distance and mileage.">
+          <div className="grid gap-4">
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Distance (km)</label><input type="number" value={distance} onChange={e => setDistance(e.target.value)} placeholder="e.g. 300" className={fieldClass()} /></div>
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Vehicle Mileage (km/litre)</label><input type="number" value={mileage} onChange={e => setMileage(e.target.value)} placeholder="e.g. 15" className={fieldClass()} /></div>
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Fuel Price (₹/litre)</label><input type="number" value={fuelPrice} onChange={e => setFuelPrice(e.target.value)} placeholder="e.g. 106" className={fieldClass()} /></div>
+            <button onClick={calculate} className="w-full rounded-2xl bg-q-primary px-4 py-3 text-sm font-semibold text-white hover:bg-q-primary-hover transition">Calculate →</button>
+          </div>
+        </InputPanel>}
+        right={<ResultsStage title="Fuel cost result" result={result} emptyText="Enter trip details to calculate fuel cost." />}
+      />
+    </Workspace>
+  );
+}
+
+// ─── CAGR CALCULATOR ─────────────────────────────────────────────────────────
+function CAGRCalculator({ name }: { name: string }) {
+  const [initial, setInitial] = useState("");
+  const [finalVal, setFinalVal] = useState("");
+  const [years, setYears] = useState("");
+  const [result, setResult] = useState<InterpretedResult | null>(null);
+  function calculate() {
+    const i = parseFloat(initial);
+    const f = parseFloat(finalVal);
+    const y = parseFloat(years);
+    if (!isFinite(i) || !isFinite(f) || !isFinite(y) || i <= 0 || f <= 0 || y <= 0) { setResult({ primary: "Invalid input", secondary: "", insight: "All values must be positive numbers.", recommendation: "" }); return; }
+    const cagr = (Math.pow(f / i, 1 / y) - 1) * 100;
+    setResult({ primary: `${formatNumber(cagr, 2)}%`, secondary: `CAGR over ${y} years`, extra: `From ₹${formatCurrency(i)} → ₹${formatCurrency(f)}`, insight: `Your investment grew from ₹${formatCurrency(i)} to ₹${formatCurrency(f)} in ${y} years at a CAGR of ${formatNumber(cagr, 2)}% per year.`, recommendation: cagr >= 15 ? "Exceptional growth — top quartile investment performance." : cagr >= 10 ? "Strong CAGR — above average equity market returns." : cagr >= 7 ? "Decent CAGR — beating fixed income returns." : "Below average — consider reviewing your investment strategy." });
+  }
+  return (
+    <Workspace title={name || "CAGR Calculator"}>
+      <CalculatorGrid
+        left={<InputPanel subtitle="Calculate compound annual growth rate between two values.">
+          <div className="grid gap-4">
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Initial Value (₹)</label><input type="number" value={initial} onChange={e => setInitial(e.target.value)} placeholder="e.g. 100000" className={fieldClass()} /></div>
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Final Value (₹)</label><input type="number" value={finalVal} onChange={e => setFinalVal(e.target.value)} placeholder="e.g. 250000" className={fieldClass()} /></div>
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Number of Years</label><input type="number" value={years} onChange={e => setYears(e.target.value)} placeholder="e.g. 5" className={fieldClass()} /></div>
+            <button onClick={calculate} className="w-full rounded-2xl bg-q-primary px-4 py-3 text-sm font-semibold text-white hover:bg-q-primary-hover transition">Calculate →</button>
+          </div>
+        </InputPanel>}
+        right={<ResultsStage title="CAGR result" result={result} emptyText="Enter initial value, final value and years." />}
+      />
+    </Workspace>
+  );
+}
+
+// ─── GRATUITY CALCULATOR ─────────────────────────────────────────────────────
+function GratuityCalculator({ name }: { name: string }) {
+  const [salary, setSalary] = useState("");
+  const [yearsWorked, setYearsWorked] = useState("");
+  const [result, setResult] = useState<InterpretedResult | null>(null);
+  function calculate() {
+    const s = parseFloat(salary);
+    const y = parseFloat(yearsWorked);
+    if (!isFinite(s) || !isFinite(y) || s <= 0 || y < 5) { setResult({ primary: y < 5 ? "Min 5 years required" : "Invalid input", secondary: "Gratuity requires minimum 5 years of service", insight: "As per the Payment of Gratuity Act, an employee must complete at least 5 years of continuous service.", recommendation: "" }); return; }
+    // Formula: (Last drawn salary × 15/26) × years of service
+    const gratuity = (s * 15 / 26) * Math.floor(y);
+    const maxGratuity = 2000000; // ₹20 lakh cap
+    const finalGratuity = Math.min(gratuity, maxGratuity);
+    setResult({ primary: `₹${formatCurrency(finalGratuity)}`, secondary: `Gratuity amount after ${y} years`, extra: finalGratuity === maxGratuity ? "Capped at ₹20 lakh (statutory limit)" : `Based on last drawn salary of ₹${formatCurrency(s)}/month`, insight: `Based on a last drawn salary of ₹${formatCurrency(s)} and ${Math.floor(y)} years of service, your gratuity is ₹${formatCurrency(finalGratuity)}.`, recommendation: "This amount is tax-exempt up to ₹20 lakhs for private sector employees under the Payment of Gratuity Act." });
+  }
+  return (
+    <Workspace title={name || "Gratuity Calculator"}>
+      <CalculatorGrid
+        left={<InputPanel subtitle="Calculate gratuity as per Indian Payment of Gratuity Act, 1972.">
+          <div className="grid gap-4">
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Last Drawn Salary (Basic + DA, ₹/month)</label><input type="number" value={salary} onChange={e => setSalary(e.target.value)} placeholder="e.g. 50000" className={fieldClass()} /></div>
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Years of Service (min 5)</label><input type="number" value={yearsWorked} onChange={e => setYearsWorked(e.target.value)} placeholder="e.g. 8" className={fieldClass()} /></div>
+            <button onClick={calculate} className="w-full rounded-2xl bg-q-primary px-4 py-3 text-sm font-semibold text-white hover:bg-q-primary-hover transition">Calculate →</button>
+          </div>
+        </InputPanel>}
+        right={<ResultsStage title="Gratuity amount" result={result} emptyText="Enter salary and years of service (minimum 5 years)." />}
+      />
+    </Workspace>
+  );
+}
+
+// ─── RD CALCULATOR ───────────────────────────────────────────────────────────
+function RDCalculator({ name }: { name: string }) {
+  const [monthly, setMonthly] = useState("");
+  const [rate, setRate] = useState("");
+  const [months, setMonths] = useState("");
+  const [result, setResult] = useState<InterpretedResult | null>(null);
+  function calculate() {
+    const m = parseFloat(monthly);
+    const r = parseFloat(rate) / 100 / 4; // Quarterly compounding (RBI standard)
+    const n = parseFloat(months);
+    if (!isFinite(m) || !isFinite(r) || !isFinite(n) || m <= 0 || r <= 0 || n <= 0) { setResult({ primary: "Invalid input", secondary: "", insight: "Enter valid monthly deposit, interest rate and tenure.", recommendation: "" }); return; }
+    // RD maturity formula with quarterly compounding
+    const maturity = m * (((Math.pow(1 + r, n / 3) - 1) / (1 - Math.pow(1 + r, -1 / 3))));
+    const invested = m * n;
+    const interest = maturity - invested;
+    setResult({ primary: `₹${formatCurrency(maturity)}`, secondary: `RD maturity after ${n} months`, extra: `Invested: ₹${formatCurrency(invested)} · Interest: ₹${formatCurrency(interest)}`, insight: `Depositing ₹${formatCurrency(m)}/month for ${n} months at ${rate}% p.a. (quarterly compounding) yields ₹${formatCurrency(maturity)} at maturity.`, recommendation: `Interest earned: ₹${formatCurrency(interest)} (${formatNumber((interest / invested) * 100, 1)}% return on investment).` });
+  }
+  return (
+    <Workspace title={name || "RD Calculator"}>
+      <CalculatorGrid
+        left={<InputPanel subtitle="Calculate recurring deposit maturity amount with quarterly compounding.">
+          <div className="grid gap-4">
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Monthly Deposit (₹)</label><input type="number" value={monthly} onChange={e => setMonthly(e.target.value)} placeholder="e.g. 5000" className={fieldClass()} /></div>
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Annual Interest Rate (%)</label><input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="e.g. 7.5" className={fieldClass()} /></div>
+            <div><label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Tenure (Months)</label><input type="number" value={months} onChange={e => setMonths(e.target.value)} placeholder="e.g. 24" className={fieldClass()} /></div>
+            <button onClick={calculate} className="w-full rounded-2xl bg-q-primary px-4 py-3 text-sm font-semibold text-white hover:bg-q-primary-hover transition">Calculate →</button>
+          </div>
+        </InputPanel>}
+        right={<ResultsStage title="RD maturity amount" result={result} emptyText="Enter monthly deposit, rate and tenure to calculate maturity." />}
+      />
+    </Workspace>
+  );
+}
+
 export default function BuiltInCalculatorClient({ item }: Props) {
   const engine = String(item.engine_type || inferEngineType("calculator", item.slug) || "");
   const config = item.engine_config || {};
@@ -2293,6 +2636,16 @@ export default function BuiltInCalculatorClient({ item }: Props) {
   if (engine === "hra-calculator") return <HRACalculator name={name} />;
   if (engine === "income-tax-calculator") return <IncomeTaxCalculator />;
   if (engine === "compound-interest-calculator") return <CompoundInterestCalculator name={name} />;
+  if (engine === "discount-calculator") return <DiscountCalculator name={name} />;
+  if (engine === "tip-calculator") return <TipCalculator name={name} />;
+  if (engine === "roi-calculator") return <ROICalculator name={name} />;
+  if (engine === "savings-calculator") return <SavingsCalculator name={name} />;
+  if (engine === "retirement-calculator") return <RetirementCalculator name={name} />;
+  if (engine === "calorie-calculator") return <CalorieCalculator name={name} />;
+  if (engine === "fuel-cost-calculator") return <FuelCostCalculator name={name} />;
+  if (engine === "cagr-calculator") return <CAGRCalculator name={name} />;
+  if (engine === "gratuity-calculator") return <GratuityCalculator name={name} />;
+  if (engine === "rd-calculator") return <RDCalculator name={name} />;
 
   return <GenericCalculator name={item.name} />;
 }

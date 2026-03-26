@@ -68,6 +68,16 @@ export type CalculatorEngineType =
   | "hra-calculator"
   | "income-tax-calculator"
   | "formula-calculator"
+  | "discount-calculator"
+  | "tip-calculator"
+  | "roi-calculator"
+  | "savings-calculator"
+  | "retirement-calculator"
+  | "calorie-calculator"
+  | "fuel-cost-calculator"
+  | "cagr-calculator"
+  | "gratuity-calculator"
+  | "rd-calculator"
   | "generic-directory";
 
 export type AIToolEngineType =
@@ -771,6 +781,96 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
       tone: "clear",
     },
   }),
+  "discount-calculator": createDefinition({
+    type: "discount-calculator",
+    category: "calculator",
+    family: "math-calculator",
+    title: "Discount Calculator",
+    description: "Calculate discounted price, savings amount and percentage off.",
+    keywords: ["discount-calculator", "discount calculator", "percentage off", "sale price"],
+    defaultConfig: {},
+  }),
+  "tip-calculator": createDefinition({
+    type: "tip-calculator",
+    category: "calculator",
+    family: "math-calculator",
+    title: "Tip Calculator",
+    description: "Calculate tip amount, total bill and per-person split.",
+    keywords: ["tip-calculator", "tip calculator", "bill split", "restaurant tip"],
+    defaultConfig: {},
+  }),
+  "roi-calculator": createDefinition({
+    type: "roi-calculator",
+    category: "calculator",
+    family: "investment-calculator",
+    title: "ROI Calculator",
+    description: "Calculate return on investment as a percentage and absolute gain.",
+    keywords: ["roi-calculator", "roi calculator", "return on investment"],
+    defaultConfig: {},
+  }),
+  "savings-calculator": createDefinition({
+    type: "savings-calculator",
+    category: "calculator",
+    family: "investment-calculator",
+    title: "Savings Calculator",
+    description: "Project savings growth over time with monthly contributions and interest.",
+    keywords: ["savings-calculator", "savings calculator", "savings growth"],
+    defaultConfig: {},
+  }),
+  "retirement-calculator": createDefinition({
+    type: "retirement-calculator",
+    category: "calculator",
+    family: "investment-calculator",
+    title: "Retirement Calculator",
+    description: "Estimate retirement corpus needed based on age, income and expenses.",
+    keywords: ["retirement-calculator", "retirement calculator", "retirement planning"],
+    defaultConfig: {},
+  }),
+  "calorie-calculator": createDefinition({
+    type: "calorie-calculator",
+    category: "calculator",
+    family: "health-calculator",
+    title: "Calorie Calculator",
+    description: "Calculate daily calorie needs based on age, weight, height and activity level.",
+    keywords: ["calorie-calculator", "calorie calculator", "tdee", "daily calories"],
+    defaultConfig: {},
+  }),
+  "fuel-cost-calculator": createDefinition({
+    type: "fuel-cost-calculator",
+    category: "calculator",
+    family: "math-calculator",
+    title: "Fuel Cost Calculator",
+    description: "Estimate fuel cost for a trip based on distance, mileage and fuel price.",
+    keywords: ["fuel-cost-calculator", "fuel calculator", "petrol cost", "trip cost"],
+    defaultConfig: {},
+  }),
+  "cagr-calculator": createDefinition({
+    type: "cagr-calculator",
+    category: "calculator",
+    family: "investment-calculator",
+    title: "CAGR Calculator",
+    description: "Calculate compound annual growth rate between an initial and final value.",
+    keywords: ["cagr-calculator", "cagr calculator", "compound annual growth", "investment growth"],
+    defaultConfig: {},
+  }),
+  "gratuity-calculator": createDefinition({
+    type: "gratuity-calculator",
+    category: "calculator",
+    family: "tax-calculator",
+    title: "Gratuity Calculator",
+    description: "Calculate gratuity amount payable as per Indian Payment of Gratuity Act.",
+    keywords: ["gratuity-calculator", "gratuity calculator", "gratuity amount"],
+    defaultConfig: {},
+  }),
+  "rd-calculator": createDefinition({
+    type: "rd-calculator",
+    category: "calculator",
+    family: "investment-calculator",
+    title: "RD Calculator",
+    description: "Calculate recurring deposit maturity amount and interest earned.",
+    keywords: ["rd-calculator", "rd calculator", "recurring deposit"],
+    defaultConfig: {},
+  }),
   "generic-directory": createDefinition({
     type: "generic-directory",
     category: "tool",
@@ -835,6 +935,16 @@ const CALCULATOR_ENGINE_ORDER: CalculatorEngineType[] = [
   "hra-calculator",
   "income-tax-calculator",
   "formula-calculator",
+  "discount-calculator",
+  "tip-calculator",
+  "roi-calculator",
+  "savings-calculator",
+  "retirement-calculator",
+  "calorie-calculator",
+  "fuel-cost-calculator",
+  "cagr-calculator",
+  "gratuity-calculator",
+  "rd-calculator",
   "generic-directory",
 ];
 
@@ -1030,6 +1140,30 @@ export function inferEngineType(category: EngineCategory, slug: string): EngineT
     if (value.includes("robots-txt") || value.includes("robots-txt-generator") || value.includes("robotstxt")) return "robots-txt-generator";
     if (value.includes("open-graph") || value.includes("og-preview") || value.includes("og-tester") || value.includes("opengraph")) return "open-graph-tester";
 
+    // ─── Extended slug coverage for auto-generated tools ──────────────────────
+    if (value.includes("email-validator") || value.includes("email-checker") || value.includes("email-verify")) return "regex-tester";
+    if (value.includes("line-counter") || value.includes("line-count") || value.includes("word-frequency") || value.includes("text-statistics")) return "word-counter";
+    if (value.includes("text-repeater") || value.includes("text-duplicator") || value.includes("repeat-text")) return "text-transformer";
+    if (value.includes("camel-to-kebab") || value.includes("kebab-to-camel") || value.includes("snake-to-camel") || value.includes("naming-converter")) return "text-case-converter";
+    if (value.includes("text-to-slug") || value.includes("url-friendly") || value.includes("slugify")) return "slug-generator";
+    if (value.includes("html-minifier") || value.includes("css-minifier") || value.includes("js-minifier") || value.includes("javascript-minifier") || value.includes("minify")) return "code-formatter";
+    if (value.includes("html-formatter") || value.includes("css-formatter") || value.includes("sql-formatter") || value.includes("xml-formatter") || value.includes("code-beautifier")) return "code-formatter";
+    if (value.includes("json-validator") || value.includes("json-lint") || value.includes("json-check")) return "json-formatter";
+    if (value.includes("xml-to-json") || value.includes("json-to-xml")) return "yaml-json-converter";
+    if (value.includes("html-to-markdown") || value.includes("markdown-to-html")) return "markdown-editor";
+    if (value.includes("image-to-base64") || value.includes("base64-to-image")) return "base64-encoder";
+    if (value.includes("chmod") || value.includes("permission-calculator")) return "number-base-converter";
+    if (value.includes("pixel-to-rem") || value.includes("rem-to-pixel") || value.includes("px-to-rem")) return "unit-converter";
+    if (value.includes("meta-tag") || value.includes("metatag-generator")) return "open-graph-tester";
+    if (value.includes("http-status") || value.includes("status-code") || value.includes("http-checker")) return "ip-lookup";
+    if (value.includes("url-parser") || value.includes("url-analyzer") || value.includes("query-string-parser")) return "url-decoder";
+    if (value.includes("color-name") || value.includes("color-palette") || value.includes("gradient-generator") || value.includes("box-shadow") || value.includes("css-color")) return "color-picker";
+    if (value.includes("sitemap-generator") || value.includes("sitemap-builder")) return "robots-txt-generator";
+    if (value.includes("htaccess") || value.includes("nginx-config") || value.includes("server-config")) return "robots-txt-generator";
+    if (value.includes("tsv-to-csv") || value.includes("csv-formatter") || value.includes("excel-to-json") || value.includes("spreadsheet-to-json")) return "csv-to-json";
+    if (value.includes("random-name") || value.includes("name-generator") || value.includes("fake-name")) return "random-string-generator";
+    if (value.includes("image-converter") || value.includes("image-compressor") || value.includes("image-resize") || value.includes("photo-editor")) return "markdown-editor";
+
     for (const engineType of TOOL_ENGINE_ORDER) {
       if (engineType === "generic-directory") continue;
       const definition = ENGINE_CATALOG[engineType];
@@ -1055,6 +1189,28 @@ export function inferEngineType(category: EngineCategory, slug: string): EngineT
     if (value.includes("simple-interest") || value === "interest-calculator") return "simple-interest-calculator";
     if (value.includes("gst") || value.includes("vat")) return "gst-calculator";
     if (value.includes("percentage")) return "percentage-calculator";
+    if (value.includes("discount") || value.includes("sale-price") || value.includes("percentage-off")) return "discount-calculator";
+    if (value.includes("tip") || value.includes("bill-split") || value.includes("gratuity-tip")) return "tip-calculator";
+    if (value.includes("roi") || value.includes("return-on-investment")) return "roi-calculator";
+    if (value.includes("savings") && !value.includes("tax")) return "savings-calculator";
+    if (value.includes("retirement")) return "retirement-calculator";
+    if (value.includes("calorie") || value.includes("tdee") || value.includes("bmr")) return "calorie-calculator";
+    if (value.includes("fuel") || value.includes("petrol-cost") || value.includes("mileage-cost")) return "fuel-cost-calculator";
+    if (value.includes("cagr") || value.includes("compound-annual-growth")) return "cagr-calculator";
+    if (value.includes("gratuity")) return "gratuity-calculator";
+    if (value.includes("rd-calculator") || value.includes("recurring-deposit")) return "rd-calculator";
+    if (value.includes("mortgage") || value.includes("home-loan")) return "loan-calculator";
+    if (value.includes("credit-card") || value.includes("card-payoff")) return "loan-calculator";
+    if (value.includes("car-loan") || value.includes("auto-loan")) return "loan-calculator";
+    if (value.includes("salary") || value.includes("take-home") || value.includes("payroll")) return "income-tax-calculator";
+    if (value.includes("inflation") || value.includes("real-return")) return "compound-interest-calculator";
+    if (value.includes("investment-growth") || value.includes("mutual-fund") || value.includes("nps-")) return "sip-calculator";
+    if (value.includes("step-up-sip") || value.includes("stepup-sip")) return "sip-calculator";
+    if (value.includes("sukanya") || value.includes("nps") || value.includes("bond-yield") || value.includes("dividend-yield")) return "fd-calculator";
+    if (value.includes("break-even") || value.includes("profit-margin") || value.includes("markup")) return "percentage-calculator";
+    if (value.includes("net-worth") || value.includes("time-duration") || value.includes("time-value")) return "compound-interest-calculator";
+    if (value.includes("rent-vs-buy") || value.includes("rent-calculator")) return "loan-calculator";
+    if (value.includes("tax-bracket") || value.includes("tds") || value.includes("professional-tax")) return "income-tax-calculator";
     return "generic-directory";
   }
 
