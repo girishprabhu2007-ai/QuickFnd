@@ -69,6 +69,7 @@ export default function AdminIntelligencePage() {
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [screening, setScreening] = useState(false);
   const [message, setMessage] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -158,6 +159,31 @@ export default function AdminIntelligencePage() {
     }
   }
 
+  async function screenPending() {
+    setScreening(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/admin/run-cron", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ job: "auto-screen-queue" }),
+      });
+      const { data } = await res.json();
+      if (res.ok) {
+        const d = data?.data || data || {};
+        setMessage(`✓ Screened: ${d.approved ?? 0} approved · ${d.rejected ?? 0} rejected · ${d.skipped ?? 0} left for review`);
+        loadStats();
+        loadQueue();
+      } else {
+        setMessage(`Error: ${data?.error || "Screening failed"}`);
+      }
+    } catch {
+      setMessage("Failed to run screener");
+    } finally {
+      setScreening(false);
+    }
+  }
+
   async function updateStatus(id: string, status: string, reason?: string) {
     await fetch("/api/admin/trend-signals", {
       method: "PATCH",
@@ -191,6 +217,10 @@ export default function AdminIntelligencePage() {
             <button onClick={runCronNow} disabled={running}
               className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-50">
               {running ? "Running..." : "▶ Run Now"}
+            </button>
+            <button onClick={screenPending} disabled={screening}
+              className="rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-500 disabled:opacity-50">
+              {screening ? "Screening..." : "🔍 Screen Queue"}
             </button>
             <button onClick={() => generateApproved()} disabled={generating}
               className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50">
