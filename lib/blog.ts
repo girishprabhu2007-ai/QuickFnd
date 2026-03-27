@@ -156,3 +156,37 @@ export const CATEGORY_LABELS: Record<BlogCategory, string> = {
   "comparison": "Comparison",
   "pillar": "Pillar Page",
 };
+
+export async function getPostsByToolSlug(
+  toolSlug: string,
+  limit = 4
+): Promise<BlogPostSummary[]> {
+  try {
+    const supabase = getSupabase();
+    const { data } = await supabase
+      .from("blog_posts")
+      .select("id,slug,title,excerpt,category,status,tags,tool_slug,reading_time_minutes,og_title,og_description,target_keyword,secondary_keywords,published_at,created_at,updated_at,source,author_id")
+      .eq("status", "published")
+      .eq("tool_slug", toolSlug)
+      .order("published_at", { ascending: false })
+      .limit(limit);
+    return data || [];
+  } catch { return []; }
+}
+
+export async function getPostsByKeyword(
+  keyword: string,
+  limit = 4
+): Promise<BlogPostSummary[]> {
+  try {
+    const supabase = getSupabase();
+    const { data } = await supabase
+      .from("blog_posts")
+      .select("id,slug,title,excerpt,category,status,tags,tool_slug,reading_time_minutes,og_title,og_description,target_keyword,secondary_keywords,published_at,created_at,updated_at,source,author_id")
+      .eq("status", "published")
+      .ilike("target_keyword", `%${keyword}%`)
+      .order("published_at", { ascending: false })
+      .limit(limit);
+    return data || [];
+  } catch { return []; }
+}

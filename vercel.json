@@ -31,6 +31,30 @@
     {
       "path": "/api/cron/internal-links",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/email-nurture",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/social-post",
+      "schedule": "47 4 * * *"
+    },
+    {
+      "path": "/api/cron/social-post",
+      "schedule": "13 9 * * *"
+    },
+    {
+      "path": "/api/cron/social-post",
+      "schedule": "29 12 * * *"
+    },
+    {
+      "path": "/api/cron/social-post",
+      "schedule": "51 16 * * *"
+    },
+    {
+      "path": "/api/cron/social-post",
+      "schedule": "23 21 * * *"
     }
   ]
 }

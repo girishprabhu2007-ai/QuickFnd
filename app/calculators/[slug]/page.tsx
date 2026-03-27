@@ -30,6 +30,8 @@ import {
   dedupeTopicLinkItems,
 } from "@/lib/internal-linking";
 import type { PublicContentItem } from "@/lib/content-pages";
+import { getPostsByToolSlug, getPostsByKeyword } from "@/lib/blog";
+import ToolArticlesSection from "@/components/blog/ToolArticlesSection";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -168,6 +170,16 @@ export default async function CalculatorPage({ params }: Props) {
   const relatedTopics = dedupeTopicLinkItems(
     nearbyTopics.filter((topic) => !topicLinkKeys.has(topic.key))
   );
+
+  // Fetch related blog articles
+  let relatedArticles = await getPostsByToolSlug(item.slug, 4);
+  if (relatedArticles.length < 2) {
+    const kwPosts = await getPostsByKeyword(
+      item.name.toLowerCase().split(" ").slice(0, 2).join(" "), 4
+    );
+    const existingSlugs = new Set(relatedArticles.map((p: {slug: string}) => p.slug));
+    relatedArticles = [...relatedArticles, ...kwPosts.filter(p => !existingSlugs.has((p as {slug: string}).slug))].slice(0, 4);
+  }
 
   const secondaryContent = (
     <div className="space-y-8">

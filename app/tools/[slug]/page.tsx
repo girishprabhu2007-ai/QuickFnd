@@ -21,6 +21,8 @@ import {
 } from "@/lib/seo-content";
 import { getSiteUrl } from "@/lib/site-url";
 import { isToolPubliclyVisible } from "@/lib/public-tool-visibility";
+import { getPostsByToolSlug, getPostsByKeyword } from "@/lib/blog";
+import ToolArticlesSection from "@/components/blog/ToolArticlesSection";
 import {
   getRelatedVisibleTools,
   getToolTopicLinks,
@@ -212,10 +214,27 @@ export default async function ToolDetailPage({ params }: Props) {
     nearbyTopics.filter((topic) => !topicLinkKeys.has(topic.key))
   );
 
+  // Fetch related blog articles — by tool_slug first, then by name keyword
+  let relatedArticles = await getPostsByToolSlug(item.slug, 4);
+  if (relatedArticles.length < 2) {
+    const kwPosts = await getPostsByKeyword(
+      item.name.toLowerCase().split(" ").slice(0, 2).join(" "),
+      4
+    );
+    const existingSlugs = new Set(relatedArticles.map(p => p.slug));
+    relatedArticles = [
+      ...relatedArticles,
+      ...kwPosts.filter(p => !existingSlugs.has(p.slug)),
+    ].slice(0, 4);
+  }
+
   const secondaryContent = (
     <div className="space-y-8">
       <TopicLinksSection title="Explore This Topic" items={topicLinks} />
       <RelatedToolsSection title="Related Tools" items={smartRelatedTools} />
+      {relatedArticles.length > 0 && (
+        <ToolArticlesSection posts={relatedArticles} toolName={item.name} />
+      )}
       <TopicLinksSection title="Nearby Topics" items={relatedTopics} />
     </div>
   );
