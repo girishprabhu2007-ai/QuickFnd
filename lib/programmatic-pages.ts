@@ -121,32 +121,72 @@ const TOOL_VARIANTS: Variant[] = [
   {
     slugBuilder: (item) => `${item.slug}-online`,
     keywordBuilder: (item) => `${item.name} online`,
-    titleBuilder: (item) => `${item.name} Online | QuickFnd`,
+    titleBuilder: (item) => `${item.name} Online — Free Browser Tool | QuickFnd`,
     headingBuilder: (item) => `${item.name} Online`,
     descriptionBuilder: (item) =>
-      `Use ${item.name} online with QuickFnd. Explore the browser-based page, benefits, FAQs, and the main tool experience.`,
+      `Use ${item.name} online for free. No install, no signup — runs instantly in your browser. ${item.description || ""}`,
     introBuilder: (item) =>
-      `${item.name} Online is a search-focused QuickFnd landing page designed for users who want to find and use the tool quickly in the browser.`,
+      `${item.name} Online is a free browser-based tool on QuickFnd. Open it instantly and use it without downloading anything.`,
   },
   {
     slugBuilder: (item) => `free-${item.slug}`,
     keywordBuilder: (item) => `free ${item.name}`,
-    titleBuilder: (item) => `Free ${item.name} | QuickFnd`,
+    titleBuilder: (item) => `Free ${item.name} — No Signup Required | QuickFnd`,
     headingBuilder: (item) => `Free ${item.name}`,
     descriptionBuilder: (item) =>
-      `Explore Free ${item.name} on QuickFnd. Learn what it does, why users search for it, and open the main tool page.`,
+      `Free ${item.name} on QuickFnd — no account, no install, no ads on the tool itself. Just open and use.`,
     introBuilder: (item) =>
-      `Free ${item.name} is a QuickFnd landing page built for users searching for a fast, browser-based version of this tool.`,
+      `Free ${item.name} is available instantly on QuickFnd. No credit card, no signup, no download required.`,
   },
   {
     slugBuilder: (item) => `best-${item.slug}`,
     keywordBuilder: (item) => `best ${item.name}`,
-    titleBuilder: (item) => `Best ${item.name} | QuickFnd`,
-    headingBuilder: (item) => `Best ${item.name}`,
+    titleBuilder: (item) => `Best ${item.name} Online in 2026 | QuickFnd`,
+    headingBuilder: (item) => `Best ${item.name} Online`,
     descriptionBuilder: (item) =>
-      `Looking for the best ${item.name} experience? Explore QuickFnd's dedicated page, related tools, FAQs, and direct access.`,
+      `Why QuickFnd is the best place to use ${item.name} online — fast, free, privacy-friendly, and no install needed.`,
     introBuilder: (item) =>
-      `Best ${item.name} is a QuickFnd landing page created for users comparing options and looking for a focused browser-based experience.`,
+      `Looking for the best ${item.name} online? QuickFnd offers a fast, free, browser-based version with no signup required.`,
+  },
+  {
+    slugBuilder: (item) => `${item.slug}-no-download`,
+    keywordBuilder: (item) => `${item.name} no download`,
+    titleBuilder: (item) => `${item.name} — No Download Needed | QuickFnd`,
+    headingBuilder: (item) => `${item.name} — No Download`,
+    descriptionBuilder: (item) =>
+      `Use ${item.name} without downloading anything. Runs entirely in your browser on QuickFnd — instant and free.`,
+    introBuilder: (item) =>
+      `${item.name} requires no download on QuickFnd. Open your browser, use the tool, close the tab. Done.`,
+  },
+  {
+    slugBuilder: (item) => `${item.slug}-for-beginners`,
+    keywordBuilder: (item) => `${item.name} for beginners`,
+    titleBuilder: (item) => `${item.name} for Beginners — Step by Step | QuickFnd`,
+    headingBuilder: (item) => `${item.name} for Beginners`,
+    descriptionBuilder: (item) =>
+      `New to ${item.name}? This page explains what it does, how to use it, and why it matters — then opens the tool directly.`,
+    introBuilder: (item) =>
+      `${item.name} for beginners: a simple explanation of what this tool does and how to get started on QuickFnd in under a minute.`,
+  },
+  {
+    slugBuilder: (item) => `how-to-use-${item.slug}`,
+    keywordBuilder: (item) => `how to use ${item.name}`,
+    titleBuilder: (item) => `How to Use ${item.name} — Guide | QuickFnd`,
+    headingBuilder: (item) => `How to Use ${item.name}`,
+    descriptionBuilder: (item) =>
+      `Step-by-step guide on how to use ${item.name} on QuickFnd. Learn the inputs, outputs, and practical use cases.`,
+    introBuilder: (item) =>
+      `This page walks you through how to use ${item.name} on QuickFnd — what to enter, what you get, and when to use it.`,
+  },
+  {
+    slugBuilder: (item) => `${item.slug}-alternative`,
+    keywordBuilder: (item) => `${item.name} alternative`,
+    titleBuilder: (item) => `${item.name} Alternative — Free & Instant | QuickFnd`,
+    headingBuilder: (item) => `Free ${item.name} Alternative`,
+    descriptionBuilder: (item) =>
+      `Looking for a free ${item.name} alternative? QuickFnd offers a browser-based version with no signup and no cost.`,
+    introBuilder: (item) =>
+      `QuickFnd is a free ${item.name} alternative that runs in your browser. No installation, no account, no paid plan needed.`,
   },
 ];
 
@@ -154,32 +194,82 @@ const CALCULATOR_VARIANTS: Variant[] = [
   {
     slugBuilder: (item) => `${item.slug}-online`,
     keywordBuilder: (item) => `${item.name} online`,
-    titleBuilder: (item) => `${item.name} Online | QuickFnd`,
+    titleBuilder: (item) => `${item.name} Online — Free Calculator | QuickFnd`,
     headingBuilder: (item) => `${item.name} Online`,
     descriptionBuilder: (item) =>
-      `Use ${item.name} online with QuickFnd. Discover the calculator, FAQs, benefits, and the main calculation page.`,
+      `Free ${item.name} online — instant results in your browser. No signup, no install. ${item.description || ""}`,
     introBuilder: (item) =>
-      `${item.name} Online is a search-focused QuickFnd landing page designed for users who want to calculate results quickly in the browser.`,
+      `${item.name} Online on QuickFnd gives you instant calculations in your browser. Free, accurate, and no account needed.`,
+  },
+  {
+    slugBuilder: (item) => `${item.slug}-india`,
+    keywordBuilder: (item) => `${item.name} India`,
+    titleBuilder: (item) => `${item.name} India — Free Online | QuickFnd`,
+    headingBuilder: (item) => `${item.name} for India`,
+    descriptionBuilder: (item) =>
+      `${item.name} built for India — uses Indian financial rules, rupee values, and local regulations. Free on QuickFnd.`,
+    introBuilder: (item) =>
+      `This ${item.name} is designed for Indian users — supporting INR values, Indian tax rules, and local financial context.`,
   },
   {
     slugBuilder: (item) => `${item.slug}-formula`,
     keywordBuilder: (item) => `${item.name} formula`,
-    titleBuilder: (item) => `${item.name} Formula | QuickFnd`,
+    titleBuilder: (item) => `${item.name} Formula Explained | QuickFnd`,
     headingBuilder: (item) => `${item.name} Formula`,
     descriptionBuilder: (item) =>
-      `Explore ${item.name} formula intent with QuickFnd, then continue into the main calculator for fast online calculation.`,
+      `Learn the ${item.name} formula with a clear explanation and worked examples — then calculate instantly on QuickFnd.`,
     introBuilder: (item) =>
-      `${item.name} Formula is a QuickFnd landing page built for users searching for formula-related context before using the calculator itself.`,
+      `Understanding the ${item.name} formula helps you verify results. Here's the formula explained simply, with a free calculator below.`,
   },
   {
     slugBuilder: (item) => `free-${item.slug}`,
     keywordBuilder: (item) => `free ${item.name}`,
-    titleBuilder: (item) => `Free ${item.name} | QuickFnd`,
+    titleBuilder: (item) => `Free ${item.name} — No Signup | QuickFnd`,
     headingBuilder: (item) => `Free ${item.name}`,
     descriptionBuilder: (item) =>
-      `Use Free ${item.name} on QuickFnd. Discover the calculator page, FAQs, and a faster path into the main calculator experience.`,
+      `Free ${item.name} on QuickFnd — no account, no cost, instant results. Used by thousands of Indians every month.`,
     introBuilder: (item) =>
-      `Free ${item.name} is a QuickFnd landing page created for users looking for a clean online calculator without extra setup.`,
+      `QuickFnd's free ${item.name} gives you instant results with no signup required. Open the calculator and start calculating now.`,
+  },
+  {
+    slugBuilder: (item) => `${item.slug}-2026`,
+    keywordBuilder: (item) => `${item.name} 2026`,
+    titleBuilder: (item) => `${item.name} 2026 — Updated Rates | QuickFnd`,
+    headingBuilder: (item) => `${item.name} 2026`,
+    descriptionBuilder: (item) =>
+      `${item.name} updated for 2026 — reflects latest tax rates, interest rates, and Indian financial regulations.`,
+    introBuilder: (item) =>
+      `This ${item.name} is updated for 2026 with the latest rates and rules applicable in India. Calculate accurately for this financial year.`,
+  },
+  {
+    slugBuilder: (item) => `how-to-calculate-${item.slug.replace("-calculator", "")}`,
+    keywordBuilder: (item) => `how to calculate ${item.name.replace(" Calculator", "").toLowerCase()}`,
+    titleBuilder: (item) => `How to Calculate ${item.name.replace(" Calculator", "")} | QuickFnd`,
+    headingBuilder: (item) => `How to Calculate ${item.name.replace(" Calculator", "")}`,
+    descriptionBuilder: (item) =>
+      `Step-by-step guide on how to calculate ${item.name.replace(" Calculator", "").toLowerCase()} — with formula, examples, and a free calculator.`,
+    introBuilder: (item) =>
+      `Learn how to calculate ${item.name.replace(" Calculator", "").toLowerCase()} manually or use our free tool for instant results.`,
+  },
+  {
+    slugBuilder: (item) => `${item.slug}-with-examples`,
+    keywordBuilder: (item) => `${item.name} with examples`,
+    titleBuilder: (item) => `${item.name} with Examples — Step by Step | QuickFnd`,
+    headingBuilder: (item) => `${item.name} with Examples`,
+    descriptionBuilder: (item) =>
+      `${item.name} explained with real worked examples. Understand the calculation step by step and verify with our free tool.`,
+    introBuilder: (item) =>
+      `Real examples make ${item.name.toLowerCase()} easy to understand. Follow along below and use our free calculator to verify.`,
+  },
+  {
+    slugBuilder: (item) => `best-${item.slug}`,
+    keywordBuilder: (item) => `best ${item.name}`,
+    titleBuilder: (item) => `Best ${item.name} Online 2026 | QuickFnd`,
+    headingBuilder: (item) => `Best ${item.name} Online`,
+    descriptionBuilder: (item) =>
+      `Why QuickFnd has the best free ${item.name} — accurate results, no signup, India-specific, and constantly updated.`,
+    introBuilder: (item) =>
+      `QuickFnd's ${item.name} is trusted by thousands of Indians for its accuracy, simplicity, and India-specific calculations.`,
   },
 ];
 
