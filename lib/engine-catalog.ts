@@ -30,6 +30,7 @@ export type ToolEngineType =
   | "binary-to-text"
   | "json-escape"
   | "qr-generator"
+  | "barcode-generator"
   | "color-picker"
   | "markdown-editor"
   | "csv-to-json"
@@ -80,6 +81,7 @@ export type CalculatorEngineType =
   | "roi-calculator"
   | "savings-calculator"
   | "retirement-calculator"
+  | "salary-calculator"
   | "calorie-calculator"
   | "fuel-cost-calculator"
   | "cagr-calculator"
@@ -226,7 +228,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "base64-encoder": createDefinition({
     type: "base64-encoder",
     category: "tool",
-    family: "encoder-decoder",
+    family: "codec",
     title: "Base64 Encoder",
     description: "Encode text or data to Base64 format.",
     keywords: ["base64-encoder", "base64 encoder", "base64 encode"],
@@ -237,7 +239,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "base64-decoder": createDefinition({
     type: "base64-decoder",
     category: "tool",
-    family: "encoder-decoder",
+    family: "codec",
     title: "Base64 Decoder",
     description: "Decode Base64 data back into readable text.",
     keywords: ["base64-decoder", "base64 decoder", "base64 decode"],
@@ -248,7 +250,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "url-encoder": createDefinition({
     type: "url-encoder",
     category: "tool",
-    family: "encoder-decoder",
+    family: "codec",
     title: "URL Encoder",
     description: "Percent-encode URLs for safe transmission.",
     keywords: ["url-encoder", "url encoder", "url encode", "percent-encode"],
@@ -259,7 +261,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "url-decoder": createDefinition({
     type: "url-decoder",
     category: "tool",
-    family: "encoder-decoder",
+    family: "codec",
     title: "URL Decoder",
     description: "Decode percent-encoded URLs back to readable text.",
     keywords: ["url-decoder", "url decoder", "url decode"],
@@ -286,7 +288,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "code-formatter": createDefinition({
     type: "code-formatter",
     category: "tool",
-    family: "code-tools",
+    family: "text-formatter",
     title: "Code Formatter",
     description: "Format source code with proper indentation and structure.",
     keywords: ["code-formatter", "code formatter", "code beautifier"],
@@ -295,7 +297,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "code-snippet-manager": createDefinition({
     type: "code-snippet-manager",
     category: "tool",
-    family: "code-tools",
+    family: "text-formatter",
     title: "Code Snippet Manager",
     description: "Save and retrieve reusable code snippets.",
     keywords: ["code-snippet-manager", "code snippet", "snippet manager"],
@@ -326,7 +328,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "unit-converter": createDefinition({
     type: "unit-converter",
     category: "tool",
-    family: "converter",
+    family: "unit-converter",
     title: "Unit Converter",
     description: "Convert between units of length, weight, temperature and volume.",
     keywords: ["unit-converter", "unit converter", "measurement converter"],
@@ -335,7 +337,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "currency-converter": createDefinition({
     type: "currency-converter",
     category: "tool",
-    family: "converter",
+    family: "currency-converter",
     title: "Currency Converter",
     description: "Convert between currencies using live exchange rates.",
     keywords: ["currency-converter", "currency converter", "exchange rate"],
@@ -344,7 +346,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "regex-tester": createDefinition({
     type: "regex-tester",
     category: "tool",
-    family: "developer-tools",
+    family: "regex-tools",
     title: "Regex Tester",
     description: "Test regular expressions against text with real-time match highlighting.",
     keywords: ["regex-tester", "regex tester", "regular expression tester"],
@@ -353,7 +355,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "regex-extractor": createDefinition({
     type: "regex-extractor",
     category: "tool",
-    family: "developer-tools",
+    family: "regex-tools",
     title: "Regex Extractor",
     description: "Extract matching groups from text using regex patterns.",
     keywords: ["regex-extractor", "regex extractor", "match extractor"],
@@ -362,7 +364,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "sha256-generator": createDefinition({
     type: "sha256-generator",
     category: "tool",
-    family: "hash-generator",
+    family: "hash-tools",
     title: "SHA-256 Hash Generator",
     description: "Generate SHA-256 cryptographic hashes from any text input.",
     keywords: ["sha256-generator", "sha256 generator", "sha-256", "hash generator"],
@@ -371,7 +373,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "md5-generator": createDefinition({
     type: "md5-generator",
     category: "tool",
-    family: "hash-generator",
+    family: "hash-tools",
     title: "MD5 Hash Generator",
     description: "Generate MD5 hashes from text input.",
     keywords: ["md5-generator", "md5 generator", "md5 hash"],
@@ -380,7 +382,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "timestamp-converter": createDefinition({
     type: "timestamp-converter",
     category: "tool",
-    family: "converter",
+    family: "timestamp-tools",
     title: "Unix Timestamp Converter",
     description: "Convert Unix timestamps to human-readable dates and vice versa.",
     keywords: ["timestamp-converter", "timestamp converter", "unix timestamp", "epoch converter"],
@@ -407,7 +409,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "text-to-binary": createDefinition({
     type: "text-to-binary",
     category: "tool",
-    family: "encoder-decoder",
+    family: "codec",
     title: "Text to Binary Converter",
     description: "Convert plain text to binary representation.",
     keywords: ["text-to-binary", "text to binary", "binary converter"],
@@ -416,7 +418,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "binary-to-text": createDefinition({
     type: "binary-to-text",
     category: "tool",
-    family: "encoder-decoder",
+    family: "codec",
     title: "Binary to Text Converter",
     description: "Convert binary code back to readable text.",
     keywords: ["binary-to-text", "binary to text", "binary decoder"],
@@ -447,7 +449,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "qr-generator": createDefinition({
     type: "qr-generator",
     category: "tool",
-    family: "generator",
+    family: "qr-generator",
     title: "QR Code Generator",
     description: "Generate QR codes from URLs, text or any content.",
     keywords: ["qr-generator", "qr code generator", "qr code"],
@@ -474,7 +476,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "csv-to-json": createDefinition({
     type: "csv-to-json",
     category: "tool",
-    family: "converter",
+    family: "csv-to-json",
     title: "CSV to JSON Converter",
     description: "Convert CSV data to JSON with auto-delimiter detection.",
     keywords: ["csv-to-json", "csv to json", "csv json converter"],
@@ -483,11 +485,21 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "ip-lookup": createDefinition({
     type: "ip-lookup",
     category: "tool",
-    family: "network-tools",
+    family: "ip-lookup",
     title: "IP Address Lookup",
     description: "Look up location, ISP and timezone for any IP address.",
     keywords: ["ip-lookup", "ip lookup", "ip address lookup"],
     defaultConfig: {},
+  }),
+
+  "barcode-generator": createDefinition({
+    type: "barcode-generator",
+    category: "tool",
+    family: "qr-generator",
+    title: "Barcode Generator",
+    description: "Generate barcodes in Code128, EAN-13, and QR formats instantly in your browser.",
+    keywords: ["barcode generator", "barcode", "code128", "ean13", "barcode online"],
+    defaultConfig: { format: "code128" },
   }),
 
   // ─── NEW DEVELOPER / UTILITY TOOLS ───────────────────────────────────────
@@ -617,7 +629,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "age-calculator": createDefinition({
     type: "age-calculator",
     category: "calculator",
-    family: "date-calculator",
+    family: "text-formatter",
     title: "Age Calculator",
     description: "Calculate exact age from a birth date.",
     keywords: ["age-calculator", "age calculator"],
@@ -836,6 +848,15 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
     keywords: ["retirement-calculator", "retirement calculator", "retirement planning"],
     defaultConfig: {},
   }),
+  "salary-calculator": createDefinition({
+    type: "salary-calculator",
+    category: "calculator",
+    family: "generic-directory",
+    title: "Salary Calculator",
+    description: "Calculate your in-hand salary from CTC with PF, PT, and HRA breakdowns for India.",
+    keywords: ["salary calculator", "ctc calculator", "take home salary", "in hand salary india"],
+    defaultConfig: {},
+  }),
   "calorie-calculator": createDefinition({
     type: "calorie-calculator",
     category: "calculator",
@@ -982,6 +1003,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   }),
 };
 
+
 const TOOL_ENGINE_ORDER: ToolEngineType[] = [
   "password-strength-checker",
   "password-generator",
@@ -1013,6 +1035,7 @@ const TOOL_ENGINE_ORDER: ToolEngineType[] = [
   "json-escape",
   "json-unescape",
   "qr-generator",
+  "barcode-generator",
   "color-picker",
   "markdown-editor",
   "csv-to-json",
@@ -1047,6 +1070,7 @@ const CALCULATOR_ENGINE_ORDER: CalculatorEngineType[] = [
   "roi-calculator",
   "savings-calculator",
   "retirement-calculator",
+  "salary-calculator",
   "calorie-calculator",
   "fuel-cost-calculator",
   "cagr-calculator",
@@ -1118,6 +1142,7 @@ export function inferEngineType(category: EngineCategory, slug: string): EngineT
 
   if (category === "tool") {
     if (value === "qr-code-generator" || value.includes("qr-code") || (value.includes("qr") && value.includes("generator"))) return "qr-generator";
+    if (value.includes("barcode")) return "barcode-generator";
     if (value === "color-picker" || value.includes("color-picker") || value === "colour-picker") return "color-picker";
     if (value === "markdown-editor" || value.includes("markdown-editor") || value.includes("markdown-preview")) return "markdown-editor";
     if (value === "csv-to-json" || value.includes("csv-to-json") || value.includes("csv-json")) return "csv-to-json";
@@ -1321,7 +1346,7 @@ export function inferEngineType(category: EngineCategory, slug: string): EngineT
     if (value.includes("mortgage") || value.includes("home-loan")) return "loan-calculator";
     if (value.includes("credit-card") || value.includes("card-payoff")) return "loan-calculator";
     if (value.includes("car-loan") || value.includes("auto-loan")) return "loan-calculator";
-    if (value.includes("salary") || value.includes("take-home") || value.includes("payroll")) return "income-tax-calculator";
+    if (value.includes("salary") || value.includes("take-home") || value.includes("payroll")) return "salary-calculator";
     if (value.includes("inflation") || value.includes("real-return")) return "compound-interest-calculator";
     if (value.includes("investment-growth") || value.includes("mutual-fund") || value.includes("nps-")) return "sip-calculator";
     if (value.includes("step-up-sip") || value.includes("stepup-sip")) return "sip-calculator";

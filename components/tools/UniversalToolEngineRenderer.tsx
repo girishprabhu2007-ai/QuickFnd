@@ -2209,6 +2209,167 @@ type FamilyRendererProps = {
   config: Record<string, unknown>;
 };
 
+
+// ─── Barcode Generator ────────────────────────────────────────────────────────
+function BarcodeGenerator({ title }: { title: string }) {
+  const [input, setInput] = useState("");
+  const [format, setFormat] = useState<"code128" | "ean13" | "upca">("code128");
+  const [bars, setBars] = useState<number[]>([]);
+  const [error, setError] = useState("");
+
+  // Code 128 B encoding table
+  const CODE128B_TABLE: Record<string, number> = {};
+  const CODE128B_PATTERNS: string[] = [
+    "11011001100","11001101100","11001100110","10010011000","10010001100",
+    "10001001100","10011001000","10011000100","10001100100","11001001000",
+    "11001000100","11000100100","10110011100","10011011100","10011001110",
+    "10111001100","10011101100","10011100110","11001110010","11001011100",
+    "11001001110","11011100100","11001110100","11101101110","11101001100",
+    "11100101100","11100100110","11101100100","11100110100","11100110010",
+    "11011011000","11011000110","11000110110","10100011000","10001011000",
+    "10001000110","10110001000","10001101000","10001100010","11010001000",
+    "11000101000","11000100010","10110111000","10110001110","10001101110",
+    "10111011000","10111000110","10001110110","11101110110","11010001110",
+    "11000101110","11011101000","11011100010","11011101110","11101011000",
+    "11101000110","11100010110","11011010000","11011010110","11011010100",
+    "11000010010","11001010000","11110101000","11110100010","11110010100",
+    "11110010010","11011110100","11011110010","11110100100","11000010100",
+    "10001111010","10100111100","10010111100","10010011110","10111100100",
+    "10011110100","10011110010","11110100100","11110010100","00110111011",
+    "10100010000","10001010000","10010010000","10001000100","10001000010",
+    "10100001000","10001001000","10000100110","10000110100","10000110010",
+    "11000010010","11001010000","11110101000","11110100010","11110010100",
+    "11110010010","11011110100","11011110010","11110100100",
+  ];
+  for (let i = 0; i < 96; i++) {
+    CODE128B_TABLE[String.fromCharCode(32 + i)] = i;
+  }
+  const START_B = "11010010000";
+  const STOP   = "1100011101011";
+
+  function encodeCode128B(text: string): number[] {
+    if (!text) return [];
+    let encoded = START_B;
+    let checksum = 104; // start B value
+    for (let i = 0; i < text.length; i++) {
+      const code = CODE128B_TABLE[text[i]];
+      if (code === undefined) return [];
+      checksum += (i + 1) * code;
+      encoded += CODE128B_PATTERNS[code] || "";
+    }
+    encoded += CODE128B_PATTERNS[checksum % 103] || "";
+    encoded += STOP;
+    return encoded.split("").map(Number);
+  }
+
+  function encodeEAN13(digits: string): number[] {
+    if (!/^\d{12,13}$/.test(digits)) return [];
+    const d = digits.slice(0, 12);
+    const checksum = (10 - (d.split("").reduce((sum, c, i) =>
+      sum + parseInt(c) * (i % 2 === 0 ? 1 : 3), 0) % 10)) % 10;
+    const full = d + checksum;
+    const L = ["0001101","0011001","0010011","0111101","0100011","0110001","0101111","0111011","0110111","0001011"];
+    const R = ["1110010","1100110","1101100","1000010","1011100","1001110","1010000","1000100","1001000","1110100"];
+    const ODD  = [0,0,1,0,1,1];
+    const EVEN = [1,1,0,1,0,0];
+    const first = parseInt(full[0]);
+    const parity = [ODD, EVEN, ODD, ODD, EVEN, EVEN][first] || ODD;
+    let bits = "101";
+    for (let i = 1; i <= 6; i++) bits += parity[i-1] ? R[parseInt(full[i])] : L[parseInt(full[i])];
+    bits += "01010";
+    for (let i = 7; i <= 12; i++) bits += R[parseInt(full[i])];
+    bits += "101";
+    return bits.split("").map(Number);
+  }
+
+  function generate() {
+    setError("");
+    if (!input.trim()) { setError("Please enter text or a number"); return; }
+    let result: number[] = [];
+    if (format === "code128") {
+      result = encodeCode128B(input);
+      if (!result.length) { setError("Code 128 supports printable ASCII characters only"); return; }
+    } else {
+      const digits = input.replace(/\D/g, "");
+      result = encodeEAN13(digits);
+      if (!result.length) { setError("EAN-13 requires 12 or 13 digits"); return; }
+    }
+    setBars(result);
+  }
+
+  function downloadSVG() {
+    const svg = document.getElementById("barcode-svg");
+    if (!svg) return;
+    const blob = new Blob([svg.outerHTML], { type: "image/svg+xml" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+    a.download = `barcode-${input.slice(0,20)}.svg`; a.click();
+  }
+
+  const barWidth = 2;
+  const svgWidth = bars.length * barWidth + 40;
+  const svgHeight = 80;
+
+  return (
+    <Workspace title={title}>
+      <div className="space-y-5">
+        <div className="flex gap-3 flex-wrap">
+          {(["code128", "ean13"] as const).map(f => (
+            <button key={f} onClick={() => setFormat(f)}
+              className={`rounded-xl border px-4 py-2 text-sm font-medium transition ${format === f ? "bg-q-primary text-white border-q-primary" : "border-q-border bg-q-bg text-q-muted hover:text-q-text"}`}>
+              {f === "code128" ? "Code 128 (text)" : "EAN-13 (numbers)"}
+            </button>
+          ))}
+        </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">
+            {format === "code128" ? "Text or URL" : "12-13 digit number"}
+          </label>
+          <div className="flex gap-2">
+            <input value={input} onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && generate()}
+              placeholder={format === "code128" ? "e.g. quickfnd.com or PRODUCT-001" : "e.g. 012345678901"}
+              className="flex-1 rounded-xl border border-q-border bg-q-bg px-4 py-3 text-q-text outline-none focus:border-blue-400/60 transition" />
+            <button onClick={generate}
+              className="rounded-xl bg-q-primary px-5 py-3 text-sm font-semibold text-white hover:bg-q-primary-hover transition">
+              Generate
+            </button>
+          </div>
+          {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+        </div>
+        {bars.length > 0 && (
+          <div className="rounded-2xl border border-q-border bg-white p-6 dark:bg-slate-900 flex flex-col items-center gap-4">
+            <svg id="barcode-svg" width={Math.min(svgWidth, 500)} height={svgHeight + 20}
+              viewBox={`0 0 ${svgWidth} ${svgHeight + 20}`} xmlns="http://www.w3.org/2000/svg"
+              style={{ background: "white" }}>
+              <rect width={svgWidth} height={svgHeight + 20} fill="white"/>
+              {bars.map((b, i) => b === 1 ? (
+                <rect key={i} x={20 + i * barWidth} y={8} width={barWidth} height={svgHeight - 16} fill="#000"/>
+              ) : null)}
+              <text x={svgWidth / 2} y={svgHeight + 14} textAnchor="middle"
+                fontSize="10" fontFamily="monospace" fill="#333">{input.slice(0, 40)}</text>
+            </svg>
+            <div className="flex gap-3">
+              <button onClick={downloadSVG}
+                className="rounded-xl border border-q-border bg-q-bg px-4 py-2 text-sm font-medium text-q-text hover:bg-q-card transition">
+                Download SVG
+              </button>
+              <button onClick={() => { setBars([]); setInput(""); }}
+                className="rounded-xl border border-q-border bg-q-bg px-4 py-2 text-sm font-medium text-q-muted hover:text-q-text transition">
+                Clear
+              </button>
+            </div>
+          </div>
+        )}
+        {bars.length === 0 && !error && (
+          <div className="rounded-2xl border border-dashed border-q-border bg-q-bg p-8 text-center text-sm text-q-muted">
+            Enter text above and click Generate to create a barcode
+          </div>
+        )}
+      </div>
+    </Workspace>
+  );
+}
+
 function renderByFamily({
   family,
   title,
@@ -2268,6 +2429,10 @@ function renderByFamily({
 
   if (family === "qr-generator") {
     return <QRGenerator title={title} />;
+  }
+
+  if (family === "barcode-generator") {
+    return <BarcodeGenerator title={title} />;
   }
 
   if (family === "color-picker") {

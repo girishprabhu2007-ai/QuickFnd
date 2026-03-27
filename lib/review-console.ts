@@ -16,7 +16,7 @@ const LIVE_TOOL_ENGINES = new Set([
   "unit-converter", "currency-converter", "regex-tester", "regex-extractor",
   "sha256-generator", "md5-generator", "timestamp-converter", "hex-to-rgb",
   "rgb-to-hex", "text-to-binary", "binary-to-text", "json-escape", "json-unescape",
-  "qr-generator", "color-picker", "markdown-editor", "csv-to-json", "ip-lookup",
+  "qr-generator", "barcode-generator", "color-picker", "markdown-editor", "csv-to-json", "ip-lookup",
   "cron-builder", "diff-checker", "jwt-decoder", "lorem-ipsum-generator",
   "number-base-converter", "html-entity-encoder", "string-escape-tool",
   "yaml-json-converter", "json-to-csv", "color-contrast-checker",
@@ -30,7 +30,7 @@ const LIVE_CALC_ENGINES = new Set([
   "gst-calculator", "sip-calculator", "fd-calculator", "ppf-calculator",
   "hra-calculator", "income-tax-calculator", "formula-calculator",
   "discount-calculator", "tip-calculator", "roi-calculator", "savings-calculator",
-  "retirement-calculator", "calorie-calculator", "fuel-cost-calculator",
+  "retirement-calculator", "salary-calculator", "calorie-calculator", "fuel-cost-calculator",
   "cagr-calculator", "gratuity-calculator", "rd-calculator",
   "mortgage-calculator", "sales-tax-calculator", "vat-calculator",
 ]);
