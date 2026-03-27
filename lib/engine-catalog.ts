@@ -467,7 +467,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "markdown-editor": createDefinition({
     type: "markdown-editor",
     category: "tool",
-    family: "text-formatter",
+    family: "markdown-editor",
     title: "Markdown Editor",
     description: "Write Markdown with live HTML preview.",
     keywords: ["markdown-editor", "markdown editor", "markdown preview"],
@@ -629,7 +629,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "age-calculator": createDefinition({
     type: "age-calculator",
     category: "calculator",
-    family: "text-formatter",
+    family: "math-calculator",
     title: "Age Calculator",
     description: "Calculate exact age from a birth date.",
     keywords: ["age-calculator", "age calculator"],
@@ -851,7 +851,7 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
   "salary-calculator": createDefinition({
     type: "salary-calculator",
     category: "calculator",
-    family: "generic-directory",
+    family: "salary-calculator",
     title: "Salary Calculator",
     description: "Calculate your in-hand salary from CTC with PF, PT, and HRA breakdowns for India.",
     keywords: ["salary calculator", "ctc calculator", "take home salary", "in hand salary india"],

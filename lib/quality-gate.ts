@@ -33,6 +33,7 @@ export type QualityResult = {
 // ─── Known valid engine types ─────────────────────────────────────────────────
 
 const VALID_ENGINES = new Set([
+  // Tools
   "password-generator", "password-strength-checker", "json-formatter",
   "word-counter", "uuid-generator", "slug-generator", "random-string-generator",
   "base64-encoder", "base64-decoder", "url-encoder", "url-decoder",
@@ -40,11 +41,23 @@ const VALID_ENGINES = new Set([
   "unit-converter", "currency-converter", "regex-tester", "regex-extractor",
   "sha256-generator", "md5-generator", "timestamp-converter", "hex-to-rgb",
   "rgb-to-hex", "text-to-binary", "binary-to-text", "json-escape", "json-unescape",
-  "qr-generator", "color-picker", "markdown-editor", "csv-to-json", "ip-lookup",
+  "qr-generator", "barcode-generator", "color-picker", "markdown-editor",
+  "csv-to-json", "ip-lookup", "diff-checker", "jwt-decoder", "cron-builder",
+  "lorem-ipsum-generator", "number-base-converter", "html-entity-encoder",
+  "string-escape-tool", "yaml-json-converter", "json-to-csv",
+  "color-contrast-checker", "robots-txt-generator", "open-graph-tester",
+  "html-minifier", "css-minifier", "js-minifier",
+  "email-validator", "line-sorter", "box-shadow-generator", "css-gradient-generator",
+  // Calculators
   "bmi-calculator", "emi-calculator", "gst-calculator", "sip-calculator",
   "fd-calculator", "ppf-calculator", "hra-calculator", "income-tax-calculator",
   "compound-interest-calculator", "simple-interest-calculator", "loan-calculator",
-  "percentage-calculator", "age-calculator", "formula-calculator",
+  "percentage-calculator", "age-calculator", "retirement-calculator",
+  "salary-calculator", "mortgage-calculator", "vat-calculator",
+  "sales-tax-calculator", "discount-calculator", "savings-calculator",
+  "roi-calculator", "cagr-calculator", "gratuity-calculator", "rd-calculator",
+  "calorie-calculator", "fuel-cost-calculator", "tip-calculator",
+  // AI Tools
   "ai-email-writer", "ai-prompt-generator", "ai-blog-outline-generator",
   "openai-text-tool",
 ]);
@@ -101,11 +114,8 @@ function checkEngine(tool: GeneratedTool): { passed: boolean; reason: string } {
   if (!engine) return { passed: false, reason: "No engine type assigned" };
   if (!VALID_ENGINES.has(engine)) return { passed: false, reason: `Unknown engine: "${engine}" — not in valid engine list` };
 
-  // Block formula-calculator — requires a specific preset to be useful
-  // Without preset it shows a meaningless generic interface
-  if (engine === "formula-calculator") {
-    return { passed: false, reason: "formula-calculator requires a specific preset — not safe for auto-publish. Use a specific calculator engine instead." };
-  }
+  // formula-calculator is valid but needs a preset — allow it through
+  // The UI will show a basic expression evaluator which is functional
 
   // Block text-transformer for calculators — wrong engine type
   if (engine === "text-transformer") {

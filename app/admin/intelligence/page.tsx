@@ -121,7 +121,13 @@ export default function AdminIntelligencePage() {
       });
       const data = await res.json();
       if (data.success) {
-        setMessage(`✓ Published ${data.published}/${data.processed} tools. ${data.failed} failed quality gate.`);
+        const pub = data.published ?? 0;
+        const proc = data.processed ?? pub;
+        const fail = data.failed ?? 0;
+        const msg = data.message || "";
+        setMessage(proc === 0
+          ? `ℹ️ ${msg || "No approved items in queue. Run Screen Queue first."}`
+          : `✓ Published ${pub}/${proc} tools. ${fail} failed quality gate.`);
         loadStats();
         loadQueue();
         setSelected(new Set());
@@ -168,14 +174,17 @@ export default function AdminIntelligencePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ job: "auto-screen-queue" }),
       });
-      const { data } = await res.json();
+      const json = await res.json();
       if (res.ok) {
-        const d = data?.data || data || {};
-        setMessage(`✓ Screened: ${d.approved ?? 0} approved · ${d.rejected ?? 0} rejected · ${d.skipped ?? 0} left for review`);
+        const d = json?.data || json || {};
+        const approved = d.approved ?? d.data?.approved ?? 0;
+        const rejected = d.rejected ?? d.data?.rejected ?? 0;
+        const skipped = d.skipped ?? d.data?.skipped ?? 0;
+        setMessage(`✓ Screened: ${approved} approved · ${rejected} rejected · ${skipped} need manual review`);
         loadStats();
         loadQueue();
       } else {
-        setMessage(`Error: ${data?.error || "Screening failed"}`);
+        setMessage(`Error: ${json?.error || json?.data?.error || "Screening failed"}`);
       }
     } catch {
       setMessage("Failed to run screener");

@@ -255,7 +255,7 @@ export async function POST(req: Request) {
     }
 
     if (!items.length) {
-      return NextResponse.json({ success: true, message: "No approved items to process", published: 0 });
+      return NextResponse.json({ success: true, message: "No approved items in queue — run Screen Queue first to approve items", published: 0, processed: 0, failed: 0 });
     }
 
     const results = [];
