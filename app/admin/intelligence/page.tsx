@@ -138,20 +138,21 @@ export default function AdminIntelligencePage() {
     setRunning(true);
     setMessage("");
     try {
-      const secret = process.env.NEXT_PUBLIC_CRON_SECRET || "";
-      const res = await fetch("/api/cron/intelligence", {
-        headers: { Authorization: `Bearer ${secret}` },
+      const res = await fetch("/api/admin/run-cron", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ job: "intelligence" }),
       });
-      const data = await res.json();
-      if (data.success) {
-        setMessage(`✓ Collected ${data.signals_collected} signals, queued ${data.gaps_queued} gaps`);
+      const { data } = await res.json();
+      if (res.ok && data?.success) {
+        setMessage(`✓ Collected ${data.signals_collected ?? "?"} signals, queued ${data.gaps_queued ?? "?"} gaps`);
         loadStats();
         loadQueue();
       } else {
-        setMessage(`Error: ${data.error}`);
+        setMessage(`Error: ${data?.error || "Failed"}`);
       }
     } catch {
-      setMessage("Failed to trigger cron job");
+      setMessage("Failed to trigger intelligence pipeline");
     } finally {
       setRunning(false);
     }
