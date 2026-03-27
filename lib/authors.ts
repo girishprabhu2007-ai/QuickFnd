@@ -430,32 +430,69 @@ export function getAuthorBySlug(slug: string): Author | undefined {
  * Select best author for a topic — weighted by expertise match + posting_weight.
  * Ensures natural variety by capping how recently the same author posted.
  */
+// Topic → author domain keywords for hard matching
+const TOPIC_DOMAIN_MAP: { pattern: RegExp; domains: string[] }[] = [
+  { pattern: /json|regex|uuid|base64|jwt|url.encod|timestamp|cron|markdown|diff|slug|code|javascript|node|api|sql|graphql|rest|http|developer|programming/i,
+    domains: ["developer-guide", "tools-guide"] },
+  { pattern: /password|sha256|md5|hash|encrypt|security|vpn|csrf|xss|auth|token/i,
+    domains: ["developer-guide"] },
+  { pattern: /css|color|hex|rgb|gradient|shadow|tailwind|design|ui|accessibility|wcag|font/i,
+    domains: ["developer-guide", "tools-guide"] },
+  { pattern: /sip|fd|ppf|nps|mutual.fund|invest|stock|equity|portfolio|cagr|return|wealth|demat|zerodha|groww/i,
+    domains: ["finance-guide", "calculator-guide"] },
+  { pattern: /emi|loan|mortgage|home.loan|car.loan|personal.loan|interest.rate|repay|bankbazaar/i,
+    domains: ["finance-guide", "calculator-guide"] },
+  { pattern: /gst|income.tax|hra|tds|itr|80c|tax.regime|tax.planning|advance.tax|cleartax/i,
+    domains: ["finance-guide", "calculator-guide"] },
+  { pattern: /bmi|calorie|health|fitness|weight|nutrition|body.fat|wellness/i,
+    domains: ["tools-guide"] },
+  { pattern: /percent|discount|compound.interest|simple.interest|currency|unit.convert|qr.code|ip.lookup|ai.tool|chatgpt|prompt|email.write/i,
+    domains: ["tools-guide", "how-to"] },
+];
+
+function getTopicDomains(keyword: string): string[] {
+  for (const rule of TOPIC_DOMAIN_MAP) {
+    if (rule.pattern.test(keyword)) return rule.domains;
+  }
+  return []; // no hard constraint — fall back to scoring
+}
+
 export async function selectAuthorForTopic(
   keyword: string,
   category: string,
   recentAuthorIds: string[] = []
 ): Promise<Author> {
   const kw = keyword.toLowerCase();
+  const requiredDomains = getTopicDomains(kw);
 
-  const scored = AUTHORS.map(a => {
+  // Filter to authors whose categories overlap the topic domain
+  const eligible = requiredDomains.length > 0
+    ? AUTHORS.filter(a => a.categories.some(c => requiredDomains.includes(c)))
+    : AUTHORS;
+
+  // Fall back to all authors if no eligible (should not happen)
+  const pool = eligible.length > 0 ? eligible : AUTHORS;
+
+  const scored = pool.map(a => {
     let score = a.posting_weight * 5;
 
-    // Category match
-    if (a.categories.includes(category)) score += 25;
+    // Category match — strong signal
+    if (a.categories.includes(category)) score += 30;
 
-    // Keyword/expertise match
+    // Expertise keyword match — very strong signal
     for (const exp of a.expertise) {
-      if (kw.includes(exp) || exp.split(" ").some(w => kw.includes(w))) score += 15;
+      if (kw.includes(exp)) score += 20;
+      else if (exp.split(" ").some(w => w.length > 3 && kw.includes(w))) score += 10;
     }
 
-    // Penalise recent authors so we rotate naturally
-    const recencyPenalty = recentAuthorIds.indexOf(a.id);
-    if (recencyPenalty === 0) score -= 60;  // posted most recently
-    else if (recencyPenalty === 1) score -= 35;
-    else if (recencyPenalty >= 2) score -= 15;
+    // Recency penalty — apply AFTER expertise, so expertise always wins
+    const recencyIdx = recentAuthorIds.indexOf(a.id);
+    if (recencyIdx === 0) score -= 40;       // most recent poster
+    else if (recencyIdx === 1) score -= 20;
+    else if (recencyIdx >= 2) score -= 10;
 
-    // Add randomness (±20) so articles don't feel robotic
-    score += Math.random() * 20 - 10;
+    // Small randomness (±8) — enough variety, not enough to override expertise
+    score += Math.random() * 8 - 4;
 
     return { author: a, score };
   }).sort((a, b) => b.score - a.score);

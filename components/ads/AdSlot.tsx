@@ -93,6 +93,7 @@ function Placeholder({ type, className }: { type: AdSlotType; className?: string
 
 function AdsenseUnit({ type, slotId, client }: { type: AdSlotType; slotId: string; client: string }) {
   const ref = useRef<HTMLModElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const pushed = useRef(false);
   const dim = SLOT_DIMENSIONS[type];
   const isResponsive = type === "in-article" || type === "footer";
@@ -105,18 +106,43 @@ function AdsenseUnit({ type, slotId, client }: { type: AdSlotType; slotId: strin
       w.adsbygoogle = w.adsbygoogle ?? [];
       w.adsbygoogle.push({});
     } catch { /* ad blocker */ }
+
+    // Hide wrapper entirely when Google marks slot as unfilled
+    const ins = ref.current;
+    const wrap = wrapRef.current;
+    if (!ins || !wrap) return;
+
+    const observer = new MutationObserver(() => {
+      const status = ins.getAttribute("data-ad-status");
+      if (status === "unfilled") {
+        wrap.style.display = "none";
+      } else if (status === "filled") {
+        wrap.style.display = "";
+      }
+    });
+    observer.observe(ins, { attributes: true, attributeFilter: ["data-ad-status"] });
+
+    // Also check after a delay in case attribute was already set
+    const timer = setTimeout(() => {
+      const status = ins.getAttribute("data-ad-status");
+      if (status === "unfilled") wrap.style.display = "none";
+    }, 3000);
+
+    return () => { observer.disconnect(); clearTimeout(timer); };
   }, []);
 
   return (
-    <ins
-      ref={ref}
-      className="adsbygoogle"
-      style={isResponsive ? { display: "block" } : { display: "inline-block", width: dim.w, height: dim.h }}
-      data-ad-client={client}
-      data-ad-slot={slotId}
-      data-ad-format={isResponsive ? "auto" : undefined}
-      data-full-width-responsive={isResponsive ? "true" : undefined}
-    />
+    <div ref={wrapRef}>
+      <ins
+        ref={ref}
+        className="adsbygoogle"
+        style={isResponsive ? { display: "block" } : { display: "inline-block", width: dim.w, height: dim.h }}
+        data-ad-client={client}
+        data-ad-slot={slotId}
+        data-ad-format={isResponsive ? "auto" : undefined}
+        data-full-width-responsive={isResponsive ? "true" : undefined}
+      />
+    </div>
   );
 }
 
@@ -163,7 +189,7 @@ export default function AdSlot({ type, pageKey, label = true, className }: AdSlo
   if (!slot.slot_id?.trim()) return null;
 
   return (
-    <div className={`overflow-hidden ${className ?? ""}`}>
+    <div className={`overflow-hidden ${className ?? ""}`} id={`ad-wrap-${slot.slot_id}`}>
       {label && <p className="mb-1 text-center text-[10px] uppercase tracking-widest text-q-muted opacity-40">Advertisement</p>}
       <AdsenseUnit type={type} slotId={slot.slot_id} client={settings.adsense_client} />
     </div>
