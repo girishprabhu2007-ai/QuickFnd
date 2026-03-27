@@ -14,8 +14,11 @@ import {
 import { getTopicCollections } from "@/lib/programmatic-seo";
 import { getSiteUrl } from "@/lib/site-url";
 import EmailCapture from "@/components/email/EmailCapture";
+import { getCountryProfile } from "@/lib/geo-personalisation";
+import { headers } from "next/headers";
 
-export const revalidate = 60;
+// Geo-personalisation requires dynamic rendering (reads request headers)
+export const dynamic = "force-dynamic";
 
 const siteUrl = getSiteUrl();
 
@@ -31,13 +34,10 @@ export const metadata: Metadata = {
   },
 };
 
-const PINNED_TOOL_SLUGS = [
+const UNIVERSAL_TOOL_SLUGS = [
   "password-generator", "json-formatter", "word-counter",
   "base64-encoder", "uuid-generator", "text-case-converter",
-];
-const PINNED_CALCULATOR_SLUGS = [
-  "sip-calculator", "income-tax-calculator", "emi-calculator",
-  "bmi-calculator", "fd-calculator", "gst-calculator",
+  "qr-code-generator", "sha256-generator", "regex-tester",
 ];
 const PINNED_AI_SLUGS = [
   "ai-email-writer", "ai-prompt-generator", "ai-blog-outline-generator",
@@ -52,6 +52,30 @@ function getPinned<T extends { slug: string }>(items: T[], pinned: string[]): T[
     if (!result.find((r) => r.slug === item.slug)) result.push(item);
   }
   return result.slice(0, 6);
+}
+
+function getGeoTools<T extends { slug: string }>(items: T[], prioritySlugs: string[], fallbackSlugs: string[], limit = 6): T[] {
+  const map = new Map(items.map(i => [i.slug, i]));
+  const seen = new Set<string>();
+  const result: T[] = [];
+  // Priority slugs first
+  for (const slug of prioritySlugs) {
+    if (result.length >= limit) break;
+    const item = map.get(slug);
+    if (item && !seen.has(slug)) { result.push(item); seen.add(slug); }
+  }
+  // Fill from fallback
+  for (const slug of fallbackSlugs) {
+    if (result.length >= limit) break;
+    const item = map.get(slug);
+    if (item && !seen.has(slug)) { result.push(item); seen.add(slug); }
+  }
+  // Fill from full list
+  for (const item of items) {
+    if (result.length >= limit) break;
+    if (!seen.has(item.slug)) { result.push(item); seen.add(item.slug); }
+  }
+  return result.slice(0, limit);
 }
 
 const TOOL_ACCENT: Record<string, { bg: string; text: string; border: string }> = {
@@ -86,8 +110,8 @@ const STATS = [
 ];
 
 export default async function HomePage() {
-  const [rawTools, rawCalculators, rawAITools] = await Promise.all([
-    getTools(), getCalculators(), getAITools(),
+  const [rawTools, rawCalculators, rawAITools, headersList] = await Promise.all([
+    getTools(), getCalculators(), getAITools(), headers(),
   ]);
 
   const tools = filterVisibleTools(rawTools);
@@ -97,10 +121,16 @@ export default async function HomePage() {
   const taxonomy = buildHomepageTaxonomy({ tools, calculators, aiTools });
   const topics = getTopicCollections({ tools, calculators, aiTools }).slice(0, 6);
 
-  const featuredTools = getPinned(tools, PINNED_TOOL_SLUGS);
-  const featuredCalculators = getPinned(calculators, PINNED_CALCULATOR_SLUGS);
+  // Geo-personalisation — Vercel injects x-vercel-ip-country into every request header.
+  // No middleware needed — server components can read it directly.
+  const countryCode = (headersList.get("x-vercel-ip-country") || "US").toUpperCase().slice(0, 2);
+  const geoProfile = getCountryProfile(countryCode);
+
+  const featuredTools = getGeoTools(tools, geoProfile.featuredToolSlugs, UNIVERSAL_TOOL_SLUGS, 6);
+  const featuredCalculators = getGeoTools(calculators, geoProfile.calculatorSlugs, [], 6);
   const featuredAITools = getPinned(aiTools, PINNED_AI_SLUGS);
   const totalCount = tools.length + calculators.length + aiTools.length;
+  const isLocalised = countryCode !== "US" && geoProfile.calculatorSlugs.length > 0;
 
   return (
     <main className="min-h-screen bg-q-bg text-q-text">
@@ -287,8 +317,10 @@ export default async function HomePage() {
             <section>
               <div className="mb-8 flex items-end justify-between">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.25em] text-violet-500 mb-2">Finance · Health · Math</p>
-                  <h2 className="text-3xl font-bold text-q-text">Calculators</h2>
+                  <p className="text-xs font-bold uppercase tracking-[0.25em] text-violet-500 mb-2">{geoProfile.financeLabel}</p>
+                  <h2 className="text-3xl font-bold text-q-text">
+                    Calculators{isLocalised && <span className="ml-2 text-sm font-normal text-q-muted">for {geoProfile.name}</span>}
+                  </h2>
                 </div>
                 <Link href="/calculators" className="text-sm font-semibold text-blue-500 hover:text-blue-400 transition">
                   View all {calculators.length} →
