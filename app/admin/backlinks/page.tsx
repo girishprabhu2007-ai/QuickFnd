@@ -57,6 +57,34 @@ function DABadge({ da }: { da: number }) {
   return <span className={`text-xs font-bold ${color}`}>DA {da}</span>;
 }
 
+
+function GitHubSubmitButton() {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState("");
+
+  async function submit() {
+    setLoading(true);
+    setResult("");
+    try {
+      const res = await fetch("/api/admin/github-submit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+      const data = await res.json();
+      if (!res.ok) setResult("✗ " + (data.error || "Failed"));
+      else setResult(`✓ ${data.submitted} PRs created`);
+    } catch { setResult("✗ Request failed"); }
+    finally { setLoading(false); }
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <button onClick={submit} disabled={loading}
+        className="rounded-xl bg-slate-800 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-700 transition disabled:opacity-60">
+        {loading ? "Submitting PRs..." : "Auto-Submit to GitHub Lists"}
+      </button>
+      {result && <span className="text-xs text-q-muted">{result}</span>}
+    </div>
+  );
+}
+
 export default function BacklinksPage() {
   const [category, setCategory] = useState("All");
   const [statuses, setStatuses] = useState<Record<string, Directory["status"]>>({});
@@ -87,6 +115,7 @@ export default function BacklinksPage() {
         <div className="flex flex-wrap gap-3 items-center">
           <input type="text" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)}
             className="rounded-xl border border-q-border bg-q-bg px-3 py-2 text-sm text-q-text outline-none focus:border-blue-400/60 transition w-40" />
+          <GitHubSubmitButton />
         </div>
       </div>
 

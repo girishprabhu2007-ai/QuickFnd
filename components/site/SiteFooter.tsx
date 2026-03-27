@@ -95,6 +95,7 @@ export default function SiteFooter() {
                 { href: "/blog", label: "Blog" },
                 { href: "/blog/authors", label: "Our Writers" },
                 { href: "/write-for-us", label: "Write for Us" },
+                { href: "/embed", label: "Embed Our Tools" },
                 { href: "/contact", label: "Contact" },
                 { href: "/privacy", label: "Privacy Policy" },
                 { href: "/terms", label: "Terms of Use" },
