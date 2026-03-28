@@ -151,7 +151,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = buildMetaDescription(item, "tools");
   const ogImage = `${siteUrl}/api/og?title=${encodeURIComponent(
     item.name
-  )}&subtitle=${encodeURIComponent(description)}`;
+  )}&subtitle=${encodeURIComponent(description)}&type=tools&likes=${item.likes || 0}`;
 
   return {
     title,
