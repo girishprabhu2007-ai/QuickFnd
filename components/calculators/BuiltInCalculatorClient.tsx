@@ -2728,6 +2728,355 @@ function SalesTaxCalculator({ name, label = "Tax" }: { name: string; label?: str
   );
 }
 
+// ─── MULTI-COUNTRY SALARY CALCULATOR ────────────────────────────────────────
+type SalaryCountry = "US" | "UK" | "IN" | "AU" | "DE" | "GENERIC";
+
+const SALARY_COUNTRY_INFO: Record<SalaryCountry, { label: string; flag: string; symbol: string; defaultSalary: string; period: string }> = {
+  US:      { label: "United States", flag: "🇺🇸", symbol: "$",  defaultSalary: "75000",   period: "Annual Salary" },
+  UK:      { label: "United Kingdom", flag: "🇬🇧", symbol: "£",  defaultSalary: "45000",   period: "Annual Salary" },
+  IN:      { label: "India",          flag: "🇮🇳", symbol: "₹",  defaultSalary: "1200000", period: "Annual CTC" },
+  AU:      { label: "Australia",      flag: "🇦🇺", symbol: "$",  defaultSalary: "90000",   period: "Annual Salary" },
+  DE:      { label: "Germany",        flag: "🇩🇪", symbol: "€",  defaultSalary: "55000",   period: "Annual Brutto" },
+  GENERIC: { label: "Other Country",  flag: "🌍", symbol: "",   defaultSalary: "60000",   period: "Annual Salary" },
+};
+
+function detectSalaryCountry(slug: string): SalaryCountry {
+  const s = slug.toLowerCase();
+  if (s.includes("washington") || s.includes("maryland") || s.includes("virginia") ||
+      s.includes("california") || s.includes("new-york") || s.includes("texas") ||
+      s.includes("florida") || s.includes("illinois") || s.includes("usa") ||
+      s.includes("united-states") || s.includes("-us-") || s.endsWith("-us")) return "US";
+  if (s.includes("uk") || s.includes("united-kingdom") || s.includes("paye") ||
+      s.includes("london") || s.includes("england") || s.includes("scotland")) return "UK";
+  if (s.includes("india") || s.includes("ctc") || s.includes("in-hand") ||
+      s.includes("-in-") || s.endsWith("-in") || s.includes("inr")) return "IN";
+  if (s.includes("australia") || s.includes("-au-") || s.endsWith("-au") ||
+      s.includes("superannuation")) return "AU";
+  if (s.includes("germany") || s.includes("deutschland") || s.includes("-de-") ||
+      s.endsWith("-de") || s.includes("brutto")) return "DE";
+  return "GENERIC";
+}
+
+type SalaryResult = {
+  grossMonthly: number;
+  netMonthly: number;
+  rows: Array<{ label: string; value: number; type: "income" | "deduction" | "total" | "final" }>;
+  effectiveTaxRate: number;
+  note: string;
+};
+
+function calcSalaryUS(salary: number, filing: string): SalaryResult {
+  const sB = [{ l: 11600, r: 0.10 },{ l: 47150, r: 0.12 },{ l: 100525, r: 0.22 },{ l: 191950, r: 0.24 },{ l: 243725, r: 0.32 },{ l: 609350, r: 0.35 },{ l: Infinity, r: 0.37 }];
+  const mB = [{ l: 23200, r: 0.10 },{ l: 94300, r: 0.12 },{ l: 201050, r: 0.22 },{ l: 383900, r: 0.24 },{ l: 487450, r: 0.32 },{ l: 731200, r: 0.35 },{ l: Infinity, r: 0.37 }];
+  const sd = filing === "married" ? 29200 : 14600;
+  const brackets = filing === "married" ? mB : sB;
+  const ti = Math.max(0, salary - sd);
+  let ft = 0; let prev = 0;
+  for (const b of brackets) { if (ti <= prev) break; ft += (Math.min(ti, b.l) - prev) * b.r; prev = b.l; }
+  const ss = Math.min(salary, 168600) * 0.062;
+  const mc = salary * 0.0145;
+  const amc = salary > 200000 ? (salary - 200000) * 0.009 : 0;
+  const fica = ss + mc + amc;
+  const totalTax = ft + fica;
+  const net = salary - totalTax;
+  return {
+    grossMonthly: salary / 12, netMonthly: net / 12, effectiveTaxRate: salary > 0 ? totalTax / salary * 100 : 0,
+    note: "Federal tax only. State/local taxes vary. Based on 2025 brackets.",
+    rows: [
+      { label: "Gross Annual Salary", value: salary, type: "income" },
+      { label: `Standard Deduction (${filing === "married" ? "Married" : "Single"})`, value: -sd, type: "deduction" },
+      { label: "Federal Income Tax", value: -ft, type: "deduction" },
+      { label: "Social Security (6.2%)", value: -ss, type: "deduction" },
+      { label: "Medicare (1.45%)", value: -mc, type: "deduction" },
+      ...(amc > 0 ? [{ label: "Additional Medicare (0.9%)", value: -amc, type: "deduction" as const }] : []),
+      { label: "Annual Take-Home", value: net, type: "final" },
+    ],
+  };
+}
+
+function calcSalaryUK(salary: number): SalaryResult {
+  const pa = salary <= 100000 ? 12570 : Math.max(0, 12570 - (salary - 100000) / 2);
+  const ti = Math.max(0, salary - pa);
+  let it = 0;
+  if (ti <= 37700) it = ti * 0.20;
+  else if (ti <= 125140) it = 37700 * 0.20 + (ti - 37700) * 0.40;
+  else it = 37700 * 0.20 + (125140 - 37700) * 0.40 + (ti - 125140) * 0.45;
+  let ni = 0;
+  const wp = salary / 52; const wpt = 242; const wuel = 967;
+  if (wp > wpt) { ni = Math.min(wp - wpt, wuel - wpt) * 0.08; if (wp > wuel) ni += (wp - wuel) * 0.02; ni *= 52; }
+  const td = it + ni; const net = salary - td;
+  return {
+    grossMonthly: salary / 12, netMonthly: net / 12, effectiveTaxRate: salary > 0 ? td / salary * 100 : 0,
+    note: "Based on PAYE 2025-26 tax year. Excludes student loan, pension, and salary sacrifice.",
+    rows: [
+      { label: "Gross Annual Salary", value: salary, type: "income" },
+      { label: "Personal Allowance", value: -pa, type: "deduction" },
+      { label: "Income Tax (PAYE)", value: -it, type: "deduction" },
+      { label: "National Insurance", value: -ni, type: "deduction" },
+      { label: "Annual Take-Home", value: net, type: "final" },
+    ],
+  };
+}
+
+function calcSalaryIN(annual: number, city: string, rent: number): SalaryResult {
+  const basic = annual * 0.40; const hra = basic * (city === "metro" ? 0.50 : 0.40);
+  const special = annual * 0.20; const lta = annual * 0.05; const med = 15000;
+  const pfM = Math.min(basic / 12 * 0.12, 1800); const pfA = pfM * 12;
+  const rentA = rent * 12;
+  const hraEx = Math.max(0, Math.min(hra, rentA - basic * 0.10, basic * (city === "metro" ? 0.50 : 0.40)));
+  const gross = basic + hra + special + lta + med;
+  const taxable = Math.max(0, gross - hraEx - pfA - 50000);
+  let tax = 0;
+  if (taxable <= 300000) tax = 0;
+  else if (taxable <= 600000) tax = (taxable - 300000) * 0.05;
+  else if (taxable <= 900000) tax = 15000 + (taxable - 600000) * 0.10;
+  else if (taxable <= 1200000) tax = 45000 + (taxable - 900000) * 0.15;
+  else if (taxable <= 1500000) tax = 90000 + (taxable - 1200000) * 0.20;
+  else tax = 150000 + (taxable - 1500000) * 0.30;
+  const totalTax = tax + tax * 0.04; const pt = 2400;
+  const inHand = gross - pfA - totalTax - pt;
+  return {
+    grossMonthly: gross / 12, netMonthly: inHand / 12, effectiveTaxRate: gross > 0 ? totalTax / gross * 100 : 0,
+    note: "New Tax Regime FY 2025-26. Assumes 40% Basic, standard CTC structure.",
+    rows: [
+      { label: "Basic Salary", value: basic / 12, type: "income" },
+      { label: "HRA", value: hra / 12, type: "income" },
+      { label: "Special Allowance", value: special / 12, type: "income" },
+      { label: "Gross Monthly", value: gross / 12, type: "total" },
+      { label: "Provident Fund (12%)", value: -pfM, type: "deduction" },
+      { label: "Income Tax (New Regime)", value: -(totalTax / 12), type: "deduction" },
+      { label: "Professional Tax", value: -(pt / 12), type: "deduction" },
+      { label: "Monthly In-Hand", value: inHand / 12, type: "final" },
+    ],
+  };
+}
+
+function calcSalaryAU(salary: number): SalaryResult {
+  let it = 0;
+  if (salary <= 18200) it = 0;
+  else if (salary <= 45000) it = (salary - 18200) * 0.16;
+  else if (salary <= 135000) it = 4288 + (salary - 45000) * 0.30;
+  else if (salary <= 190000) it = 31288 + (salary - 135000) * 0.37;
+  else it = 51638 + (salary - 190000) * 0.45;
+  const ml = salary > 24276 ? salary * 0.02 : 0;
+  const superG = salary * 0.115;
+  const td = it + ml; const net = salary - td;
+  return {
+    grossMonthly: salary / 12, netMonthly: net / 12, effectiveTaxRate: salary > 0 ? td / salary * 100 : 0,
+    note: "Based on 2025-26 PAYG rates. Super is employer-paid on top. Excludes HECS/HELP.",
+    rows: [
+      { label: "Gross Annual Salary", value: salary, type: "income" },
+      { label: "Income Tax (PAYG)", value: -it, type: "deduction" },
+      { label: "Medicare Levy (2%)", value: -ml, type: "deduction" },
+      { label: "Super Guarantee (11.5%)", value: superG, type: "income" },
+      { label: "Annual Take-Home", value: net, type: "final" },
+    ],
+  };
+}
+
+function calcSalaryDE(salary: number, tc: string): SalaryResult {
+  const gf = 11784; const taxable = Math.max(0, salary - gf);
+  let it = 0;
+  if (taxable <= 17005) it = taxable * 0.14;
+  else if (taxable <= 66760) it = 17005 * 0.14 + (taxable - 17005) * 0.2397;
+  else if (taxable <= 277826 - gf) it = 17005 * 0.14 + (66760 - 17005) * 0.2397 + (taxable - 66760) * 0.42;
+  else it = 17005 * 0.14 + (66760 - 17005) * 0.2397 + (277826 - gf - 66760) * 0.42 + (taxable - (277826 - gf)) * 0.45;
+  if (tc === "III") it *= 0.65;
+  const soli = it > 18130 ? it * 0.055 : 0;
+  const hi = Math.min(salary, 66150) * 0.073;
+  const nc = Math.min(salary, 66150) * 0.017;
+  const pen = Math.min(salary, 90600) * 0.093;
+  const ue = Math.min(salary, 90600) * 0.013;
+  const td = it + soli + hi + nc + pen + ue; const net = salary - td;
+  return {
+    grossMonthly: salary / 12, netMonthly: net / 12, effectiveTaxRate: salary > 0 ? td / salary * 100 : 0,
+    note: "Estimated 2025 rates. Actual amounts depend on tax class, church tax, and health insurer.",
+    rows: [
+      { label: "Brutto (Gross Annual)", value: salary, type: "income" },
+      { label: `Income Tax (Class ${tc})`, value: -it, type: "deduction" },
+      { label: "Solidarity Surcharge", value: -soli, type: "deduction" },
+      { label: "Health Insurance (7.3%)", value: -hi, type: "deduction" },
+      { label: "Pension (9.3%)", value: -pen, type: "deduction" },
+      { label: "Unemployment (1.3%)", value: -ue, type: "deduction" },
+      { label: "Nursing Care (1.7%)", value: -nc, type: "deduction" },
+      { label: "Netto (Annual Take-Home)", value: net, type: "final" },
+    ],
+  };
+}
+
+function calcSalaryGeneric(salary: number, rate: number): SalaryResult {
+  const tax = salary * (rate / 100); const net = salary - tax;
+  return {
+    grossMonthly: salary / 12, netMonthly: net / 12, effectiveTaxRate: rate,
+    note: "Using flat estimated tax rate. For accurate results, select your country above.",
+    rows: [
+      { label: "Gross Annual Salary", value: salary, type: "income" },
+      { label: `Estimated Tax (${rate}%)`, value: -tax, type: "deduction" },
+      { label: "Estimated Take-Home", value: net, type: "final" },
+    ],
+  };
+}
+
+function SalaryCalculator({ name, slug }: { name: string; slug: string }) {
+  const detected = detectSalaryCountry(slug);
+  const [country, setCountry] = useState<SalaryCountry>(detected);
+  const info = SALARY_COUNTRY_INFO[country];
+  const [salary, setSalary] = useState(info.defaultSalary);
+  const [filing, setFiling] = useState("single");
+  const [city, setCity] = useState<"metro" | "non-metro">("metro");
+  const [rent, setRent] = useState("25000");
+  const [taxClass, setTaxClass] = useState("I");
+  const [taxRate, setTaxRate] = useState("25");
+
+  const handleCountry = (c: SalaryCountry) => { setCountry(c); setSalary(SALARY_COUNTRY_INFO[c].defaultSalary); };
+
+  const result: SalaryResult | null = useMemo(() => {
+    const s = parseFloat(salary);
+    if (!isFinite(s) || s <= 0) return null;
+    switch (country) {
+      case "US": return calcSalaryUS(s, filing);
+      case "UK": return calcSalaryUK(s);
+      case "IN": return calcSalaryIN(s, city, parseFloat(rent) || 0);
+      case "AU": return calcSalaryAU(s);
+      case "DE": return calcSalaryDE(s, taxClass);
+      case "GENERIC": return calcSalaryGeneric(s, parseFloat(taxRate) || 25);
+    }
+  }, [salary, country, filing, city, rent, taxClass, taxRate]);
+
+  const fmt = (n: number) => {
+    const abs = Math.abs(n);
+    if (country === "IN") return `${info.symbol}${Math.round(abs).toLocaleString("en-IN")}`;
+    return `${info.symbol || ""}${Math.round(abs).toLocaleString("en-US")}`;
+  };
+
+  return (
+    <Workspace title={name || "Salary Calculator"}>
+      {/* Country selector */}
+      <div className="mb-5">
+        <div className="mb-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-q-muted">Country / Tax System</div>
+        <div className="flex flex-wrap gap-2">
+          {(Object.keys(SALARY_COUNTRY_INFO) as SalaryCountry[]).map(c => (
+            <button key={c} onClick={() => handleCountry(c)}
+              className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition ${country === c ? "bg-q-primary border-q-primary text-white" : "border-q-border bg-q-bg text-q-muted hover:text-q-text hover:border-q-text/30"}`}>
+              {SALARY_COUNTRY_INFO[c].flag} {SALARY_COUNTRY_INFO[c].label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <CalculatorGrid
+        left={
+          <InputPanel subtitle="Enter your salary details to calculate take-home pay.">
+            <div className="grid gap-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">{info.period}</label>
+                <div className="flex items-center rounded-2xl border border-q-border bg-q-card overflow-hidden">
+                  {info.symbol && <span className="px-3 text-q-muted text-sm">{info.symbol}</span>}
+                  <input type="number" value={salary} onChange={e => setSalary(e.target.value)}
+                    className="flex-1 bg-transparent py-3.5 px-2 text-q-text outline-none" />
+                </div>
+              </div>
+
+              {country === "US" && (
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Filing Status</label>
+                  <div className="flex gap-2">
+                    {["single", "married"].map(s => (
+                      <button key={s} onClick={() => setFiling(s)}
+                        className={`flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition capitalize ${filing === s ? "border-blue-400 bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400" : "border-q-border bg-q-card text-q-text hover:bg-q-card-hover"}`}>
+                        {s === "single" ? "Single" : "Married Filing Jointly"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {country === "IN" && (
+                <>
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">City Type</label>
+                    <div className="flex gap-2">
+                      {(["metro", "non-metro"] as const).map(c => (
+                        <button key={c} onClick={() => setCity(c)}
+                          className={`flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition capitalize ${city === c ? "border-blue-400 bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400" : "border-q-border bg-q-card text-q-text hover:bg-q-card-hover"}`}>
+                          {c === "metro" ? "Metro City" : "Non-Metro"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Monthly Rent Paid</label>
+                    <div className="flex items-center rounded-2xl border border-q-border bg-q-card overflow-hidden">
+                      <span className="px-3 text-q-muted text-sm">₹</span>
+                      <input type="number" value={rent} onChange={e => setRent(e.target.value)}
+                        className="flex-1 bg-transparent py-3.5 px-2 text-q-text outline-none" />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {country === "DE" && (
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Tax Class (Steuerklasse)</label>
+                  <div className="flex gap-2">
+                    {["I", "III", "V"].map(tc => (
+                      <button key={tc} onClick={() => setTaxClass(tc)}
+                        className={`flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition ${taxClass === tc ? "border-blue-400 bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400" : "border-q-border bg-q-card text-q-text hover:bg-q-card-hover"}`}>
+                        Class {tc}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {country === "GENERIC" && (
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Estimated Tax Rate</label>
+                  <div className="flex items-center rounded-2xl border border-q-border bg-q-card overflow-hidden">
+                    <input type="number" value={taxRate} onChange={e => setTaxRate(e.target.value)}
+                      className="flex-1 bg-transparent py-3.5 px-3 text-q-text outline-none" />
+                    <span className="px-3 text-q-muted text-sm">%</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </InputPanel>
+        }
+        right={
+          result ? (
+            <section className="rounded-[26px] border border-q-border bg-gradient-to-br from-q-card to-q-bg p-5 shadow-sm md:p-6 space-y-4">
+              <div className="rounded-2xl border-2 border-emerald-400/50 bg-emerald-50/40 dark:bg-emerald-500/10 p-5">
+                <div className="text-xs font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Monthly Take-Home</div>
+                <div className="mt-1 text-3xl font-bold text-emerald-700 dark:text-emerald-300">{fmt(result.netMonthly)}</div>
+                <div className="mt-1 text-sm text-q-muted">{fmt(result.netMonthly * 12)}/yr · Tax rate: {result.effectiveTaxRate.toFixed(1)}%</div>
+              </div>
+              <div className="rounded-2xl border border-q-border bg-q-bg overflow-hidden">
+                <div className="px-4 py-2.5 border-b border-q-border text-xs font-semibold uppercase tracking-widest text-q-muted">
+                  {country === "IN" ? "Monthly" : "Annual"} Breakdown
+                </div>
+                <div className="divide-y divide-q-border">
+                  {result.rows.map(row => (
+                    <div key={row.label} className={`flex items-center justify-between px-4 py-2.5 ${row.type === "total" || row.type === "final" ? "bg-q-card" : ""}`}>
+                      <span className={`text-sm ${row.type === "final" ? "font-semibold text-q-text" : "text-q-muted"}`}>{row.label}</span>
+                      <span className={`text-sm font-semibold tabular-nums ${row.type === "deduction" ? "text-red-500" : row.type === "final" ? "text-emerald-600 dark:text-emerald-400" : "text-q-text"}`}>
+                        {row.value < 0 ? `-${fmt(-row.value)}` : fmt(row.value)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <p className="text-xs text-q-muted">{result.note}</p>
+            </section>
+          ) : (
+            <ResultsStage title="Salary result" result={null} emptyText="Enter your salary to see the take-home breakdown." />
+          )
+        }
+      />
+    </Workspace>
+  );
+}
+
+
 export default function BuiltInCalculatorClient({ item }: Props) {
   const engine = String(item.engine_type || inferEngineType("calculator", item.slug) || "");
   const config = item.engine_config || {};
@@ -2766,6 +3115,7 @@ export default function BuiltInCalculatorClient({ item }: Props) {
   if (engine === "mortgage-calculator") return <MortgageCalculator name={name} />;
   if (engine === "sales-tax-calculator") return <SalesTaxCalculator name={name} label="Sales Tax" />;
   if (engine === "vat-calculator") return <SalesTaxCalculator name={name} label="VAT" />;
+  if (engine === "salary-calculator") return <SalaryCalculator name={name} slug={item.slug} />;
 
   return <GenericCalculator name={item.name} />;
 }
