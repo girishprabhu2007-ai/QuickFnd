@@ -321,7 +321,7 @@ export default async function ComparePage({ params }: Props) {
           </Link>
         </section>
 
-        <EmailCapture className="mt-10" />
+        <div className="mt-10"><EmailCapture /></div>
       </article>
 
       <SiteFooter />
