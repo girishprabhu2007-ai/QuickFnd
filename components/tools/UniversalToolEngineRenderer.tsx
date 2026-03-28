@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { PublicContentItem } from "@/lib/content-pages";
 import CurrencyConverterClient from "@/components/tools/CurrencyConverterClient";
 import FileToolRenderer from "@/components/tools/FileToolRenderer";
+import PDFToolRenderer from "@/components/tools/PDFToolRenderer";
 import { getToolEnginePreset } from "@/lib/tool-engine-presets";
 import {
   getEngineUISchema,
@@ -2529,6 +2530,13 @@ function renderByFamily({
   ]);
   if (FILE_TOOL_FAMILIES.has(family)) {
     return <FileToolRenderer family={family as "image-compressor"} title={title} />;
+  }
+
+  const PDF_TOOL_FAMILIES = new Set([
+    "pdf-merger", "pdf-splitter", "image-to-pdf", "text-to-pdf",
+  ]);
+  if (PDF_TOOL_FAMILIES.has(family)) {
+    return <PDFToolRenderer family={family as "pdf-merger"} title={title} />;
   }
 
   return <GenericTool title={title} description={description} />;

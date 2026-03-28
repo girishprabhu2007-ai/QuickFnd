@@ -96,6 +96,10 @@ export type CalculatorEngineType =
   | "image-cropper"
   | "image-to-base64"
   | "svg-to-png"
+  | "pdf-merger"
+  | "pdf-splitter"
+  | "image-to-pdf"
+  | "text-to-pdf"
   | "generic-directory";
 
 export type AIToolEngineType =
@@ -1053,6 +1057,43 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
     keywords: ["svg-to-png", "svg to png", "convert svg", "svg converter", "svg export"],
     defaultConfig: {},
   }),
+  // ── PDF Tools ─────────────────────────────────────────────────────────────
+  "pdf-merger": createDefinition({
+    type: "pdf-merger",
+    category: "tool",
+    family: "pdf-merger",
+    title: "PDF Merger",
+    description: "Combine multiple PDF files into one document. Drag to reorder before merging.",
+    keywords: ["pdf-merger", "merge pdf", "combine pdf", "join pdf", "pdf combiner", "merge pdf online"],
+    defaultConfig: {},
+  }),
+  "pdf-splitter": createDefinition({
+    type: "pdf-splitter",
+    category: "tool",
+    family: "pdf-splitter",
+    title: "PDF Splitter",
+    description: "Extract specific pages from a PDF. Split by page range or individual pages.",
+    keywords: ["pdf-splitter", "split pdf", "extract pages", "pdf page extractor", "separate pdf pages"],
+    defaultConfig: {},
+  }),
+  "image-to-pdf": createDefinition({
+    type: "image-to-pdf",
+    category: "tool",
+    family: "image-to-pdf",
+    title: "Image to PDF",
+    description: "Convert images to PDF. Combine multiple photos into a single PDF document.",
+    keywords: ["image-to-pdf", "image to pdf", "jpg to pdf", "png to pdf", "photo to pdf", "pictures to pdf"],
+    defaultConfig: {},
+  }),
+  "text-to-pdf": createDefinition({
+    type: "text-to-pdf",
+    category: "tool",
+    family: "text-to-pdf",
+    title: "Text to PDF",
+    description: "Convert plain text to a downloadable PDF document with clean formatting.",
+    keywords: ["text-to-pdf", "text to pdf", "convert text to pdf", "create pdf from text", "txt to pdf"],
+    defaultConfig: {},
+  }),
   "generic-directory": createDefinition({
     type: "generic-directory",
     category: "tool",
@@ -1146,6 +1187,10 @@ const CALCULATOR_ENGINE_ORDER: CalculatorEngineType[] = [
   "image-cropper",
   "image-to-base64",
   "svg-to-png",
+  "pdf-merger",
+  "pdf-splitter",
+  "image-to-pdf",
+  "text-to-pdf",
   "generic-directory",
 ];
 
@@ -1380,6 +1425,10 @@ export function inferEngineType(category: EngineCategory, slug: string): EngineT
     if (value.includes("image-to-base64") || value.includes("img-to-base64")) return "image-to-base64";
     if (value.includes("svg-to-png") || value.includes("svg-convert")) return "svg-to-png";
     if (value.includes("photo-editor") || value.includes("image-editor")) return "image-compressor";
+    if (value.includes("pdf-merge") || value.includes("combine-pdf") || value.includes("join-pdf")) return "pdf-merger";
+    if (value.includes("pdf-split") || value.includes("extract-pdf") || value.includes("pdf-page")) return "pdf-splitter";
+    if (value.includes("image-to-pdf") || value.includes("jpg-to-pdf") || value.includes("png-to-pdf") || value.includes("photo-to-pdf")) return "image-to-pdf";
+    if (value.includes("text-to-pdf") || value.includes("txt-to-pdf")) return "text-to-pdf";
 
     for (const engineType of TOOL_ENGINE_ORDER) {
       if (engineType === "generic-directory") continue;

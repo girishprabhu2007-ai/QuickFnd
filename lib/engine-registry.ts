@@ -34,6 +34,8 @@ export const LIVE_TOOL_ENGINES = new Set([
   // Image / File tools
   "image-compressor", "image-resizer", "image-converter",
   "image-cropper", "image-to-base64", "svg-to-png",
+  // PDF tools
+  "pdf-merger", "pdf-splitter", "image-to-pdf", "text-to-pdf",
 ]);
 
 // ── Calculators with working renderers in BuiltInCalculatorClient ────────────
