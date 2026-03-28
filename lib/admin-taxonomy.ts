@@ -116,6 +116,41 @@ function bucketItems<
 
 const TOOL_GROUPS: TaxonomyEntry[] = [
   {
+    key: "image-tools",
+    label: "Image Tools",
+    include: [
+      /\bimage\b/i,
+      /\bphoto\b/i,
+      /\bpng\b/i,
+      /\bjpg\b/i,
+      /\bwebp\b/i,
+      /\bsvg\b/i,
+      /\bcrop\b/i,
+      /\bresize\b/i,
+      /\bcompress\b/i,
+    ],
+    exclude: [/\bpdf\b/i, /\bvideo\b/i],
+    minScore: 1,
+  },
+  {
+    key: "pdf-tools",
+    label: "PDF Tools",
+    include: [
+      /\bpdf\b/i,
+    ],
+    minScore: 1,
+  },
+  {
+    key: "video-gif-tools",
+    label: "Video & GIF Tools",
+    include: [
+      /\bvideo\b/i,
+      /\bgif\b/i,
+    ],
+    exclude: [/\byoutube\b/i],
+    minScore: 1,
+  },
+  {
     key: "developer-tools",
     label: "Developer Tools",
     include: [
