@@ -1,4 +1,4 @@
-/**
+﻿/**
  * lib/blog-generator.ts  v2
  * ─────────────────────────────────────────────────────────────────────────────
  * Fully autonomous blog generation pipeline.
@@ -99,6 +99,39 @@ export const TOOL_MAP: Record<string, { name: string; slug: string; category: st
   "gst-calculator": { name: "GST Calculator", slug: "gst-calculator", category: "tax" },
   "income-tax-calculator": { name: "Income Tax Calculator", slug: "income-tax-calculator", category: "tax" },
   "hra-calculator": { name: "HRA Calculator", slug: "hra-calculator", category: "tax" },
+  // Image Tools (Session 5)
+  "image-compressor": { name: "Image Compressor", slug: "image-compressor", category: "image" },
+  "image-resizer": { name: "Image Resizer", slug: "image-resizer", category: "image" },
+  "image-converter": { name: "Image Format Converter", slug: "image-converter", category: "image" },
+  "image-cropper": { name: "Image Cropper", slug: "image-cropper", category: "image" },
+  "image-to-base64": { name: "Image to Base64 Converter", slug: "image-to-base64", category: "image" },
+  "svg-to-png": { name: "SVG to PNG Converter", slug: "svg-to-png", category: "image" },
+  // PDF Tools (Session 5)
+  "pdf-merger": { name: "PDF Merger", slug: "pdf-merger", category: "pdf" },
+  "pdf-splitter": { name: "PDF Splitter", slug: "pdf-splitter", category: "pdf" },
+  "image-to-pdf": { name: "Image to PDF Converter", slug: "image-to-pdf", category: "pdf" },
+  "text-to-pdf": { name: "Text to PDF Converter", slug: "text-to-pdf", category: "pdf" },
+  // Salary & Mortgage (Session 5)
+  "salary-calculator": { name: "Salary Calculator", slug: "salary-calculator", category: "salary" },
+  "mortgage-calculator": { name: "Mortgage Calculator", slug: "mortgage-calculator", category: "finance" },
+  // AI Tools (Session 4+5)
+  "ai-email-writer": { name: "AI Email Writer", slug: "ai-email-writer", category: "ai" },
+  "ai-prompt-generator": { name: "AI Prompt Generator", slug: "ai-prompt-generator", category: "ai" },
+  "ai-blog-outline-generator": { name: "AI Blog Outline Generator", slug: "ai-blog-outline-generator", category: "ai" },
+  "ai-resume-bullet-points": { name: "AI Resume Bullet Point Writer", slug: "ai-resume-bullet-points", category: "ai" },
+  "ai-cover-letter-writer": { name: "AI Cover Letter Writer", slug: "ai-cover-letter-writer", category: "ai" },
+  "ai-tweet-generator": { name: "AI Tweet Generator", slug: "ai-tweet-generator", category: "ai" },
+  "ai-meeting-notes-summarizer": { name: "AI Meeting Notes Summarizer", slug: "ai-meeting-notes-summarizer", category: "ai" },
+  "ai-meta-description-writer": { name: "AI Meta Description Writer", slug: "ai-meta-description-writer", category: "ai" },
+  "ai-content-ideas-generator": { name: "AI Content Ideas Generator", slug: "ai-content-ideas-generator", category: "ai" },
+  "ai-seo-optimizer": { name: "AI SEO Optimizer", slug: "ai-seo-optimizer", category: "ai" },
+  "ai-grammar-checker": { name: "AI Grammar Checker", slug: "ai-grammar-checker", category: "ai" },
+  "ai-paraphraser": { name: "AI Paraphraser", slug: "ai-paraphraser", category: "ai" },
+  "ai-rewriter": { name: "AI Rewriter", slug: "ai-rewriter", category: "ai" },
+  "ai-linkedin-bio-writer": { name: "AI LinkedIn Bio Writer", slug: "ai-linkedin-bio-writer", category: "ai" },
+  "ai-product-description-writer": { name: "AI Product Description Writer", slug: "ai-product-description-writer", category: "ai" },
+  "ai-youtube-description-writer": { name: "AI YouTube Description Writer", slug: "ai-youtube-description-writer", category: "ai" },
+  "ai-summarizer": { name: "AI Summarizer", slug: "ai-summarizer", category: "ai" },
   // Health
   "bmi-calculator": { name: "BMI Calculator", slug: "bmi-calculator", category: "health" },
 };
@@ -115,6 +148,10 @@ const CATEGORY_TOOLS: Record<string, string[]> = {
   health:     ["bmi-calculator"],
   seo:        ["slug-generator", "slug-generator", "slug-generator"],
   utility:    ["qr-generator", "unit-converter", "age-calculator", "regex-tester"],
+  salary:     ["salary-calculator", "income-tax-calculator", "hra-calculator"],
+  image:      ["image-compressor", "image-resizer", "image-converter", "image-cropper", "image-to-base64", "svg-to-png"],
+  pdf:        ["pdf-merger", "pdf-splitter", "image-to-pdf", "text-to-pdf"],
+  ai:         ["ai-email-writer", "ai-prompt-generator", "ai-blog-outline-generator", "ai-resume-bullet-points", "ai-grammar-checker", "ai-paraphraser", "ai-summarizer"],
 };
 
 // ─── Expanded seed bank (500+ topics across all tool categories) ──────────────
@@ -305,6 +342,75 @@ const SEED_BANK: BlogGenerationInput[] = [
   { keyword: "how to build a personal finance system india", tool_slug: "emi-calculator", tool_name: "EMI Calculator", related_tool_slugs: ["sip-calculator", "income-tax-calculator"] },
   { keyword: "web development tools every beginner needs in 2026", tool_slug: "json-formatter", tool_name: "JSON Formatter", related_tool_slugs: ["regex-tester", "uuid-generator"] },
   { keyword: "free tools to improve website seo in 2026", tool_slug: "slug-generator", tool_name: "Robots.txt Generator", related_tool_slugs: ["slug-generator"] },
+  // SESSION 6: IMAGE TOOL GUIDES
+  { keyword: "how to compress images for web without losing quality", tool_slug: "image-compressor", tool_name: "Image Compressor", related_tool_slugs: ["image-resizer", "image-converter"] },
+  { keyword: "best image compression settings for website speed", tool_slug: "image-compressor", tool_name: "Image Compressor", related_tool_slugs: ["image-resizer", "svg-to-png"] },
+  { keyword: "how to resize images for instagram and twitter", tool_slug: "image-resizer", tool_name: "Image Resizer", related_tool_slugs: ["image-compressor", "image-cropper"] },
+  { keyword: "social media image sizes 2026 complete guide", tool_slug: "image-resizer", tool_name: "Image Resizer", related_tool_slugs: ["image-cropper", "image-compressor"] },
+  { keyword: "how to convert png to webp for faster websites", tool_slug: "image-converter", tool_name: "Image Format Converter", related_tool_slugs: ["image-compressor", "svg-to-png"] },
+  { keyword: "webp vs png vs jpg which image format is best", tool_slug: "image-converter", tool_name: "Image Format Converter", related_tool_slugs: ["image-compressor"] },
+  { keyword: "how to crop images to exact dimensions online free", tool_slug: "image-cropper", tool_name: "Image Cropper", related_tool_slugs: ["image-resizer", "image-compressor"] },
+  { keyword: "how to convert image to base64 for html email", tool_slug: "image-to-base64", tool_name: "Image to Base64 Converter", related_tool_slugs: ["base64-encoder", "image-converter"] },
+  { keyword: "how to convert svg to png at high resolution", tool_slug: "svg-to-png", tool_name: "SVG to PNG Converter", related_tool_slugs: ["image-converter", "image-resizer"] },
+  { keyword: "svg vs png which format to use and when", tool_slug: "svg-to-png", tool_name: "SVG to PNG Converter", related_tool_slugs: ["image-converter"] },
+  { keyword: "how to batch resize images online free no watermark", tool_slug: "image-resizer", tool_name: "Image Resizer", related_tool_slugs: ["image-compressor"] },
+  { keyword: "image optimization for core web vitals 2026", tool_slug: "image-compressor", tool_name: "Image Compressor", related_tool_slugs: ["image-converter", "image-resizer"] },
+  { keyword: "how to reduce image file size below 100kb", tool_slug: "image-compressor", tool_name: "Image Compressor", related_tool_slugs: ["image-resizer", "image-converter"] },
+  { keyword: "how to make passport size photo online free", tool_slug: "image-cropper", tool_name: "Image Cropper", related_tool_slugs: ["image-resizer"] },
+  // SESSION 6: PDF TOOL GUIDES
+  { keyword: "how to merge pdf files online free without signup", tool_slug: "pdf-merger", tool_name: "PDF Merger", related_tool_slugs: ["pdf-splitter", "image-to-pdf"] },
+  { keyword: "how to split a pdf into separate pages online", tool_slug: "pdf-splitter", tool_name: "PDF Splitter", related_tool_slugs: ["pdf-merger", "text-to-pdf"] },
+  { keyword: "how to convert images to pdf online free", tool_slug: "image-to-pdf", tool_name: "Image to PDF Converter", related_tool_slugs: ["pdf-merger", "image-compressor"] },
+  { keyword: "how to create a pdf from text online free", tool_slug: "text-to-pdf", tool_name: "Text to PDF Converter", related_tool_slugs: ["pdf-merger", "image-to-pdf"] },
+  { keyword: "best free pdf tools online 2026 no watermark", tool_slug: "pdf-merger", tool_name: "PDF Merger", related_tool_slugs: ["pdf-splitter", "image-to-pdf", "text-to-pdf"] },
+  { keyword: "how to combine multiple scanned documents into one pdf", tool_slug: "pdf-merger", tool_name: "PDF Merger", related_tool_slugs: ["image-to-pdf"] },
+  { keyword: "how to extract specific pages from a pdf online", tool_slug: "pdf-splitter", tool_name: "PDF Splitter", related_tool_slugs: ["pdf-merger"] },
+  { keyword: "how to convert jpg to pdf on phone or computer free", tool_slug: "image-to-pdf", tool_name: "Image to PDF Converter", related_tool_slugs: ["image-compressor", "pdf-merger"] },
+  { keyword: "pdf tools privacy which online tools are safe to use", tool_slug: "pdf-merger", tool_name: "PDF Merger", related_tool_slugs: ["pdf-splitter"] },
+  // SESSION 6: SALARY & TAX MULTI-COUNTRY GUIDES
+  { keyword: "how to calculate take home salary in india 2026", tool_slug: "salary-calculator", tool_name: "Salary Calculator", related_tool_slugs: ["income-tax-calculator", "hra-calculator"] },
+  { keyword: "ctc vs in hand salary explained india", tool_slug: "salary-calculator", tool_name: "Salary Calculator", related_tool_slugs: ["income-tax-calculator"] },
+  { keyword: "how to calculate take home pay in usa 2026", tool_slug: "salary-calculator", tool_name: "Salary Calculator", related_tool_slugs: ["income-tax-calculator"] },
+  { keyword: "us federal tax brackets 2025 explained simply", tool_slug: "salary-calculator", tool_name: "Salary Calculator", related_tool_slugs: ["income-tax-calculator"] },
+  { keyword: "uk paye tax calculator how to calculate take home", tool_slug: "salary-calculator", tool_name: "Salary Calculator", related_tool_slugs: ["income-tax-calculator"] },
+  { keyword: "germany brutto to netto salary explained", tool_slug: "salary-calculator", tool_name: "Salary Calculator", related_tool_slugs: ["income-tax-calculator"] },
+  { keyword: "australia payg tax explained for newcomers", tool_slug: "salary-calculator", tool_name: "Salary Calculator", related_tool_slugs: ["income-tax-calculator"] },
+  { keyword: "salary comparison india vs usa vs uk cost of living", tool_slug: "salary-calculator", tool_name: "Salary Calculator", related_tool_slugs: ["income-tax-calculator", "currency-converter"] },
+  { keyword: "how to negotiate a higher salary with calculator", tool_slug: "salary-calculator", tool_name: "Salary Calculator", related_tool_slugs: ["percentage-calculator"] },
+  { keyword: "income tax on 10 lakh salary india new regime 2026", tool_slug: "income-tax-calculator", tool_name: "Income Tax Calculator", related_tool_slugs: ["salary-calculator", "hra-calculator"] },
+  { keyword: "mortgage payment calculator how to plan home purchase", tool_slug: "mortgage-calculator", tool_name: "Mortgage Calculator", related_tool_slugs: ["emi-calculator", "compound-interest-calculator"] },
+  // SESSION 6: AI TOOL GUIDES
+  { keyword: "how to write a professional email with ai free", tool_slug: "ai-email-writer", tool_name: "AI Email Writer", related_tool_slugs: ["ai-grammar-checker", "ai-rewriter"] },
+  { keyword: "how to write resume bullet points that get interviews", tool_slug: "ai-resume-bullet-points", tool_name: "AI Resume Bullet Point Writer", related_tool_slugs: ["ai-cover-letter-writer"] },
+  { keyword: "how to write a cover letter with ai in 5 minutes", tool_slug: "ai-cover-letter-writer", tool_name: "AI Cover Letter Writer", related_tool_slugs: ["ai-resume-bullet-points", "ai-email-writer"] },
+  { keyword: "how to write viral tweets with ai tools free", tool_slug: "ai-tweet-generator", tool_name: "AI Tweet Generator", related_tool_slugs: ["ai-content-ideas-generator"] },
+  { keyword: "how to summarize meeting notes with ai free", tool_slug: "ai-meeting-notes-summarizer", tool_name: "AI Meeting Notes Summarizer", related_tool_slugs: ["ai-summarizer", "ai-email-writer"] },
+  { keyword: "how to write seo meta descriptions that get clicks", tool_slug: "ai-meta-description-writer", tool_name: "AI Meta Description Writer", related_tool_slugs: ["ai-seo-optimizer", "slug-generator"] },
+  { keyword: "how to generate content ideas when you are stuck", tool_slug: "ai-content-ideas-generator", tool_name: "AI Content Ideas Generator", related_tool_slugs: ["ai-blog-outline-generator", "ai-tweet-generator"] },
+  { keyword: "how to paraphrase text without plagiarism using ai", tool_slug: "ai-paraphraser", tool_name: "AI Paraphraser", related_tool_slugs: ["ai-rewriter", "ai-grammar-checker"] },
+  { keyword: "how to write a linkedin bio that stands out 2026", tool_slug: "ai-linkedin-bio-writer", tool_name: "AI LinkedIn Bio Writer", related_tool_slugs: ["ai-resume-bullet-points"] },
+  { keyword: "how to write product descriptions that sell", tool_slug: "ai-product-description-writer", tool_name: "AI Product Description Writer", related_tool_slugs: ["ai-seo-optimizer"] },
+  { keyword: "how to write youtube descriptions for more views", tool_slug: "ai-youtube-description-writer", tool_name: "AI YouTube Description Writer", related_tool_slugs: ["ai-meta-description-writer"] },
+  { keyword: "ai grammar checker vs grammarly which is better free", tool_slug: "ai-grammar-checker", tool_name: "AI Grammar Checker", related_tool_slugs: ["ai-paraphraser", "word-counter"] },
+  { keyword: "best free ai writing tools for bloggers 2026", tool_slug: "ai-blog-outline-generator", tool_name: "AI Blog Outline Generator", related_tool_slugs: ["ai-email-writer", "ai-content-ideas-generator", "ai-rewriter"] },
+  // SESSION 6: COMPARISON ARTICLES
+  { keyword: "tinypng vs squoosh vs quickfnd image compressor comparison", tool_slug: "image-compressor", tool_name: "Image Compressor", category: "comparison", related_tool_slugs: ["image-resizer", "image-converter"] },
+  { keyword: "ilovepdf vs smallpdf vs quickfnd free pdf tools comparison", tool_slug: "pdf-merger", tool_name: "PDF Merger", category: "comparison", related_tool_slugs: ["pdf-splitter", "image-to-pdf"] },
+  { keyword: "grammarly vs quillbot vs free ai grammar checker 2026", tool_slug: "ai-grammar-checker", tool_name: "AI Grammar Checker", category: "comparison", related_tool_slugs: ["ai-paraphraser", "ai-rewriter"] },
+  { keyword: "jasper ai vs copy ai vs free ai writing tools 2026", tool_slug: "ai-email-writer", tool_name: "AI Email Writer", category: "comparison", related_tool_slugs: ["ai-blog-outline-generator", "ai-content-ideas-generator"] },
+  { keyword: "canva image resizer vs online free image resizers 2026", tool_slug: "image-resizer", tool_name: "Image Resizer", category: "comparison", related_tool_slugs: ["image-compressor", "image-cropper"] },
+  { keyword: "online salary calculator vs excel salary sheet which is easier", tool_slug: "salary-calculator", tool_name: "Salary Calculator", category: "comparison", related_tool_slugs: ["income-tax-calculator"] },
+  { keyword: "chatgpt vs claude for writing emails which ai is better", tool_slug: "ai-email-writer", tool_name: "AI Email Writer", category: "comparison", related_tool_slugs: ["ai-grammar-checker"] },
+  { keyword: "webp vs avif vs jpeg xl next gen image formats compared", tool_slug: "image-converter", tool_name: "Image Format Converter", category: "comparison", related_tool_slugs: ["image-compressor"] },
+  { keyword: "adobe acrobat vs free online pdf tools do you need to pay", tool_slug: "pdf-merger", tool_name: "PDF Merger", category: "comparison", related_tool_slugs: ["pdf-splitter", "text-to-pdf"] },
+  { keyword: "semrush vs ahrefs vs free seo tools for beginners 2026", tool_slug: "ai-seo-optimizer", tool_name: "AI SEO Optimizer", category: "comparison", related_tool_slugs: ["ai-meta-description-writer", "slug-generator"] },
+  // SESSION 6: PILLAR PAGES
+  { keyword: "best free image tools online 2026 compress resize convert crop", tool_slug: "image-compressor", tool_name: "Image Compressor", related_tool_slugs: ["image-resizer", "image-converter", "image-cropper", "svg-to-png", "image-to-base64"] },
+  { keyword: "best free pdf tools online 2026 merge split convert no watermark", tool_slug: "pdf-merger", tool_name: "PDF Merger", related_tool_slugs: ["pdf-splitter", "image-to-pdf", "text-to-pdf"] },
+  { keyword: "complete guide to free ai writing tools 2026", tool_slug: "ai-email-writer", tool_name: "AI Email Writer", related_tool_slugs: ["ai-blog-outline-generator", "ai-resume-bullet-points", "ai-cover-letter-writer", "ai-tweet-generator", "ai-grammar-checker"] },
+  { keyword: "free salary calculator for every country 2026 us uk india", tool_slug: "salary-calculator", tool_name: "Salary Calculator", related_tool_slugs: ["income-tax-calculator", "hra-calculator", "mortgage-calculator"] },
+  { keyword: "best free tools for freelancers and remote workers 2026", tool_slug: "ai-email-writer", tool_name: "AI Email Writer", related_tool_slugs: ["salary-calculator", "pdf-merger", "image-compressor", "ai-meeting-notes-summarizer"] },
+  { keyword: "free tools for students 2026 calculators converters and ai", tool_slug: "percentage-calculator", tool_name: "Percentage Calculator", related_tool_slugs: ["word-counter", "ai-grammar-checker", "ai-paraphraser", "unit-converter", "bmi-calculator"] },
 ];
 
 // ─── Supabase client ───────────────────────────────────────────────────────────
@@ -375,7 +481,10 @@ function scoreTopic(keyword: string, publishedKeywords: Set<string>): number {
   if (kw.includes("free") || kw.includes("online")) score += 5;
   if (kw.includes("calculator") || kw.includes("tool")) score += 5;
   if (kw.includes("best") || kw.includes("guide")) score += 5;
-  if (kw.includes("vs") || kw.includes("versus")) score += 8;
+  if (kw.includes("vs") || kw.includes("versus") || kw.includes("comparison")) score += 12;
+  if (kw.includes("image") || kw.includes("pdf") || kw.includes("compress")) score += 6;
+  if (kw.includes("salary") || kw.includes("take home")) score += 6;
+  if (kw.includes("resume") || kw.includes("cover letter") || kw.includes("linkedin")) score += 6;
   // Prefer longer-tail (harder to over-optimise)
   const words = kw.split(" ").length;
   if (words >= 6) score += 10;
@@ -398,10 +507,13 @@ function getRelatedTools(
     if (!tool) return;
     seen.add(slug);
     const isCalc = ["emi-calculator", "sip-calculator", "gst-calculator", "income-tax-calculator",
+      "salary-calculator", "mortgage-calculator",
       "bmi-calculator", "emi-calculator", "compound-interest-calculator", "percentage-calculator",
       "percentage-calculator", "age-calculator", "fd-calculator", "ppf-calculator", "hra-calculator",
     ].includes(slug);
-    result.push({ name: tool.name, slug: tool.slug, path: `/${isCalc ? "calculators" : "tools"}/${tool.slug}`, type: isCalc ? "calculator" : "tool" });
+    const isAI = tool.category === "ai";
+    const basePath = isCalc ? "calculators" : isAI ? "ai-tools" : "tools";
+    result.push({ name: tool.name, slug: tool.slug, path: `/${basePath}/${tool.slug}`, type: isCalc ? "calculator" : "tool" });
   };
 
   if (primaryToolSlug) addTool(primaryToolSlug);
@@ -430,6 +542,8 @@ function inferCategory(keyword: string, toolSlug?: string): BlogCategory {
   if (kw.includes(" ai ") || kw.includes("chatgpt") || kw.startsWith("ai ")) return "ai-guide";
   if (kw.includes("tax") || kw.includes("loan") || kw.includes("invest") || kw.includes("finance") || kw.includes("salary")) return "finance-guide";
   if (kw.includes("bmi") || kw.includes("calorie") || kw.includes("health")) return "tools-guide";
+  if (kw.includes("pdf") || kw.includes("merge pdf") || kw.includes("split pdf")) return "tools-guide";
+  if (kw.includes("image") || kw.includes("compress") || kw.includes("resize") || kw.includes("crop") || kw.includes("webp")) return "tools-guide";
   return "tools-guide";
 }
 
@@ -635,6 +749,7 @@ export async function selectTopicsForToday(count = 2): Promise<BlogGenerationInp
       keyword: topic.keyword,
       tool_slug: seedMatch?.tool_slug,
       tool_name: seedMatch?.tool_name,
+      category: seedMatch?.category,
       related_questions: paa,
       secondary_keywords: related,
       related_tool_slugs: seedMatch?.related_tool_slugs || [],
