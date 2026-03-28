@@ -409,7 +409,7 @@ const UNIQUE_CONTENT: Record<string, UniqueContent> = {
     ],
   },
   "ai-prompt-generator": {
-    intro: "AI Prompt Generator creates better, more effective prompts for any AI tool � text, image, and code assistants. Describe your goal and get a well-structured prompt with clear instructions, context, and format — ready to paste.",
+    intro: "AI Prompt Generator creates better, more effective prompts for any AI tool � text, image, and code assistants. Describe your goal and get a well-structured prompt with clear instructions, context, and format — ready to paste.",
     benefits: [
       "Turn vague ideas into specific, effective AI prompts with clear structure.",
       "Prompts include role-setting, context, constraints, and output format instructions.",

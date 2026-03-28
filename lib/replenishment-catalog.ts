@@ -326,7 +326,7 @@ export const TOOL_CATALOG: CatalogEntry[] = [
     category: "ai_tool", priority: 1, group: "writing" },
 
   { slug: "ai-prompt-generator", name: "AI Prompt Generator", status: "live",
-    description: "Create better prompts for any AI tool — text, image, or code assistants.",
+    description: "Create better prompts for any AI tool ï¿½ text, image, or code assistants.",
     engine_type: "ai-prompt-generator", related_slugs: ["ai-email-writer", "ai-blog-outline-generator"],
     category: "ai_tool", priority: 1, group: "prompt" },
 
