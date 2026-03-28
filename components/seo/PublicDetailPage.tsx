@@ -8,6 +8,7 @@ import AdSlot from "@/components/ads/AdSlot";
 import type { ReactNode } from "react";
 import AffiliateCard from "@/components/monetisation/AffiliateCard";
 import EmailCapture from "@/components/email/EmailCapture";
+import ToolHistoryTracker from "@/components/history/ToolHistoryTracker";
 import type { PublicContentItem } from "@/lib/content-pages";
 import { getDisplayDescription } from "@/lib/display-content";
 import { getSiteUrl } from "@/lib/site-url";
@@ -141,6 +142,9 @@ export default function PublicDetailPage({
 
   return (
     <main className="min-h-screen bg-q-bg text-q-text">
+      {/* ── Tool History Tracker (invisible, records visit) ──────────────── */}
+      <ToolHistoryTracker slug={item.slug} name={item.name} table={table} />
+
       <section className="px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">

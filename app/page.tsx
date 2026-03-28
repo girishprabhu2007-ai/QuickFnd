@@ -16,6 +16,7 @@ import { getSiteUrl } from "@/lib/site-url";
 import EmailCapture from "@/components/email/EmailCapture";
 import { getCountryProfile } from "@/lib/geo-personalisation";
 import { headers } from "next/headers";
+import RecentlyUsedTools from "@/components/history/RecentlyUsedTools";
 
 // Geo-personalisation requires dynamic rendering (reads request headers)
 export const dynamic = "force-dynamic";
@@ -25,12 +26,12 @@ const siteUrl = getSiteUrl();
 export const metadata: Metadata = {
   title: "QuickFnd — Free Tools, Calculators & AI Utilities",
   description:
-    "Free browser-based tools, calculators, and AI utilities. JSON formatter, password generator, EMI calculator, AI email writer, word counter and 190+ more. No install needed.",
+    "Free browser-based tools, calculators, and AI utilities. JSON formatter, password generator, EMI calculator, AI email writer, word counter and 205+ more. No install needed.",
   alternates: { canonical: siteUrl },
   openGraph: {
     url: siteUrl,
     title: "QuickFnd — Free Tools, Calculators & AI Utilities",
-    description: "190+ free browser-based tools, calculators, and AI utilities. No install needed.",
+    description: "205+ free browser-based tools, calculators, and AI utilities. No install needed.",
   },
 };
 
@@ -103,7 +104,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 const STATS = [
-  { value: "130+", label: "Free tools" },
+  { value: "205+", label: "Free tools" },
   { value: "0", label: "Signup required" },
   { value: "100%", label: "Browser-based" },
   { value: "0kb", label: "Data sent" },
@@ -222,6 +223,11 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ── RECENTLY USED (client-side, shows only if history exists) ───── */}
+      <div className="pt-10">
+        <RecentlyUsedTools />
+      </div>
 
       {/* ── AD ─────────────────────────────────────────────────────────────── */}
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex justify-center">
