@@ -55,6 +55,9 @@ export type ToolEngineType =
   | "line-sorter"
   | "box-shadow-generator"
   | "css-gradient-generator"
+  | "video-to-gif"
+  | "gif-maker"
+  | "video-compressor"
   | "generic-directory";
 
 // ─── FIXED: Added all calculator engines that exist in calculator-runtime.ts ──
