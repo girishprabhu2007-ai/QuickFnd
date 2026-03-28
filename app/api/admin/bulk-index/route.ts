@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { getTools, getCalculators, getAITools } from "@/lib/db";
 import { filterVisibleTools, filterVisibleCalculators, filterVisibleAITools } from "@/lib/visibility";
 import { getAllPublishedSlugs } from "@/lib/blog";
+import { getPublishedComparisonSlugs } from "@/lib/comparisons";
 import { indexMultiplePages } from "@/lib/index-now";
 
 export const maxDuration = 120;
@@ -25,6 +26,8 @@ export async function GET(req: Request) {
       getAITools(),
       getAllPublishedSlugs().catch(() => []),
     ]);
+
+    const comparisonSlugs = await getPublishedComparisonSlugs().catch(() => []);
 
     const tools = filterVisibleTools(rawTools);
     const calculators = filterVisibleCalculators(rawCalcs);
@@ -53,12 +56,14 @@ export async function GET(req: Request) {
     if (indexNowKey) {
       const extraUrls = [
         ...blogSlugs.map(b => `${siteUrl}/blog/${b.slug}`),
+        ...comparisonSlugs.map(s => `${siteUrl}/compare/${s}`),
         `${siteUrl}/`,
         `${siteUrl}/tools`,
         `${siteUrl}/calculators`,
         `${siteUrl}/ai-tools`,
         `${siteUrl}/blog`,
         `${siteUrl}/topics`,
+        `${siteUrl}/compare`,
       ];
 
       const payload = {

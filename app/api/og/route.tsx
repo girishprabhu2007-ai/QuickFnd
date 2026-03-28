@@ -1,4 +1,4 @@
-import { ImageResponse } from "next/og";
+﻿import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
 
@@ -46,6 +46,12 @@ const TYPE_CONFIG: Record<string, { accent: string; icon: string; label: string;
     icon: "✨",
     label: "AI TOOL",
     tagline: "AI-powered • Free to use • Instant output",
+  },
+  compare: {
+    accent: "#f59e0b",
+    icon: "⚖️",
+    label: "COMPARISON",
+    tagline: "Honest pros, cons & verdict",
   },
 };
 

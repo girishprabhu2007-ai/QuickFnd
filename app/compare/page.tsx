@@ -1,0 +1,121 @@
+﻿import type { Metadata } from "next";
+import Link from "next/link";
+import { createClient } from "@supabase/supabase-js";
+import SiteFooter from "@/components/site/SiteFooter";
+import { getSiteUrl } from "@/lib/site-url";
+
+export const revalidate = 60;
+
+const siteUrl = getSiteUrl();
+
+export const metadata: Metadata = {
+  title: "Compare Tools — Honest X vs Y Comparisons | QuickFnd",
+  description:
+    "Side-by-side comparisons of popular online tools, calculators, and AI utilities. Honest pros, cons, and verdicts to help you choose the right tool.",
+  alternates: { canonical: `${siteUrl}/compare` },
+  openGraph: {
+    url: `${siteUrl}/compare`,
+    title: "Compare Tools — Honest Comparisons | QuickFnd",
+    description:
+      "Side-by-side comparisons of popular online tools. Honest pros, cons, and verdicts.",
+  },
+};
+
+type ComparisonListItem = {
+  slug: string;
+  title: string;
+  tool_a_name: string;
+  tool_b_name: string;
+  tool_a_type: string;
+  verdict: string | null;
+};
+
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+  return createClient(url, key, { auth: { persistSession: false } });
+}
+
+async function getAllComparisons(): Promise<ComparisonListItem[]> {
+  const supabase = getSupabase();
+  const { data } = await supabase
+    .from("comparison_pages")
+    .select("slug, title, tool_a_name, tool_b_name, tool_a_type, verdict")
+    .eq("status", "published")
+    .order("created_at", { ascending: false });
+  return (data || []) as ComparisonListItem[];
+}
+
+function typeIcon(type: string): string {
+  if (type === "ai-tools" || type === "ai_tools") return "✨";
+  if (type === "calculators") return "🧮";
+  return "🔧";
+}
+
+export default async function CompareIndexPage() {
+  const comparisons = await getAllComparisons();
+
+  return (
+    <main className="min-h-screen bg-q-bg px-4 py-8 text-q-text sm:px-6 lg:px-8 lg:py-12">
+      <div className="mx-auto max-w-4xl">
+        {/* Breadcrumb */}
+        <nav className="mb-6 flex items-center gap-2 text-xs text-q-muted">
+          <Link href="/" className="hover:text-q-text transition">
+            Home
+          </Link>
+          <span>/</span>
+          <span className="text-q-text">Compare</span>
+        </nav>
+
+        {/* Header */}
+        <div className="mb-10">
+          <div className="inline-flex rounded-full border border-amber-300/40 bg-amber-50/50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-amber-700 dark:border-amber-500/30 dark:bg-amber-900/20 dark:text-amber-300">
+            Comparisons
+          </div>
+          <h1 className="mt-4 text-3xl font-bold tracking-tight text-q-text md:text-4xl">
+            Compare Tools
+          </h1>
+          <p className="mt-3 max-w-2xl text-base leading-7 text-q-muted">
+            Honest side-by-side comparisons of popular online tools, calculators,
+            and AI utilities. No fluff — just pros, cons, and a clear verdict.
+          </p>
+        </div>
+
+        {/* Grid */}
+        {comparisons.length === 0 ? (
+          <p className="text-q-muted">No comparisons published yet. Check back soon.</p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {comparisons.map((c) => (
+              <Link
+                key={c.slug}
+                href={`/compare/${c.slug}`}
+                className="group rounded-2xl border border-q-border bg-q-card p-5 transition hover:-translate-y-0.5 hover:border-amber-400/40 hover:shadow-md"
+              >
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="text-base">{typeIcon(c.tool_a_type)}</span>
+                  <span className="text-xs font-semibold uppercase tracking-[0.12em] text-amber-600 dark:text-amber-400">
+                    vs
+                  </span>
+                </div>
+                <h2 className="text-base font-semibold leading-6 text-q-text group-hover:text-amber-700 dark:group-hover:text-amber-300">
+                  {c.title}
+                </h2>
+                {c.verdict && (
+                  <p className="mt-2 line-clamp-2 text-sm leading-6 text-q-muted">
+                    {c.verdict}
+                  </p>
+                )}
+                <div className="mt-3 text-xs font-medium text-amber-600 dark:text-amber-400">
+                  Read comparison →
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <SiteFooter />
+    </main>
+  );
+}

@@ -1,4 +1,4 @@
-import type { MetadataRoute } from "next";
+﻿import type { MetadataRoute } from "next";
 import { getAllContentForSitemap } from "@/lib/db";
 import { buildProgrammaticPages } from "@/lib/programmatic-pages";
 import { getSiteUrl } from "@/lib/site-url";
@@ -8,6 +8,7 @@ import {
   filterVisibleCalculators,
   filterVisibleAITools,
 } from "@/lib/visibility";
+import { getPublishedComparisonSlugs } from "@/lib/comparisons";
 
 export const revalidate = 3600; // regenerate sitemap every hour
 
@@ -22,6 +23,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Blog posts — graceful fallback if table doesn't exist yet
   const blogSlugs = await getAllPublishedSlugs().catch(() => []);
+
+  // Comparison pages
+  const comparisonSlugs = await getPublishedComparisonSlugs().catch(() => []);
 
   const now = new Date();
 
@@ -142,9 +146,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: now,
   }));
 
+  const comparisonPages: MetadataRoute.Sitemap = comparisonSlugs.map((slug) => ({
+    url: `${siteUrl}/compare/${slug}`,
+    changeFrequency: "weekly",
+    priority: 0.8,
+    lastModified: now,
+  }));
+
   return [
     ...mainPages,
     ...blogPages,
+    ...comparisonPages,
     ...toolPages,
     ...calculatorPages,
     ...aiToolPages,
