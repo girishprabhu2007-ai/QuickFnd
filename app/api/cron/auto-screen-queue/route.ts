@@ -13,6 +13,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { ALL_VALID_ENGINES } from "@/lib/engine-registry";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -23,35 +24,8 @@ function getSupabase() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
-// ── Engines that render real working UIs (from our LIVE sets) ─────────────────
-const WORKING_ENGINES = new Set([
-  // Tools
-  "password-generator", "password-strength-checker", "json-formatter",
-  "word-counter", "uuid-generator", "slug-generator", "random-string-generator",
-  "base64-encoder", "base64-decoder", "url-encoder", "url-decoder",
-  "text-case-converter", "text-transformer", "code-formatter", "number-generator",
-  "unit-converter", "currency-converter", "regex-tester", "regex-extractor",
-  "sha256-generator", "md5-generator", "timestamp-converter", "hex-to-rgb",
-  "rgb-to-hex", "text-to-binary", "binary-to-text", "json-escape", "json-unescape",
-  "qr-generator", "barcode-generator", "color-picker", "markdown-editor",
-  "csv-to-json", "ip-lookup", "diff-checker", "jwt-decoder", "lorem-ipsum-generator",
-  "number-base-converter", "html-entity-encoder", "string-escape-tool",
-  "yaml-json-converter", "json-to-csv", "color-contrast-checker",
-  "robots-txt-generator", "html-minifier", "css-minifier", "js-minifier",
-  "email-validator", "line-sorter", "box-shadow-generator", "css-gradient-generator",
-  "open-graph-tester",
-  // Calculators
-  "age-calculator", "bmi-calculator", "loan-calculator", "emi-calculator",
-  "percentage-calculator", "simple-interest-calculator", "compound-interest-calculator",
-  "gst-calculator", "sip-calculator", "fd-calculator", "ppf-calculator",
-  "hra-calculator", "income-tax-calculator", "formula-calculator", "barcode-generator",
-  "discount-calculator", "tip-calculator", "roi-calculator", "savings-calculator",
-  "retirement-calculator", "salary-calculator", "calorie-calculator",
-  "fuel-cost-calculator", "cagr-calculator", "gratuity-calculator", "rd-calculator",
-  "mortgage-calculator", "sales-tax-calculator", "vat-calculator",
-  // AI Tools
-  "openai-text-tool", "ai-prompt-generator", "ai-email-writer", "ai-blog-outline-generator",
-]);
+// ── Engines that render real working UIs — imported from centralised registry ─
+const WORKING_ENGINES = ALL_VALID_ENGINES;
 
 // ── Patterns that cannot work on a browser-based platform ─────────────────────
 const REJECT_PATTERNS = [

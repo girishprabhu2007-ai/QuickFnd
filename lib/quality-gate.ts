@@ -31,36 +31,9 @@ export type QualityResult = {
 };
 
 // ─── Known valid engine types ─────────────────────────────────────────────────
-
-const VALID_ENGINES = new Set([
-  // Tools
-  "password-generator", "password-strength-checker", "json-formatter",
-  "word-counter", "uuid-generator", "slug-generator", "random-string-generator",
-  "base64-encoder", "base64-decoder", "url-encoder", "url-decoder",
-  "text-case-converter", "text-transformer", "code-formatter", "number-generator",
-  "unit-converter", "currency-converter", "regex-tester", "regex-extractor",
-  "sha256-generator", "md5-generator", "timestamp-converter", "hex-to-rgb",
-  "rgb-to-hex", "text-to-binary", "binary-to-text", "json-escape", "json-unescape",
-  "qr-generator", "barcode-generator", "color-picker", "markdown-editor",
-  "csv-to-json", "ip-lookup", "diff-checker", "jwt-decoder", "cron-builder",
-  "lorem-ipsum-generator", "number-base-converter", "html-entity-encoder",
-  "string-escape-tool", "yaml-json-converter", "json-to-csv",
-  "color-contrast-checker", "robots-txt-generator", "open-graph-tester",
-  "html-minifier", "css-minifier", "js-minifier",
-  "email-validator", "line-sorter", "box-shadow-generator", "css-gradient-generator",
-  // Calculators
-  "bmi-calculator", "emi-calculator", "gst-calculator", "sip-calculator",
-  "fd-calculator", "ppf-calculator", "hra-calculator", "income-tax-calculator",
-  "compound-interest-calculator", "simple-interest-calculator", "loan-calculator",
-  "percentage-calculator", "age-calculator", "retirement-calculator",
-  "salary-calculator", "mortgage-calculator", "vat-calculator",
-  "sales-tax-calculator", "discount-calculator", "savings-calculator",
-  "roi-calculator", "cagr-calculator", "gratuity-calculator", "rd-calculator",
-  "calorie-calculator", "fuel-cost-calculator", "tip-calculator",
-  // AI Tools
-  "ai-email-writer", "ai-prompt-generator", "ai-blog-outline-generator",
-  "openai-text-tool",
-]);
+// Imported from centralised engine-registry — single source of truth
+import { ALL_VALID_ENGINES } from "@/lib/engine-registry";
+const VALID_ENGINES = ALL_VALID_ENGINES;
 
 // ─── Check 1: Name quality ────────────────────────────────────────────────────
 

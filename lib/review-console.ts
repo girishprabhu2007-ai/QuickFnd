@@ -2,54 +2,20 @@ import { getSupabaseAdmin } from "@/lib/admin-publishing";
 import { suggestAdminEngine } from "@/lib/admin-engine-assistant";
 import { generateIdeas } from "@/lib/tool-bulk-generator";
 import { inferEngineType } from "@/lib/engine-metadata";
+import {
+  LIVE_TOOL_ENGINES,
+  LIVE_CALC_ENGINES,
+  LIVE_AI_ENGINES,
+  getLiveEngines,
+  isPlaceholderEngine,
+} from "@/lib/engine-registry";
 
 type Category = "tool" | "calculator" | "ai-tool";
 type BulkType = "tools" | "calculators" | "ai_tools";
 
-// ── Ground truth: engines that have REAL renderers in the codebase ────────────
-// Any DB item whose engine_type is NOT in this set is a placeholder.
-const LIVE_TOOL_ENGINES = new Set([
-  "password-strength-checker", "password-generator", "json-formatter", "word-counter",
-  "uuid-generator", "slug-generator", "random-string-generator", "base64-encoder",
-  "base64-decoder", "url-encoder", "url-decoder", "text-case-converter",
-  "code-formatter", "code-snippet-manager", "text-transformer", "number-generator",
-  "unit-converter", "currency-converter", "regex-tester", "regex-extractor",
-  "sha256-generator", "md5-generator", "timestamp-converter", "hex-to-rgb",
-  "rgb-to-hex", "text-to-binary", "binary-to-text", "json-escape", "json-unescape",
-  "qr-generator", "barcode-generator", "color-picker", "markdown-editor", "csv-to-json", "ip-lookup",
-  "cron-builder", "diff-checker", "jwt-decoder", "lorem-ipsum-generator",
-  "number-base-converter", "html-entity-encoder", "string-escape-tool",
-  "yaml-json-converter", "json-to-csv", "color-contrast-checker",
-  "robots-txt-generator", "open-graph-tester",
-  "html-minifier", "css-minifier", "js-minifier", "email-validator", "line-sorter", "box-shadow-generator", "css-gradient-generator",
-]);
-
-const LIVE_CALC_ENGINES = new Set([
-  "age-calculator", "bmi-calculator", "loan-calculator", "emi-calculator",
-  "percentage-calculator", "simple-interest-calculator", "compound-interest-calculator",
-  "gst-calculator", "sip-calculator", "fd-calculator", "ppf-calculator",
-  "hra-calculator", "income-tax-calculator", "formula-calculator",
-  "discount-calculator", "tip-calculator", "roi-calculator", "savings-calculator",
-  "retirement-calculator", "salary-calculator", "calorie-calculator", "fuel-cost-calculator",
-  "cagr-calculator", "gratuity-calculator", "rd-calculator",
-  "mortgage-calculator", "sales-tax-calculator", "vat-calculator",
-]);
-
-const LIVE_AI_ENGINES = new Set([
-  "openai-text-tool", "ai-prompt-generator", "ai-email-writer", "ai-blog-outline-generator",
-]);
-
-function getLiveEngines(table: "tools" | "calculators" | "ai_tools"): Set<string> {
-  if (table === "tools") return LIVE_TOOL_ENGINES;
-  if (table === "calculators") return LIVE_CALC_ENGINES;
-  return LIVE_AI_ENGINES;
-}
-
+// Re-export as local alias for backward compat within this file
 function isPlaceholder(engineType: string | null | undefined, table: "tools" | "calculators" | "ai_tools"): boolean {
-  if (!engineType) return true;
-  const et = engineType.trim().toLowerCase();
-  if (et === "generic-directory" || et === "" || et === "auto") return true;
-  return !getLiveEngines(table).has(et);
+  return isPlaceholderEngine(engineType, table);
 }
 
 export type ReviewRow = {
