@@ -3,12 +3,15 @@
 import { useMemo, useState } from "react";
 import type { PublicContentItem } from "@/lib/content-pages";
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TYPES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
 type AIToolConfig = {
   task?: string;
   tone?: string;
   toneOptions?: string[];
   outputType?: string;
-  // Config-driven fields from engine_config in DB — make each tool unique
   systemPrompt?: string;
   buttonLabel?: string;
   outputLabel?: string;
@@ -16,1635 +19,681 @@ type AIToolConfig = {
   intro?: string;
 };
 
-type RunResponse = {
-  success?: boolean;
-  output?: string;
-  error?: string;
+type RunResponse = { success?: boolean; output?: string; error?: string };
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   DESIGN SYSTEM — shared styling functions
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+const cls = {
+  card: "rounded-[28px] border border-q-border bg-q-card p-6 shadow-sm md:p-8",
+  panel: "rounded-2xl border border-q-border bg-q-bg p-5",
+  input: "w-full rounded-xl border border-q-border bg-q-card px-4 py-3 text-q-text outline-none transition placeholder:text-q-muted/60 focus:border-blue-400/60 focus:ring-2 focus:ring-blue-400/10",
+  textarea: "w-full rounded-xl border border-q-border bg-q-card px-4 py-3 text-q-text outline-none transition placeholder:text-q-muted/60 focus:border-blue-400/60 focus:ring-2 focus:ring-blue-400/10 resize-none",
+  label: "mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-q-muted",
+  sectionTitle: "text-xs font-semibold uppercase tracking-[0.16em] text-q-muted",
+  outputShell: "rounded-[24px] border border-q-border bg-gradient-to-br from-q-card to-q-bg p-5 shadow-sm md:p-6",
+  outputInner: "rounded-xl border border-q-border bg-q-card p-4 text-sm leading-7 text-q-text whitespace-pre-wrap",
+  primaryBtn: "rounded-xl bg-q-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-q-primary-hover hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50",
+  secondaryBtn: "rounded-xl border border-q-border bg-q-bg px-4 py-3 text-sm font-medium text-q-text transition hover:bg-q-card-hover disabled:opacity-50",
+  copyBtn: "rounded-lg border border-q-border bg-q-bg px-3 py-1.5 text-xs font-medium text-q-muted transition hover:text-q-text hover:bg-q-card-hover",
+  badge: (color: string) => `inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${color}`,
+  accentBar: (color: string) => `h-1 w-12 rounded-full ${color}`,
 };
 
-type TaskMeta = {
-  title: string;
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TASK IDENTITY — colors, icons, structured fields per task
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+type TaskIdentity = {
+  icon: string;
+  accentColor: string;
+  badgeColor: string;
+  barColor: string;
   actionLabel: string;
   outputLabel: string;
-  helperText: string;
-  examples: string[];
-  checklist: string[];
+  description: string;
+  fields: Array<{
+    key: string;
+    label: string;
+    placeholder: string;
+    type: "input" | "textarea" | "select";
+    options?: string[];
+    rows?: number;
+    required?: boolean;
+  }>;
+  tips: string[];
 };
 
-type EmailOutputParts = {
-  subject: string;
-  body: string;
-};
+function getTaskIdentity(task: string, itemName: string): TaskIdentity {
+  switch (task) {
+    case "email":
+    case "cold-email":
+      return {
+        icon: "✉️",
+        accentColor: "text-blue-600 dark:text-blue-400",
+        badgeColor: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+        barColor: "bg-blue-500",
+        actionLabel: task === "cold-email" ? "Write Cold Email" : "Write Email",
+        outputLabel: task === "cold-email" ? "Cold Email" : "Email Draft",
+        description: task === "cold-email"
+          ? "Write a short, personalised cold outreach email that gets replies."
+          : "Draft a polished, send-ready email with clear intent and structure.",
+        fields: [
+          { key: "purpose", label: "What's this email about?", placeholder: "Follow up on pricing discussion from Tuesday's demo call", type: "textarea", rows: 2, required: true },
+          { key: "recipient", label: "Who's receiving this?", placeholder: "Engineering lead at a mid-size SaaS company", type: "input" },
+          { key: "tone", label: "Tone", placeholder: "", type: "select", options: ["Professional", "Friendly", "Formal", "Casual", "Urgent"] },
+          { key: "cta", label: "What should they do next?", placeholder: "Schedule a 15-min call this week", type: "input" },
+        ],
+        tips: ["Be specific about the purpose — vague emails get vague results", "Mention the recipient's context for personalisation", "A clear call-to-action improves reply rates"],
+      };
 
-const GENERIC_TASK_VALUES = new Set([
-  "",
-  "text-generation",
-  "text generation",
-  "general",
-  "default",
-]);
+    case "outline":
+      return {
+        icon: "📋",
+        accentColor: "text-violet-600 dark:text-violet-400",
+        badgeColor: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300",
+        barColor: "bg-violet-500",
+        actionLabel: "Generate Outline",
+        outputLabel: "Content Outline",
+        description: "Create a structured outline for blog posts, guides, videos, or documentation.",
+        fields: [
+          { key: "topic", label: "Topic", placeholder: "Complete guide to API rate limiting for SaaS apps", type: "textarea", rows: 2, required: true },
+          { key: "audience", label: "Target audience", placeholder: "Backend developers building production APIs", type: "input" },
+          { key: "depth", label: "Depth", placeholder: "", type: "select", options: ["Quick overview", "Standard article", "Comprehensive guide", "Pillar page"] },
+          { key: "notes", label: "Anything specific to include?", placeholder: "Include a section on Redis-based rate limiting", type: "textarea", rows: 2 },
+        ],
+        tips: ["Specific topics produce better outlines than broad ones", "Mentioning the audience shapes the depth and vocabulary", "Add notes for sections you definitely want included"],
+      };
 
-const GENERIC_OUTPUT_VALUES = new Set([
-  "",
-  "text",
-  "general",
-  "default",
-]);
+    case "prompt-generator":
+      return {
+        icon: "⚡",
+        accentColor: "text-amber-600 dark:text-amber-400",
+        badgeColor: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+        barColor: "bg-amber-500",
+        actionLabel: "Generate Prompt",
+        outputLabel: "AI Prompt",
+        description: "Turn a rough idea into a strong, structured prompt ready for any AI tool.",
+        fields: [
+          { key: "goal", label: "What do you want the prompt to achieve?", placeholder: "Generate a landing page hero section for a developer tools startup", type: "textarea", rows: 2, required: true },
+          { key: "targetAI", label: "Target AI system", placeholder: "", type: "select", options: ["ChatGPT / Claude", "Midjourney / DALL-E", "Code assistant", "Any AI"] },
+          { key: "constraints", label: "Constraints or requirements", placeholder: "Output should be valid HTML with Tailwind classes", type: "textarea", rows: 2 },
+        ],
+        tips: ["Describe the end result, not the process", "Include output format expectations", "Add constraints to avoid generic results"],
+      };
 
-function inputClass() {
-  return "w-full rounded-2xl border border-q-border bg-q-bg px-4 py-3 text-q-text outline-none transition duration-150 placeholder:text-q-muted focus:border-blue-400/60 focus:bg-q-card";
+    case "summarize":
+    case "summarization":
+      return {
+        icon: "📝",
+        accentColor: "text-teal-600 dark:text-teal-400",
+        badgeColor: "border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-800 dark:bg-teal-900/30 dark:text-teal-300",
+        barColor: "bg-teal-500",
+        actionLabel: "Summarize",
+        outputLabel: "Summary",
+        description: "Condense any article, document, or text into clear key points.",
+        fields: [
+          { key: "text", label: "Paste text to summarize", placeholder: "Paste your article, report, meeting notes, or any long text here...", type: "textarea", rows: 8, required: true },
+          { key: "format", label: "Summary format", placeholder: "", type: "select", options: ["Bullet points", "Short paragraph", "Executive summary", "Key takeaways"] },
+          { key: "length", label: "Length", placeholder: "", type: "select", options: ["Brief (2-3 sentences)", "Standard", "Detailed"] },
+        ],
+        tips: ["Longer source text produces better summaries", "Choose bullet points for scannable output", "Executive summary works best for reports"],
+      };
+
+    case "grammar-check":
+      return {
+        icon: "✅",
+        accentColor: "text-green-600 dark:text-green-400",
+        badgeColor: "border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-300",
+        barColor: "bg-green-500",
+        actionLabel: "Check Grammar",
+        outputLabel: "Corrected Text",
+        description: "Fix grammar, spelling, and punctuation errors with clear explanations.",
+        fields: [
+          { key: "text", label: "Text to check", placeholder: "Paste your text here — emails, essays, blog posts, cover letters, anything...", type: "textarea", rows: 8, required: true },
+          { key: "style", label: "Writing style", placeholder: "", type: "select", options: ["General", "Academic", "Business", "Creative", "Technical"] },
+        ],
+        tips: ["Paste the complete text for best results", "Technical terms won't be flagged if you select the right style", "Review each correction before accepting"],
+      };
+
+    case "paraphrase":
+      return {
+        icon: "🔄",
+        accentColor: "text-indigo-600 dark:text-indigo-400",
+        badgeColor: "border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300",
+        barColor: "bg-indigo-500",
+        actionLabel: "Paraphrase",
+        outputLabel: "Paraphrased Text",
+        description: "Rewrite text in a different way while keeping the original meaning intact.",
+        fields: [
+          { key: "text", label: "Original text", placeholder: "Paste the text you want rewritten in a fresh way...", type: "textarea", rows: 6, required: true },
+          { key: "tone", label: "Target tone", placeholder: "", type: "select", options: ["Same tone", "More formal", "More casual", "Simpler language", "Academic"] },
+        ],
+        tips: ["Paste the full passage for consistent rewording", "Choosing 'Simpler language' is great for technical-to-plain conversions"],
+      };
+
+    case "rewrite":
+      return {
+        icon: "✏️",
+        accentColor: "text-orange-600 dark:text-orange-400",
+        badgeColor: "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-900/30 dark:text-orange-300",
+        barColor: "bg-orange-500",
+        actionLabel: "Rewrite",
+        outputLabel: "Rewritten Text",
+        description: "Improve clarity, tone, and structure while keeping the original intent.",
+        fields: [
+          { key: "text", label: "Text to rewrite", placeholder: "Paste the original text here...", type: "textarea", rows: 6, required: true },
+          { key: "goal", label: "What should improve?", placeholder: "", type: "select", options: ["More clarity", "More persuasive", "More concise", "More professional", "More engaging"] },
+        ],
+        tips: ["Be explicit about what you want improved", "Rewrite works best with 1-3 paragraphs at a time"],
+      };
+
+    case "cover-letter":
+      return {
+        icon: "📄",
+        accentColor: "text-sky-600 dark:text-sky-400",
+        badgeColor: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-900/30 dark:text-sky-300",
+        barColor: "bg-sky-500",
+        actionLabel: "Write Cover Letter",
+        outputLabel: "Cover Letter",
+        description: "Write a tailored, professional cover letter ready to personalise and send.",
+        fields: [
+          { key: "jobTitle", label: "Job title you're applying for", placeholder: "Senior Product Manager", type: "input", required: true },
+          { key: "company", label: "Company name", placeholder: "Stripe", type: "input" },
+          { key: "requirements", label: "Key job requirements", placeholder: "5+ years PM experience, SaaS background, data-driven decision making...", type: "textarea", rows: 3, required: true },
+          { key: "background", label: "Your relevant experience", placeholder: "6 years as PM at fintech startups, launched 3 products from 0 to 1, grew ARR by 4x...", type: "textarea", rows: 3, required: true },
+        ],
+        tips: ["Paste key requirements from the job posting", "Mention specific achievements with numbers", "Include the company name for personalisation"],
+      };
+
+    case "linkedin-bio":
+      return {
+        icon: "💼",
+        accentColor: "text-blue-700 dark:text-blue-400",
+        badgeColor: "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+        barColor: "bg-blue-600",
+        actionLabel: "Write LinkedIn Bio",
+        outputLabel: "LinkedIn About Section",
+        description: "Write a professional LinkedIn About section that gets noticed.",
+        fields: [
+          { key: "role", label: "Current role & speciality", placeholder: "Full-stack engineer specialising in React and Node.js", type: "input", required: true },
+          { key: "experience", label: "Key achievements", placeholder: "Built payment systems processing $2M/month, led team of 5 engineers, open source contributor...", type: "textarea", rows: 3, required: true },
+          { key: "goals", label: "What are you looking for?", placeholder: "Open to senior engineering roles at product-led companies", type: "input" },
+        ],
+        tips: ["Focus on value delivered, not job titles", "Include numbers where possible", "End with a clear call-to-action"],
+      };
+
+    case "product-description":
+      return {
+        icon: "🛒",
+        accentColor: "text-pink-600 dark:text-pink-400",
+        badgeColor: "border-pink-200 bg-pink-50 text-pink-700 dark:border-pink-800 dark:bg-pink-900/30 dark:text-pink-300",
+        barColor: "bg-pink-500",
+        actionLabel: "Write Description",
+        outputLabel: "Product Description",
+        description: "Write persuasive product descriptions that turn features into benefits.",
+        fields: [
+          { key: "productName", label: "Product name", placeholder: "AirPods Max", type: "input", required: true },
+          { key: "features", label: "Key features", placeholder: "Active noise cancellation, spatial audio, 20-hour battery, premium mesh canopy headband...", type: "textarea", rows: 3, required: true },
+          { key: "customer", label: "Target customer", placeholder: "Audiophiles and remote workers who want premium sound quality", type: "input" },
+          { key: "platform", label: "Where will this appear?", placeholder: "", type: "select", options: ["E-commerce listing", "App store", "Landing page", "Social media", "General"] },
+        ],
+        tips: ["Lead with the main benefit, not the feature", "Include sensory language for physical products", "Mention who it's for to improve relevance"],
+      };
+
+    case "tweet":
+      return {
+        icon: "🐦",
+        accentColor: "text-sky-500 dark:text-sky-400",
+        badgeColor: "border-sky-200 bg-sky-50 text-sky-600 dark:border-sky-800 dark:bg-sky-900/30 dark:text-sky-300",
+        barColor: "bg-sky-400",
+        actionLabel: "Generate Tweet",
+        outputLabel: "Tweet",
+        description: "Generate engaging tweets or threads. Punchy, direct, designed for engagement.",
+        fields: [
+          { key: "idea", label: "Topic or idea", placeholder: "The biggest mistake founders make when launching their first product...", type: "textarea", rows: 3, required: true },
+          { key: "format", label: "Format", placeholder: "", type: "select", options: ["Single tweet", "Thread (3-5 tweets)", "Quote tweet", "Engagement bait"] },
+          { key: "voice", label: "Voice", placeholder: "", type: "select", options: ["Thought leader", "Casual / conversational", "Bold / controversial", "Educational", "Humorous"] },
+        ],
+        tips: ["Start with a hook that stops the scroll", "Threads should tell a story with a payoff", "Single tweets under 200 chars get more engagement"],
+      };
+
+    case "youtube-description":
+      return {
+        icon: "🎬",
+        accentColor: "text-red-600 dark:text-red-400",
+        badgeColor: "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300",
+        barColor: "bg-red-500",
+        actionLabel: "Write Description",
+        outputLabel: "YouTube Description",
+        description: "Write SEO-optimised YouTube descriptions that rank and convert.",
+        fields: [
+          { key: "videoTitle", label: "Video title", placeholder: "How to Build a SaaS in 30 Days with Next.js", type: "input", required: true },
+          { key: "keyPoints", label: "Key topics covered in the video", placeholder: "1. Setting up Next.js\n2. Database design\n3. Auth with Clerk\n4. Deploying to Vercel", type: "textarea", rows: 4, required: true },
+          { key: "keyword", label: "Target keyword", placeholder: "build saas nextjs", type: "input" },
+        ],
+        tips: ["First 2 lines show in search — make them count", "Include timestamps placeholder in your notes", "Target keyword should appear naturally in the first sentence"],
+      };
+
+    case "meta-description":
+      return {
+        icon: "🔍",
+        accentColor: "text-emerald-600 dark:text-emerald-400",
+        badgeColor: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
+        barColor: "bg-emerald-500",
+        actionLabel: "Write Meta Description",
+        outputLabel: "Meta Description",
+        description: "Write compelling 155-character meta descriptions that improve CTR from search.",
+        fields: [
+          { key: "pageTitle", label: "Page title", placeholder: "How to Validate JSON in Your Browser — QuickFnd Guide", type: "input", required: true },
+          { key: "topic", label: "What the page is about", placeholder: "A step-by-step guide to formatting and validating JSON using free browser tools", type: "textarea", rows: 2, required: true },
+          { key: "keyword", label: "Primary keyword", placeholder: "validate json online", type: "input" },
+        ],
+        tips: ["Keep results under 155 characters for Google", "Include the target keyword naturally", "Start with an action verb for higher CTR"],
+      };
+
+    case "resume-bullets":
+      return {
+        icon: "🎯",
+        accentColor: "text-violet-600 dark:text-violet-400",
+        badgeColor: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300",
+        barColor: "bg-violet-500",
+        actionLabel: "Write Bullet Points",
+        outputLabel: "Resume Bullet Points",
+        description: "Turn vague responsibilities into powerful resume bullets with impact and numbers.",
+        fields: [
+          { key: "role", label: "Job title", placeholder: "Senior Software Engineer", type: "input", required: true },
+          { key: "responsibilities", label: "What did you do? (be honest, we'll make it shine)", placeholder: "Worked on the payments system, helped onboard new engineers, wrote tests, improved API response times...", type: "textarea", rows: 5, required: true },
+          { key: "achievements", label: "Any measurable results?", placeholder: "Reduced API latency by 40%, mentored 3 junior devs, processed $2M/month in payments...", type: "textarea", rows: 3 },
+        ],
+        tips: ["Include any numbers — revenue, users, time saved, team size", "Vague inputs get vague bullets — be specific about what you actually did", "Each bullet should start with a past-tense action verb"],
+      };
+
+    case "meeting-summary":
+      return {
+        icon: "📅",
+        accentColor: "text-cyan-600 dark:text-cyan-400",
+        badgeColor: "border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300",
+        barColor: "bg-cyan-500",
+        actionLabel: "Summarize Meeting",
+        outputLabel: "Meeting Summary",
+        description: "Extract decisions, action items, and key points from raw meeting notes.",
+        fields: [
+          { key: "notes", label: "Meeting notes or transcript", placeholder: "Paste your raw meeting notes, voice memo transcript, or bullet points...", type: "textarea", rows: 8, required: true },
+          { key: "meetingType", label: "Meeting type", placeholder: "", type: "select", options: ["Team standup", "Client call", "Strategy/planning", "1-on-1", "All-hands", "Other"] },
+        ],
+        tips: ["Include names if you want owners assigned to action items", "Raw transcripts work — the AI cleans them up", "More notes = better summary"],
+      };
+
+    case "content-ideas":
+      return {
+        icon: "💡",
+        accentColor: "text-yellow-600 dark:text-yellow-500",
+        badgeColor: "border-yellow-200 bg-yellow-50 text-yellow-700 dark:border-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
+        barColor: "bg-yellow-500",
+        actionLabel: "Generate Ideas",
+        outputLabel: "Content Ideas",
+        description: "Generate unique, engaging content ideas for blogs, social media, and marketing.",
+        fields: [
+          { key: "niche", label: "Topic or niche", placeholder: "SaaS marketing for developer tools", type: "input", required: true },
+          { key: "platform", label: "Platform", placeholder: "", type: "select", options: ["Blog", "Twitter/X", "LinkedIn", "YouTube", "Newsletter", "Any"] },
+          { key: "audience", label: "Target audience", placeholder: "Technical founders and indie hackers", type: "input" },
+          { key: "count", label: "How many ideas?", placeholder: "", type: "select", options: ["5 ideas", "10 ideas", "15 ideas"] },
+        ],
+        tips: ["Narrower niches produce more specific ideas", "Mention your audience for better targeting", "Specify the platform for format-appropriate ideas"],
+      };
+
+    case "seo-optimize":
+      return {
+        icon: "📈",
+        accentColor: "text-green-600 dark:text-green-400",
+        badgeColor: "border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-300",
+        barColor: "bg-green-500",
+        actionLabel: "Optimize Content",
+        outputLabel: "SEO-Optimized Version",
+        description: "Optimize your content for search engines with keyword placement and structure.",
+        fields: [
+          { key: "content", label: "Your content", placeholder: "Paste the article or page content you want optimized...", type: "textarea", rows: 8, required: true },
+          { key: "keyword", label: "Target keyword", placeholder: "online json formatter", type: "input", required: true },
+          { key: "goal", label: "What to improve?", placeholder: "", type: "select", options: ["Keyword placement", "Heading structure", "Full rewrite for SEO", "Meta + headings only"] },
+        ],
+        tips: ["Include the full text for best optimization", "One primary keyword per page performs best", "The AI will suggest H2/H3 structure and LSI keywords"],
+      };
+
+    default:
+      return {
+        icon: "✨",
+        accentColor: "text-q-primary",
+        badgeColor: "border-q-border bg-q-bg text-q-muted",
+        barColor: "bg-q-primary",
+        actionLabel: "Generate",
+        outputLabel: "Result",
+        description: `Use ${itemName} to generate, improve, or transform content.`,
+        fields: [
+          { key: "text", label: "Your input", placeholder: "Describe what you want the AI to generate, improve, or transform...", type: "textarea", rows: 6, required: true },
+        ],
+        tips: ["Be specific about your goal", "Add formatting requirements for structured output"],
+      };
+  }
 }
 
-function textareaClass(minHeight = "min-h-[160px]") {
-  return `w-full rounded-2xl border border-q-border bg-q-bg px-4 py-4 text-q-text outline-none transition duration-150 placeholder:text-q-muted focus:border-blue-400/60 focus:bg-q-card ${minHeight}`;
-}
-
-function cardClass() {
-  return "rounded-[30px] border border-q-border bg-q-card p-6 shadow-sm md:p-8";
-}
-
-function panelClass() {
-  return "rounded-2xl border border-q-border bg-q-bg p-4";
-}
-
-function elevatedPanelClass() {
-  return "rounded-[24px] border border-q-border bg-q-bg p-5 shadow-sm";
-}
-
-function softInfoClass() {
-  return "rounded-2xl border border-blue-200/70 bg-blue-50/80 p-4 text-sm text-slate-700";
-}
-
-function successHintClass() {
-  return "rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900";
-}
-
-function badgeClass() {
-  return "rounded-full border border-q-border bg-q-bg px-3 py-1 text-xs font-medium uppercase tracking-wide text-q-muted";
-}
-
-function labelClass() {
-  return "mb-2 block text-sm font-medium text-q-text";
-}
-
-function outputShellClass() {
-  return "rounded-[26px] border border-q-border bg-gradient-to-br from-q-card to-q-bg p-5 shadow-sm md:p-6";
-}
-
-function outputInnerClass() {
-  return "rounded-2xl border border-q-border bg-q-card p-4 text-sm leading-7 text-q-text";
-}
-
-function copyButtonClass() {
-  return "rounded-xl border border-q-border bg-q-bg px-3 py-2 text-xs font-semibold text-q-text transition duration-150 hover:-translate-y-0.5 hover:bg-q-card-hover hover:shadow-sm";
-}
-
-function primaryButtonClass() {
-  return "rounded-2xl bg-q-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition duration-150 hover:-translate-y-0.5 hover:bg-q-primary-hover hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60";
-}
-
-function secondaryButtonClass() {
-  return "rounded-2xl border border-q-border bg-q-bg px-5 py-3 text-sm font-semibold text-q-text transition duration-150 hover:-translate-y-0.5 hover:bg-q-card-hover hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60";
-}
-
-function sectionTitleClass() {
-  return "text-xs font-semibold uppercase tracking-[0.18em] text-q-muted";
-}
+/* ═══════════════════════════════════════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
 function normalize(value: unknown) {
   return String(value || "").trim().toLowerCase();
 }
 
 function toConfig(value: unknown): AIToolConfig {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return {};
-  }
-
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   return value as AIToolConfig;
 }
 
-function inferTaskFromItem(item: PublicContentItem, config: AIToolConfig) {
-  const configuredTask = normalize(config.task);
-
-  if (configuredTask && !GENERIC_TASK_VALUES.has(configuredTask)) {
-    return configuredTask;
-  }
-
-  const slug = String(item.slug || "").trim().toLowerCase();
-  const name = String(item.name || "").trim().toLowerCase();
-
-  if (slug.includes("email") || name.includes("email")) {
-    return "email";
-  }
-
-  if (slug.includes("outline") || name.includes("outline")) {
-    return "outline";
-  }
-
-  if (slug.includes("prompt") || name.includes("prompt")) {
-    return "prompt-generator";
-  }
-
-  if (slug.includes("rewrite") || name.includes("rewrite")) {
-    return "rewrite";
-  }
-
-  if (
-    slug.includes("summary") ||
-    slug.includes("summarize") ||
-    name.includes("summary")
-  ) {
-    return "summarization";
-  }
-
-  // ── New tool types ─────────────────────────────────────────────────────────
+function inferTask(item: PublicContentItem, config: AIToolConfig): string {
+  const t = normalize(config.task);
+  if (t && !["", "text-generation", "text generation", "general", "default"].includes(t)) return t;
+  const slug = normalize(item.slug);
+  const name = normalize(item.name);
+  if (slug.includes("cold-email")) return "cold-email";
+  if (slug.includes("email") || name.includes("email")) return "email";
+  if (slug.includes("outline") || name.includes("outline")) return "outline";
+  if (slug.includes("prompt") || name.includes("prompt")) return "prompt-generator";
+  if (slug.includes("summariz") || slug.includes("summary")) return "summarize";
   if (slug.includes("grammar")) return "grammar-check";
   if (slug.includes("paraphras")) return "paraphrase";
+  if (slug.includes("rewrite") || name.includes("rewrite")) return "rewrite";
   if (slug.includes("cover-letter")) return "cover-letter";
   if (slug.includes("linkedin")) return "linkedin-bio";
   if (slug.includes("product-description")) return "product-description";
   if (slug.includes("tweet") || slug.includes("twitter")) return "tweet";
   if (slug.includes("youtube-description")) return "youtube-description";
-  if (slug.includes("cold-email")) return "cold-email";
   if (slug.includes("meta-description")) return "meta-description";
   if (slug.includes("resume") || slug.includes("bullet")) return "resume-bullets";
   if (slug.includes("meeting")) return "meeting-summary";
-
+  if (slug.includes("content-idea")) return "content-ideas";
+  if (slug.includes("seo-content") || slug.includes("seo-optim")) return "seo-optimize";
   return "text-generation";
 }
 
-function inferOutputTypeFromItem(
-  item: PublicContentItem,
-  config: AIToolConfig,
-  task: string
-) {
-  const configuredOutputType = normalize(config.outputType);
-
-  if (configuredOutputType && !GENERIC_OUTPUT_VALUES.has(configuredOutputType)) {
-    return configuredOutputType;
-  }
-
-  const slug = String(item.slug || "").trim().toLowerCase();
-
-  if (task === "email" || slug.includes("email")) {
-    return "email";
-  }
-
-  if (task === "outline" || slug.includes("outline")) {
-    return "outline";
-  }
-
-  if (task === "prompt-generator" || slug.includes("prompt")) {
-    return "prompt";
-  }
-
-  return "text";
-}
-
-function getTaskMeta(task: string, itemName: string): TaskMeta {
-  switch (task) {
-    case "email":
-      return {
-        title: itemName,
-        actionLabel: "Generate Email",
-        outputLabel: "Generated email",
-        helperText:
-          "Create a send-ready email draft with clearer intent, better structure, and a stronger call to action.",
-        examples: [
-          "Client follow-up after demo",
-          "Job application follow-up",
-          "Customer support apology email",
-        ],
-        checklist: [
-          "State the purpose clearly",
-          "Mention the recipient context",
-          "Add a specific next step",
-        ],
-      };
-
-    case "outline":
-      return {
-        title: itemName,
-        actionLabel: "Generate Outline",
-        outputLabel: "Generated outline",
-        helperText:
-          "Create structured outlines for blog posts, landing pages, videos, lessons, and strategy documents.",
-        examples: [
-          "SEO audit guide outline",
-          "YouTube tutorial script outline",
-          "Beginner course structure",
-        ],
-        checklist: [
-          "Name the topic clearly",
-          "Mention the target audience",
-          "Choose the right depth",
-        ],
-      };
-
-    case "prompt-generator":
-      return {
-        title: itemName,
-        actionLabel: "Generate Prompt",
-        outputLabel: "Generated prompt",
-        helperText:
-          "Turn rough ideas into stronger prompts with context, constraints, and a clearer output format.",
-        examples: [
-          "Prompt for a product description generator",
-          "Prompt for an SEO article brief",
-          "Prompt for a Midjourney concept",
-        ],
-        checklist: [
-          "Describe the outcome you want",
-          "Mention the target AI or use case",
-          "Add constraints or formatting needs",
-        ],
-      };
-
-    case "summarization":
-      return {
-        title: itemName,
-        actionLabel: "Generate Summary",
-        outputLabel: "Generated summary",
-        helperText:
-          "Condense long text into a clearer summary for decisions, reading, revision, or reporting.",
-        examples: [
-          "Summarize meeting notes",
-          "Executive summary for an article",
-          "Condense research notes",
-        ],
-        checklist: [
-          "Paste enough source text",
-          "Mention the audience",
-          "Choose the level of detail",
-        ],
-      };
-
-    case "rewrite":
-      return {
-        title: itemName,
-        actionLabel: "Rewrite Text",
-        outputLabel: "Rewritten result",
-        helperText:
-          "Improve clarity, tone, persuasion, readability, or structure while keeping the original intent.",
-        examples: [
-          "Rewrite marketing copy more clearly",
-          "Simplify a technical explanation",
-          "Make an email more professional",
-        ],
-        checklist: [
-          "Paste the original text",
-          "Be explicit about the target tone",
-          "Add extra constraints if needed",
-        ],
-      };
-
-    case "grammar-check":
-      return {
-        title: itemName,
-        actionLabel: "Check Grammar",
-        outputLabel: "Corrected Text",
-        helperText: "Check and fix grammar, spelling and punctuation errors. Get corrections with clear explanations.",
-        examples: [
-          "Check a professional email before sending",
-          "Proofread a blog post draft",
-          "Fix grammar in a cover letter",
-        ],
-        checklist: [
-          "Paste the complete text",
-          "Include context if the text uses technical terms",
-          "Review each correction before accepting",
-        ],
-      };
-
-    case "paraphrase":
-      return {
-        title: itemName,
-        actionLabel: "Paraphrase",
-        outputLabel: "Paraphrased Text",
-        helperText: "Rewrite any text in a fresh way while keeping the original meaning. Choose your tone.",
-        examples: [
-          "Paraphrase a formal report into plain English",
-          "Rewrite marketing copy more clearly",
-          "Simplify a technical explanation",
-        ],
-        checklist: [
-          "Paste the original text",
-          "Be explicit about the target tone",
-          "Add extra constraints if needed",
-        ],
-      };
-
-    case "cover-letter":
-      return {
-        title: itemName,
-        actionLabel: "Write Cover Letter",
-        outputLabel: "Cover Letter",
-        helperText: "Write a tailored cover letter from your background and the job description. Ready to personalise and send.",
-        examples: [
-          "Cover letter for a product manager role",
-          "Application for a marketing position",
-          "Tech company job application",
-        ],
-        checklist: [
-          "Paste the job description or key requirements",
-          "Describe your relevant experience",
-          "Mention the company name for a personalised result",
-        ],
-      };
-
-    case "linkedin-bio":
-      return {
-        title: itemName,
-        actionLabel: "Write LinkedIn Bio",
-        outputLabel: "LinkedIn Bio",
-        helperText: "Write a professional LinkedIn About section that gets noticed. Keyword-rich, human and clear.",
-        examples: [
-          "Bio for a software engineer",
-          "LinkedIn summary for a freelancer",
-          "About section for a founder",
-        ],
-        checklist: [
-          "Describe your current role and speciality",
-          "Mention your key achievements",
-          "Include what you're looking for or open to",
-        ],
-      };
-
-    case "product-description":
-      return {
-        title: itemName,
-        actionLabel: "Write Description",
-        outputLabel: "Product Description",
-        helperText: "Write a persuasive product description that converts features into benefits and drives sales.",
-        examples: [
-          "E-commerce product listing",
-          "App store description",
-          "Marketplace listing",
-        ],
-        checklist: [
-          "List the key features",
-          "Describe the target customer",
-          "Mention the main benefit or pain it solves",
-        ],
-      };
-
-    case "tweet":
-      return {
-        title: itemName,
-        actionLabel: "Generate Tweet",
-        outputLabel: "Tweet",
-        helperText: "Generate engaging tweets or Twitter/X threads. Punchy, direct and designed to get engagement.",
-        examples: [
-          "Tweet about a product launch",
-          "Thought leadership thread",
-          "Announcement tweet for a new feature",
-        ],
-        checklist: [
-          "Give a clear idea or opinion",
-          "Mention if you want a thread or single tweet",
-          "Add context or a hook if you have one",
-        ],
-      };
-
-    case "youtube-description":
-      return {
-        title: itemName,
-        actionLabel: "Write Description",
-        outputLabel: "YouTube Description",
-        helperText: "Write SEO-optimised YouTube descriptions that rank and tell viewers exactly what to expect.",
-        examples: [
-          "Tutorial video description",
-          "Vlog description with timestamps",
-          "Product review video description",
-        ],
-        checklist: [
-          "Paste the video title",
-          "List the key topics covered",
-          "Include your target keyword if you have one",
-        ],
-      };
-
-    case "cold-email":
-      return {
-        title: itemName,
-        actionLabel: "Write Cold Email",
-        outputLabel: "Cold Email",
-        helperText: "Write a short, personalised cold outreach email that gets replies. One clear ask, no fluff.",
-        examples: [
-          "Outreach to a potential client",
-          "Partnership proposal email",
-          "Sales introduction email",
-        ],
-        checklist: [
-          "Describe who you're reaching out to",
-          "State your offer clearly",
-          "Keep it under 150 words",
-        ],
-      };
-
-    case "meta-description":
-      return {
-        title: itemName,
-        actionLabel: "Write Meta Description",
-        outputLabel: "Meta Description",
-        helperText: "Write compelling 155-character meta descriptions that improve click-through rates from search results.",
-        examples: [
-          "Blog post meta description",
-          "Product page meta description",
-          "Homepage SEO meta description",
-        ],
-        checklist: [
-          "Include the page title",
-          "Mention the target keyword",
-          "Keep the result under 155 characters",
-        ],
-      };
-
-    case "resume-bullets":
-      return {
-        title: itemName,
-        actionLabel: "Write Bullets",
-        outputLabel: "Resume Bullet Points",
-        helperText: "Turn vague job descriptions into powerful resume bullet points using action verbs and quantified impact.",
-        examples: [
-          "Software engineer job responsibilities",
-          "Marketing manager achievements",
-          "Sales role results to quantify",
-        ],
-        checklist: [
-          "Describe your key responsibilities",
-          "Include any measurable results or achievements",
-          "Mention your role and company type for context",
-        ],
-      };
-
-    case "meeting-summary":
-      return {
-        title: itemName,
-        actionLabel: "Summarize Meeting",
-        outputLabel: "Meeting Summary",
-        helperText: "Extract key decisions, action items and discussion points from raw meeting notes automatically.",
-        examples: [
-          "Weekly team standup notes",
-          "Client discovery call transcript",
-          "Strategy planning meeting notes",
-        ],
-        checklist: [
-          "Include names if you want owners on action items",
-          "Paste the full notes for best results",
-          "Mention any key context upfront",
-        ],
-      };
-
-    default:
-      return {
-        title: itemName,
-        actionLabel: "Generate",
-        outputLabel: "Generated output",
-        helperText:
-          "Use this AI tool to generate, improve, or transform content with clearer instructions and constraints.",
-        examples: [
-          "Generate a draft from a short prompt",
-          "Rewrite content for an audience",
-          "Create a structured response",
-        ],
-        checklist: [
-          "Be specific about the goal",
-          "Mention audience and tone",
-          "Add formatting requirements",
-        ],
-      };
-  }
-}
-
-function buildPromptQualityHint(
-  task: string,
-  primaryText: string,
-  secondarySignals: string[]
-) {
-  const length = primaryText.trim().length;
-  const filledSignals = secondarySignals.filter(
-    (value) => value.trim().length > 0
-  ).length;
-
-  if (task === "email") {
-    if (length < 20) {
-      return "Add more purpose and context for a stronger draft.";
-    }
-    if (filledSignals < 2) {
-      return "Adding recipient, subject, or CTA will make the email more useful.";
-    }
-    return "This should generate a more tailored email draft.";
-  }
-
-  if (task === "outline") {
-    if (length < 15) {
-      return "Use a more specific topic so the outline is not too broad.";
-    }
-    if (filledSignals < 2) {
-      return "Adding audience, goal, or depth will improve the outline.";
-    }
-    return "This should generate a more targeted outline.";
-  }
-
-  if (task === "prompt-generator") {
-    if (length < 15) {
-      return "Describe the end goal more clearly for a stronger prompt.";
-    }
-    if (filledSignals < 2) {
-      return "Adding context, constraints, or output format will improve the prompt.";
-    }
-    return "This should generate a stronger, more usable prompt.";
-  }
-
-  if (task === "summarization") {
-    if (length < 120) {
-      return "Summaries work better with more source text.";
-    }
-    return "This looks like enough source material for a meaningful summary.";
-  }
-
-  if (task === "rewrite") {
-    if (length < 40) {
-      return "Rewrite tasks work better when you provide the full original text.";
-    }
-    return "You’ve provided enough text for a stronger rewrite.";
-  }
-
-  if (length < 30) {
-    return "More specific inputs usually give better output.";
-  }
-
-  return "Your input has enough detail for a more useful response.";
-}
-
 async function copyText(value: string) {
-  try {
-    await navigator.clipboard.writeText(value);
-  } catch {
-    // ignore clipboard issues
-  }
+  try { await navigator.clipboard.writeText(value); } catch { /* ignore */ }
 }
 
-type EmailFormState = {
-  subject: string;
-  purpose: string;
-  recipient: string;
-  context: string;
-  cta: string;
-};
-
-type OutlineFormState = {
-  topic: string;
-  audience: string;
-  goal: string;
-  depth: string;
-  notes: string;
-};
-
-type PromptFormState = {
-  goal: string;
-  context: string;
-  constraints: string;
-  outputFormat: string;
-};
-
-function buildEmailInput(state: EmailFormState) {
-  return [
-    `Subject: ${state.subject}`,
-    `Recipient: ${state.recipient}`,
-    `Purpose: ${state.purpose}`,
-    `Context: ${state.context}`,
-    `Call to action: ${state.cta}`,
-  ]
-    .filter((line) => line.split(": ")[1]?.trim())
+function buildInputFromFields(fields: Record<string, string>): string {
+  return Object.entries(fields)
+    .filter(([, v]) => v.trim())
+    .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1).replace(/([A-Z])/g, " $1")}: ${v}`)
     .join("\n");
 }
 
-function buildOutlineInput(state: OutlineFormState) {
-  return [
-    `Topic: ${state.topic}`,
-    `Audience: ${state.audience}`,
-    `Goal: ${state.goal}`,
-    `Depth: ${state.depth}`,
-    `Notes: ${state.notes}`,
-  ]
-    .filter((line) => line.split(": ")[1]?.trim())
-    .join("\n");
-}
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MAIN COMPONENT
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
-function buildPromptGeneratorInput(state: PromptFormState) {
-  return [
-    `Goal: ${state.goal}`,
-    `Context: ${state.context}`,
-    `Constraints: ${state.constraints}`,
-    `Desired output format: ${state.outputFormat}`,
-  ]
-    .filter((line) => line.split(": ")[1]?.trim())
-    .join("\n");
-}
+export default function AIToolRenderer({ item }: { item: PublicContentItem }) {
+  const config = useMemo(() => toConfig(item.engine_config), [item.engine_config]);
+  const task = useMemo(() => inferTask(item, config), [item, config]);
+  const identity = useMemo(() => getTaskIdentity(task, item.name), [task, item.name]);
 
-function parseEmailOutput(raw: string): EmailOutputParts | null {
-  const text = String(raw || "").trim();
-  if (!text) return null;
-
-  const subjectMatch = text.match(/Subject:\s*(.+)/i);
-  const bodyMatch = text.match(/Body:\s*([\s\S]+)/i);
-
-  if (!subjectMatch && !bodyMatch) {
-    return null;
-  }
-
-  return {
-    subject: subjectMatch?.[1]?.trim() || "",
-    body: bodyMatch?.[1]?.trim() || text,
-  };
-}
-
-function renderOutlineLines(output: string) {
-  return output
-    .split("\n")
-    .map((line) => line.trimEnd())
-    .filter((line) => line.trim().length > 0);
-}
-
-function OutputHeader({
-  label,
-  ready,
-  loading,
-  hasError,
-}: {
-  label: string;
-  ready: boolean;
-  loading?: boolean;
-  hasError?: boolean;
-}) {
-  const badgeClassName = loading
-    ? "rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700"
-    : hasError
-    ? "rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700"
-    : ready
-    ? "rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800"
-    : "rounded-full border border-q-border bg-q-card px-3 py-1 text-xs font-medium text-q-muted";
-
-  const badgeLabel = loading
-    ? "Generating"
-    : hasError
-    ? "Needs attention"
-    : ready
-    ? "Ready"
-    : "Waiting for input";
-
-  return (
-    <div className="mb-4 flex items-center justify-between gap-3">
-      <div>
-        <div className={sectionTitleClass()}>Result stage</div>
-        <div className="mt-2 text-lg font-semibold text-q-text">{label}</div>
-      </div>
-      <span className={badgeClassName}>{badgeLabel}</span>
-    </div>
-  );
-}
-
-function EmailOutputView({
-  output,
-  loading,
-  error,
-}: {
-  output: string;
-  loading?: boolean;
-  error?: string;
-}) {
-  const parsed = parseEmailOutput(output);
-
-  if (!output && !loading && !error) {
-    return (
-      <div className={outputShellClass()}>
-        <OutputHeader label="Generated email" ready={false} />
-        <div className={`min-h-[220px] ${outputInnerClass()}`}>
-          Your generated result will appear here.
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className={outputShellClass()}>
-        <OutputHeader label="Generated email" ready={false} loading />
-        <div className={`${outputInnerClass()} space-y-3`}>
-          <div className="h-4 w-40 animate-pulse rounded bg-q-border" />
-          <div className="h-4 w-full animate-pulse rounded bg-q-border" />
-          <div className="h-4 w-[92%] animate-pulse rounded bg-q-border" />
-          <div className="h-4 w-[85%] animate-pulse rounded bg-q-border" />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className={outputShellClass()}>
-        <OutputHeader label="Generated email" ready={false} hasError />
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-7 text-red-700">
-          {error}
-        </div>
-      </div>
-    );
-  }
-
-  if (!parsed) {
-    return (
-      <div className={outputShellClass()}>
-        <OutputHeader label="Generated email" ready />
-        <div className={`min-h-[220px] whitespace-pre-wrap ${outputInnerClass()}`}>
-          {output}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={outputShellClass()}>
-      <OutputHeader label="Generated email" ready />
-
-      <div className="grid gap-4">
-        <div className="rounded-2xl border border-q-border bg-q-card p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div className="text-xs font-semibold uppercase tracking-wide text-q-muted">
-              Subject
-            </div>
-            <button
-              onClick={() => copyText(parsed.subject)}
-              className={copyButtonClass()}
-            >
-              Copy Subject
-            </button>
-          </div>
-          <div className="whitespace-pre-wrap text-sm leading-7 text-q-text">
-            {parsed.subject || "No subject detected."}
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-q-border bg-q-card p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div className="text-xs font-semibold uppercase tracking-wide text-q-muted">
-              Body
-            </div>
-            <button
-              onClick={() => copyText(parsed.body)}
-              className={copyButtonClass()}
-            >
-              Copy Body
-            </button>
-          </div>
-          <div className="whitespace-pre-wrap text-sm leading-7 text-q-text">
-            {parsed.body || "No body detected."}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function OutlineOutputView({
-  output,
-  loading,
-  error,
-}: {
-  output: string;
-  loading?: boolean;
-  error?: string;
-}) {
-  const lines = renderOutlineLines(output);
-
-  if (!output && !loading && !error) {
-    return (
-      <div className={outputShellClass()}>
-        <OutputHeader label="Generated outline" ready={false} />
-        <div className={`min-h-[220px] ${outputInnerClass()}`}>
-          Your generated result will appear here.
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className={outputShellClass()}>
-        <OutputHeader label="Generated outline" ready={false} loading />
-        <div className={`${outputInnerClass()} space-y-3`}>
-          <div className="h-4 w-48 animate-pulse rounded bg-q-border" />
-          <div className="h-4 w-full animate-pulse rounded bg-q-border" />
-          <div className="h-4 w-[90%] animate-pulse rounded bg-q-border" />
-          <div className="h-4 w-[82%] animate-pulse rounded bg-q-border" />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className={outputShellClass()}>
-        <OutputHeader label="Generated outline" ready={false} hasError />
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-7 text-red-700">
-          {error}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={outputShellClass()}>
-      <OutputHeader label="Generated outline" ready />
-
-      <div className="rounded-2xl border border-q-border bg-q-card p-4 shadow-sm">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="text-xs font-semibold uppercase tracking-wide text-q-muted">
-            Outline
-          </div>
-          <button onClick={() => copyText(output)} className={copyButtonClass()}>
-            Copy Outline
-          </button>
-        </div>
-
-        <div className="space-y-3">
-          {lines.map((line, index) => {
-            const trimmed = line.trim();
-
-            const isHeading =
-              /^title:/i.test(trimmed) ||
-              /^h2[:\s-]/i.test(trimmed) ||
-              /^##\s/.test(trimmed);
-
-            const isSubHeading =
-              /^h3[:\s-]/i.test(trimmed) ||
-              /^###\s/.test(trimmed);
-
-            return (
-              <div
-                key={`${trimmed}-${index}`}
-                className={
-                  isHeading
-                    ? "rounded-xl border border-blue-200/70 bg-blue-50/70 p-3 text-sm font-semibold text-slate-900"
-                    : isSubHeading
-                    ? "rounded-xl border border-q-border bg-q-bg p-3 text-sm font-medium text-q-text"
-                    : "rounded-xl border border-q-border bg-q-bg p-3 text-sm leading-7 text-q-text"
-                }
-              >
-                {trimmed}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function PromptOutputView({
-  output,
-  loading,
-  error,
-}: {
-  output: string;
-  loading?: boolean;
-  error?: string;
-}) {
-  return (
-    <div className={outputShellClass()}>
-      <OutputHeader
-        label="Generated prompt"
-        ready={Boolean(output)}
-        loading={loading}
-        hasError={Boolean(error)}
-      />
-
-      {error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-7 text-red-700">
-          {error}
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-q-border bg-q-card p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div className="text-xs font-semibold uppercase tracking-wide text-q-muted">
-              Prompt
-            </div>
-            <button
-              onClick={() => copyText(output)}
-              disabled={!output}
-              className={`${copyButtonClass()} disabled:cursor-not-allowed disabled:opacity-60`}
-            >
-              Copy Prompt
-            </button>
-          </div>
-
-          <div className="min-h-[220px] whitespace-pre-wrap rounded-2xl border border-q-border bg-q-bg p-4 text-sm leading-7 text-q-text">
-            {loading
-              ? "Generating..."
-              : output || "Your generated result will appear here."}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function GenericOutputView({
-  output,
-  label,
-  loading,
-  error,
-}: {
-  output: string;
-  label: string;
-  loading?: boolean;
-  error?: string;
-}) {
-  return (
-    <div className={outputShellClass()}>
-      <OutputHeader
-        label={label}
-        ready={Boolean(output)}
-        loading={loading}
-        hasError={Boolean(error)}
-      />
-
-      {error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-7 text-red-700">
-          {error}
-        </div>
-      ) : (
-        <div className={`min-h-[220px] whitespace-pre-wrap ${outputInnerClass()}`}>
-          {loading
-            ? "Generating..."
-            : output || "Your generated result will appear here."}
-        </div>
-      )}
-    </div>
-  );
-}
-
-export default function AIToolRenderer({
-  item,
-}: {
-  item: PublicContentItem;
-}) {
-  const config = toConfig(item.engine_config);
-  const task = inferTaskFromItem(item, config);
-  const outputType = inferOutputTypeFromItem(item, config, task);
-  const meta = getTaskMeta(task, item.name);
-
-  const toneOptions = useMemo(() => {
-    const fromConfig = Array.isArray(config.toneOptions)
-      ? config.toneOptions
-          .map((entry) => String(entry || "").trim())
-          .filter(Boolean)
-      : [];
-
-    if (fromConfig.length > 0) {
-      return fromConfig;
+  // Dynamic form state
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    for (const f of identity.fields) {
+      if (f.type === "select" && f.options?.length) init[f.key] = f.options[0];
+      else init[f.key] = "";
     }
+    return init;
+  });
 
-    if (task === "email") return ["professional", "friendly", "persuasive"];
-    if (task === "outline") return ["clear", "professional", "educational"];
-    if (task === "prompt-generator") return ["clear", "precise", "creative"];
-
-    return ["professional", "friendly", "clear", "persuasive", "casual"];
-  }, [config.toneOptions, task]);
-
-  const [tone, setTone] = useState(
-    String(config.tone || toneOptions[0] || "professional")
-  );
-  const [length, setLength] = useState("medium");
-  const [audience, setAudience] = useState("");
-  const [extraInstructions, setExtraInstructions] = useState("");
-  const [genericInput, setGenericInput] = useState("");
   const [output, setOutput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [charCount, setCharCount] = useState(0);
 
-  const [emailForm, setEmailForm] = useState<EmailFormState>({
-    subject: "",
-    purpose: "",
-    recipient: "",
-    context: "",
-    cta: "",
-  });
+  const updateField = (key: string, value: string) => {
+    setFieldValues(prev => ({ ...prev, [key]: value }));
+    // Track char count for primary field
+    const primaryField = identity.fields.find(f => f.required);
+    if (primaryField && key === primaryField.key) setCharCount(value.length);
+  };
 
-  const [outlineForm, setOutlineForm] = useState<OutlineFormState>({
-    topic: "",
-    audience: "",
-    goal: "",
-    depth: "medium",
-    notes: "",
-  });
+  const canRun = identity.fields
+    .filter(f => f.required)
+    .every(f => (fieldValues[f.key] || "").trim().length > 0);
 
-  const [promptForm, setPromptForm] = useState<PromptFormState>({
-    goal: "",
-    context: "",
-    constraints: "",
-    outputFormat: "",
-  });
-
-  const primaryInput = useMemo(() => {
-    if (task === "email") return buildEmailInput(emailForm);
-    if (task === "outline") return buildOutlineInput(outlineForm);
-    if (task === "prompt-generator") return buildPromptGeneratorInput(promptForm);
-    return genericInput;
-  }, [task, emailForm, outlineForm, promptForm, genericInput]);
-
-  const promptHint = useMemo(() => {
-    const secondarySignals =
-      task === "email"
-        ? [
-            emailForm.subject,
-            emailForm.recipient,
-            emailForm.cta,
-            extraInstructions,
-          ]
-        : task === "outline"
-        ? [
-            outlineForm.audience,
-            outlineForm.goal,
-            outlineForm.depth,
-            extraInstructions,
-          ]
-        : task === "prompt-generator"
-        ? [
-            promptForm.context,
-            promptForm.constraints,
-            promptForm.outputFormat,
-            extraInstructions,
-          ]
-        : [audience, extraInstructions, length];
-
-    return buildPromptQualityHint(task, primaryInput, secondarySignals);
-  }, [
-    task,
-    primaryInput,
-    emailForm.subject,
-    emailForm.recipient,
-    emailForm.cta,
-    outlineForm.audience,
-    outlineForm.goal,
-    outlineForm.depth,
-    promptForm.context,
-    promptForm.constraints,
-    promptForm.outputFormat,
-    audience,
-    extraInstructions,
-    length,
-  ]);
-
-  async function handleRun() {
+  const handleRun = async () => {
+    if (!canRun || loading) return;
     setLoading(true);
     setError("");
     setOutput("");
 
     try {
-      const composedInput = [
-        primaryInput,
-        extraInstructions ? `Extra instructions: ${extraInstructions}` : "",
-      ]
-        .filter(Boolean)
-        .join("\n\n");
-
+      const input = buildInputFromFields(fieldValues);
       const res = await fetch("/api/ai/run", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          input: composedInput,
+          input,
           config: {
+            ...config,
             task,
-            tone,
-            outputType,
-            audience: task === "outline" ? outlineForm.audience : audience,
-            length: task === "outline" ? outlineForm.depth : length,
-            extraInstructions,
-            // Pass DB-stored systemPrompt so auto-generated tools use their
-            // specialist prompt instead of the generic task-based routing
-            ...(config.systemPrompt ? { systemPrompt: config.systemPrompt } : {}),
+            tone: fieldValues.tone || config.tone || "professional",
+            audience: fieldValues.audience || fieldValues.customer || "",
+            length: fieldValues.length || fieldValues.format || "medium",
           },
         }),
       });
 
-      const data = (await res.json()) as RunResponse;
-
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "AI tool execution failed.");
+      const data: RunResponse = await res.json();
+      if (!res.ok || data.error) {
+        setError(data.error || "Something went wrong. Please try again.");
+      } else {
+        setOutput(data.output || "");
       }
-
-      setOutput(String(data.output || ""));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } catch {
+      setError("Network error. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  function resetAll() {
-    setGenericInput("");
-    setAudience("");
-    setLength("medium");
-    setExtraInstructions("");
+  const handleReset = () => {
+    const init: Record<string, string> = {};
+    for (const f of identity.fields) {
+      if (f.type === "select" && f.options?.length) init[f.key] = f.options[0];
+      else init[f.key] = "";
+    }
+    setFieldValues(init);
     setOutput("");
     setError("");
-    setEmailForm({
-      subject: "",
-      purpose: "",
-      recipient: "",
-      context: "",
-      cta: "",
-    });
-    setOutlineForm({
-      topic: "",
-      audience: "",
-      goal: "",
-      depth: "medium",
-      notes: "",
-    });
-    setPromptForm({
-      goal: "",
-      context: "",
-      constraints: "",
-      outputFormat: "",
-    });
-  }
-
-  const canRun = primaryInput.trim().length > 0;
+    setCharCount(0);
+  };
 
   return (
-    <section className={cardClass()}>
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-        <div className="max-w-3xl">
-          <div className="flex flex-wrap gap-2">
-            <span className={badgeClass()}>{task.replace(/-/g, " ")}</span>
-            <span className={badgeClass()}>{outputType.replace(/-/g, " ")}</span>
+    <section className={cls.card}>
+      {/* Header with accent bar and tool identity */}
+      <div className="mb-6">
+        <div className={cls.accentBar(identity.barColor)} />
+        <div className="mt-4 flex items-start gap-3">
+          <span className="text-2xl">{identity.icon}</span>
+          <div>
+            <h2 className="text-xl font-semibold text-q-text md:text-2xl">{item.name}</h2>
+            <p className="mt-1 text-sm text-q-muted">{identity.description}</p>
           </div>
-
-          <h2 className="mt-4 text-2xl font-semibold tracking-tight text-q-text md:text-3xl">
-            {meta.title}
-          </h2>
-
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-q-muted md:text-base">
-            {config.intro || meta.helperText}
-          </p>
         </div>
-
-        <div className="grid min-w-[240px] gap-3 sm:grid-cols-2 lg:grid-cols-1">
-          <div className={elevatedPanelClass()}>
-            <div className={sectionTitleClass()}>Task</div>
-            <div className="mt-2 text-sm font-semibold capitalize text-q-text">
-              {task.replace(/-/g, " ")}
-            </div>
-          </div>
-
-          <div className={elevatedPanelClass()}>
-            <div className={sectionTitleClass()}>Output type</div>
-            <div className="mt-2 text-sm font-semibold capitalize text-q-text">
-              {outputType.replace(/-/g, " ")}
-            </div>
-          </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className={cls.badge(identity.badgeColor)}>AI Powered</span>
+          {task !== "text-generation" && (
+            <span className={cls.badge("border-q-border bg-q-bg text-q-muted")}>
+              {task.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
+            </span>
+          )}
         </div>
       </div>
 
-      <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="space-y-5">
-          <div className={softInfoClass()}>
-            <div className="font-medium text-slate-800">Prompt quality hint</div>
-            <div className="mt-1">{promptHint}</div>
-          </div>
-
-          {task === "email" ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className={`${panelClass()} md:col-span-2`}>
-                <label className={labelClass()}>Email subject</label>
-                <input
-                  value={emailForm.subject}
-                  onChange={(e) =>
-                    setEmailForm((prev) => ({
-                      ...prev,
-                      subject: e.target.value,
-                    }))
-                  }
-                  placeholder="Follow-up after product demo"
-                  className={inputClass()}
-                />
-              </div>
-
-              <div className={panelClass()}>
-                <label className={labelClass()}>Recipient</label>
-                <input
-                  value={emailForm.recipient}
-                  onChange={(e) =>
-                    setEmailForm((prev) => ({
-                      ...prev,
-                      recipient: e.target.value,
-                    }))
-                  }
-                  placeholder="Client, hiring manager, support lead"
-                  className={inputClass()}
-                />
-              </div>
-
-              <div className={panelClass()}>
-                <label className={labelClass()}>Call to action</label>
-                <input
-                  value={emailForm.cta}
-                  onChange={(e) =>
-                    setEmailForm((prev) => ({
-                      ...prev,
-                      cta: e.target.value,
-                    }))
-                  }
-                  placeholder="Suggest a call next week"
-                  className={inputClass()}
-                />
-              </div>
-
-              <div className={`${panelClass()} md:col-span-2`}>
-                <label className={labelClass()}>Purpose</label>
-                <textarea
-                  value={emailForm.purpose}
-                  onChange={(e) =>
-                    setEmailForm((prev) => ({
-                      ...prev,
-                      purpose: e.target.value,
-                    }))
-                  }
-                  placeholder="Explain why you are sending this email."
-                  className={textareaClass("min-h-[120px]")}
-                />
-              </div>
-
-              <div className={`${panelClass()} md:col-span-2`}>
-                <label className={labelClass()}>Context</label>
-                <textarea
-                  value={emailForm.context}
-                  onChange={(e) =>
-                    setEmailForm((prev) => ({
-                      ...prev,
-                      context: e.target.value,
-                    }))
-                  }
-                  placeholder="Add relevant background, timing, or previous conversation details."
-                  className={textareaClass("min-h-[120px]")}
-                />
-              </div>
-            </div>
-          ) : task === "outline" ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className={`${panelClass()} md:col-span-2`}>
-                <label className={labelClass()}>Topic</label>
-                <input
-                  value={outlineForm.topic}
-                  onChange={(e) =>
-                    setOutlineForm((prev) => ({
-                      ...prev,
-                      topic: e.target.value,
-                    }))
-                  }
-                  placeholder="How to launch a SaaS in 2026"
-                  className={inputClass()}
-                />
-              </div>
-
-              <div className={panelClass()}>
-                <label className={labelClass()}>Audience</label>
-                <input
-                  value={outlineForm.audience}
-                  onChange={(e) =>
-                    setOutlineForm((prev) => ({
-                      ...prev,
-                      audience: e.target.value,
-                    }))
-                  }
-                  placeholder="Founders, marketers, beginners"
-                  className={inputClass()}
-                />
-              </div>
-
-              <div className={panelClass()}>
-                <label className={labelClass()}>Depth</label>
-                <select
-                  value={outlineForm.depth}
-                  onChange={(e) =>
-                    setOutlineForm((prev) => ({
-                      ...prev,
-                      depth: e.target.value,
-                    }))
-                  }
-                  className={inputClass()}
-                >
-                  <option value="short">Short</option>
-                  <option value="medium">Medium</option>
-                  <option value="detailed">Detailed</option>
-                </select>
-              </div>
-
-              <div className={`${panelClass()} md:col-span-2`}>
-                <label className={labelClass()}>Goal</label>
-                <input
-                  value={outlineForm.goal}
-                  onChange={(e) =>
-                    setOutlineForm((prev) => ({
-                      ...prev,
-                      goal: e.target.value,
-                    }))
-                  }
-                  placeholder="SEO article, lesson plan, landing page, video script"
-                  className={inputClass()}
-                />
-              </div>
-
-              <div className={`${panelClass()} md:col-span-2`}>
-                <label className={labelClass()}>Notes or required sections</label>
-                <textarea
-                  value={outlineForm.notes}
-                  onChange={(e) =>
-                    setOutlineForm((prev) => ({
-                      ...prev,
-                      notes: e.target.value,
-                    }))
-                  }
-                  placeholder="Mention sections, angles, keywords, or structure requirements."
-                  className={textareaClass("min-h-[140px]")}
-                />
-              </div>
-            </div>
-          ) : task === "prompt-generator" ? (
-            <div className="grid gap-4">
-              <div className={panelClass()}>
-                <label className={labelClass()}>Goal</label>
-                <textarea
-                  value={promptForm.goal}
-                  onChange={(e) =>
-                    setPromptForm((prev) => ({
-                      ...prev,
-                      goal: e.target.value,
-                    }))
-                  }
-                  placeholder="Describe exactly what you want the prompt to help produce."
-                  className={textareaClass("min-h-[120px]")}
-                />
-              </div>
-
-              <div className={panelClass()}>
-                <label className={labelClass()}>Context</label>
-                <textarea
-                  value={promptForm.context}
-                  onChange={(e) =>
-                    setPromptForm((prev) => ({
-                      ...prev,
-                      context: e.target.value,
-                    }))
-                  }
-                  placeholder="Add brand, audience, niche, domain knowledge, or use-case context."
-                  className={textareaClass("min-h-[120px]")}
-                />
-              </div>
-
-              <div className={panelClass()}>
-                <label className={labelClass()}>Constraints</label>
-                <textarea
-                  value={promptForm.constraints}
-                  onChange={(e) =>
-                    setPromptForm((prev) => ({
-                      ...prev,
-                      constraints: e.target.value,
-                    }))
-                  }
-                  placeholder="Tone, banned words, style, length, formatting, or factual constraints."
-                  className={textareaClass("min-h-[120px]")}
-                />
-              </div>
-
-              <div className={panelClass()}>
-                <label className={labelClass()}>Desired output format</label>
-                <input
-                  value={promptForm.outputFormat}
-                  onChange={(e) =>
-                    setPromptForm((prev) => ({
-                      ...prev,
-                      outputFormat: e.target.value,
-                    }))
-                  }
-                  placeholder="Bullets, table, JSON, paragraph, headings"
-                  className={inputClass()}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className={panelClass()}>
-              <label className={labelClass()}>
-                {task === "summarization"
-                  ? "Paste text to summarize"
-                  : task === "rewrite"
-                  ? "Paste text to rewrite"
-                  : task === "grammar-check"
-                  ? "Text to check"
-                  : task === "paraphrase"
-                  ? "Text to paraphrase"
-                  : task === "cover-letter"
-                  ? "Job description and your background"
-                  : task === "linkedin-bio"
-                  ? "Your role, experience and goals"
-                  : task === "product-description"
-                  ? "Product name, features and target customer"
-                  : task === "tweet"
-                  ? "Topic or idea for the tweet"
-                  : task === "youtube-description"
-                  ? "Video title and key points"
-                  : task === "cold-email"
-                  ? "Prospect context and your offer"
-                  : task === "meta-description"
-                  ? "Page title and main topic"
-                  : task === "resume-bullets"
-                  ? "Your job responsibilities and achievements"
-                  : task === "meeting-summary"
-                  ? "Paste your meeting notes or transcript"
-                  : "Enter your prompt or text"}
+      {/* Main layout: inputs + output */}
+      <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
+        {/* Left: Structured input form */}
+        <div className="space-y-4">
+          {identity.fields.map(field => (
+            <div key={field.key} className={cls.panel}>
+              <label className={cls.label}>
+                {field.label}
+                {field.required && <span className="ml-1 text-red-400">*</span>}
               </label>
-              <textarea
-                value={genericInput}
-                onChange={(e) => setGenericInput(e.target.value)}
-                placeholder={
-                  // Use config placeholder from DB if available
-                  config.placeholder ||
-                  (task === "summarization"
-                    ? "Paste a long paragraph, transcript, article, or notes here."
-                    : task === "rewrite"
-                    ? "Paste the original text you want rewritten."
-                    : task === "grammar-check"
-                    ? "Paste your text here to check for grammar, spelling and punctuation errors..."
-                    : task === "paraphrase"
-                    ? "Paste the text you want rewritten in a different way while keeping the same meaning..."
-                    : task === "cover-letter"
-                    ? "Job title: [title]\nCompany: [company name]\nMy background: [brief summary]\nKey requirements: [paste job requirements]"
-                    : task === "linkedin-bio"
-                    ? "I'm a [role] with [X] years experience in [field]. I specialise in [speciality]. Looking to connect with [audience]."
-                    : task === "product-description"
-                    ? "Product: [name]\nFeatures:\n- [feature 1]\n- [feature 2]\nTarget customer: [who buys this]"
-                    : task === "tweet"
-                    ? "The biggest mistake founders make when launching their first product is..."
-                    : task === "youtube-description"
-                    ? "Video title: [your title]\nKey points covered:\n- [point 1]\n- [point 2]\nTarget keyword: [keyword]"
-                    : task === "cold-email"
-                    ? "Prospect: [role] at [company type]\nMy offer: [what you do and why it's relevant]\nAsk: [what you want — intro call, reply, etc.]"
-                    : task === "meta-description"
-                    ? "Page title: [your page title]\nMain topic: [what the page is about]\nTarget keyword: [primary keyword]"
-                    : task === "resume-bullets"
-                    ? "Role: [your job title]\nResponsibilities: [list what you did]\nAchievements: [any results or impact]"
-                    : task === "meeting-summary"
-                    ? "Paste your raw meeting notes, voice memo transcript, or bullet points from the meeting..."
-                    : "Describe what you want the AI tool to generate, improve, or transform.")
-                }
-                className={textareaClass("min-h-[220px]")}
-              />
+
+              {field.type === "textarea" ? (
+                <textarea
+                  value={fieldValues[field.key] || ""}
+                  onChange={e => updateField(field.key, e.target.value)}
+                  placeholder={field.placeholder}
+                  rows={field.rows || 4}
+                  className={cls.textarea}
+                  style={{ minHeight: `${(field.rows || 4) * 28}px` }}
+                />
+              ) : field.type === "select" && field.options ? (
+                <div className="flex flex-wrap gap-2">
+                  {field.options.map(opt => (
+                    <button
+                      key={opt}
+                      onClick={() => updateField(field.key, opt)}
+                      className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                        fieldValues[field.key] === opt
+                          ? `border-transparent bg-q-primary text-white`
+                          : "border-q-border bg-q-card text-q-muted hover:text-q-text hover:border-q-text/20"
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={fieldValues[field.key] || ""}
+                  onChange={e => updateField(field.key, e.target.value)}
+                  placeholder={field.placeholder}
+                  className={cls.input}
+                />
+              )}
             </div>
+          ))}
+
+          {/* Character count for primary field */}
+          {charCount > 0 && (
+            <div className="text-xs text-q-muted text-right">{charCount} characters</div>
           )}
 
-          <div className={panelClass()}>
-            <label className={labelClass()}>Extra instructions</label>
-            <textarea
-              value={extraInstructions}
-              onChange={(e) => setExtraInstructions(e.target.value)}
-              placeholder="Optional: add format, structure, style, constraints, or details you want the output to follow."
-              className={textareaClass("min-h-[110px]")}
-            />
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={handleRun}
-              disabled={loading || !canRun}
-              className={primaryButtonClass()}
-            >
-              {loading ? "Generating..." : (config.buttonLabel || meta.actionLabel)}
+          {/* Action buttons */}
+          <div className="flex flex-wrap gap-3 pt-2">
+            <button onClick={handleRun} disabled={!canRun || loading} className={cls.primaryBtn}>
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Generating...
+                </span>
+              ) : (
+                config.buttonLabel || identity.actionLabel
+              )}
             </button>
-
-            <button
-              onClick={() => copyText(output)}
-              disabled={!output}
-              className={secondaryButtonClass()}
-            >
-              Copy Output
+            <button onClick={() => copyText(output)} disabled={!output} className={cls.secondaryBtn}>
+              Copy
             </button>
-
-            <button onClick={resetAll} className={secondaryButtonClass()}>
+            <button onClick={handleReset} className={cls.secondaryBtn}>
               Reset
             </button>
           </div>
 
-          {output ? (
-            <div className={successHintClass()}>
-              <div className="font-medium">How to use this result</div>
-              <div className="mt-1">
-                Review the output, refine the fields if needed, and rerun with
-                stronger constraints if you want a tighter result.
+          {/* Output section */}
+          {(output || loading || error) && (
+            <div className={cls.outputShell}>
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <div className={cls.sectionTitle}>{config.outputLabel || identity.outputLabel}</div>
+                </div>
+                <span className={cls.badge(
+                  loading
+                    ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                    : error
+                    ? "border-red-200 bg-red-50 text-red-700"
+                    : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+                )}>
+                  {loading ? "Generating" : error ? "Error" : "Ready"}
+                </span>
+              </div>
+
+              {loading ? (
+                <div className={`${cls.outputInner} space-y-3`}>
+                  <div className="h-4 w-3/4 animate-pulse rounded bg-q-border/60" />
+                  <div className="h-4 w-full animate-pulse rounded bg-q-border/60" />
+                  <div className="h-4 w-5/6 animate-pulse rounded bg-q-border/60" />
+                  <div className="h-4 w-2/3 animate-pulse rounded bg-q-border/60" />
+                </div>
+              ) : error ? (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+                  {error}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className={cls.outputInner}>{output}</div>
+                  <div className="flex items-center justify-between text-xs text-q-muted">
+                    <span>{output.length} characters · ~{Math.ceil(output.split(/\s+/).length)} words</span>
+                    <button onClick={() => copyText(output)} className={cls.copyBtn}>
+                      Copy to clipboard
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Empty state */}
+          {!output && !loading && !error && (
+            <div className={cls.outputShell}>
+              <div className="mb-4">
+                <div className={cls.sectionTitle}>{config.outputLabel || identity.outputLabel}</div>
+              </div>
+              <div className={`${cls.outputInner} text-q-muted/60`}>
+                Fill in the fields above and click &ldquo;{config.buttonLabel || identity.actionLabel}&rdquo; to generate your result.
               </div>
             </div>
-          ) : null}
-
-          {task === "email" ? (
-            <EmailOutputView output={output} loading={loading} error={error} />
-          ) : task === "outline" ? (
-            <OutlineOutputView output={output} loading={loading} error={error} />
-          ) : task === "prompt-generator" ? (
-            <PromptOutputView output={output} loading={loading} error={error} />
-          ) : (
-            <GenericOutputView
-              output={output}
-              label={config.outputLabel || meta.outputLabel}
-              loading={loading}
-              error={error}
-            />
           )}
         </div>
 
+        {/* Right: Tips sidebar */}
         <aside className="space-y-4">
-          <div className={elevatedPanelClass()}>
-            <div className={sectionTitleClass()}>Tone</div>
-            <div className="mt-3">
-              <select
-                value={tone}
-                onChange={(e) => setTone(e.target.value)}
-                className={inputClass()}
-              >
-                {toneOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option.charAt(0).toUpperCase() + option.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {task !== "outline" &&
-          task !== "email" &&
-          task !== "prompt-generator" ? (
-            <div className={elevatedPanelClass()}>
-              <div className={sectionTitleClass()}>Audience</div>
-              <div className="mt-3">
-                <input
-                  value={audience}
-                  onChange={(e) => setAudience(e.target.value)}
-                  placeholder="General audience"
-                  className={inputClass()}
-                />
-              </div>
-            </div>
-          ) : null}
-
-          {task !== "outline" ? (
-            <div className={elevatedPanelClass()}>
-              <div className={sectionTitleClass()}>Length</div>
-              <div className="mt-3">
-                <select
-                  value={length}
-                  onChange={(e) => setLength(e.target.value)}
-                  className={inputClass()}
-                >
-                  <option value="short">Short</option>
-                  <option value="medium">Medium</option>
-                  <option value="long">Long</option>
-                  <option value="detailed">Detailed</option>
-                </select>
-              </div>
-            </div>
-          ) : null}
-
-          <div className={elevatedPanelClass()}>
-            <div className={sectionTitleClass()}>Examples</div>
-            <ul className="mt-3 space-y-2 text-sm leading-6 text-q-muted">
-              {meta.examples.map((example, index) => (
-                <li key={`${example}-${index}`}>• {example}</li>
+          {/* Quick tips */}
+          <div className={cls.panel}>
+            <div className={cls.sectionTitle}>Tips for better results</div>
+            <ul className="mt-3 space-y-2.5">
+              {identity.tips.map((tip, i) => (
+                <li key={i} className="flex gap-2 text-sm leading-relaxed text-q-muted">
+                  <span className={`mt-0.5 flex-shrink-0 ${identity.accentColor}`}>→</span>
+                  {tip}
+                </li>
               ))}
             </ul>
           </div>
 
-          <div className={elevatedPanelClass()}>
-            <div className={sectionTitleClass()}>Better results checklist</div>
-            <ul className="mt-3 space-y-2 text-sm leading-6 text-q-muted">
-              {meta.checklist.map((entry, index) => (
-                <li key={`${entry}-${index}`}>• {entry}</li>
-              ))}
-            </ul>
+          {/* What this tool does */}
+          <div className={cls.panel}>
+            <div className={cls.sectionTitle}>What this tool does</div>
+            <p className="mt-3 text-sm leading-relaxed text-q-muted">
+              {item.description}
+            </p>
           </div>
 
-          <div className={elevatedPanelClass()}>
-            <div className={sectionTitleClass()}>Tips</div>
-            <ul className="mt-3 space-y-2 text-sm leading-6 text-q-muted">
-              <li>• Stronger context usually improves output quality.</li>
-              <li>• Use extra instructions to shape structure or tone.</li>
-              <li>
-                • Structured inputs usually produce better drafts than one vague
-                prompt.
-              </li>
-            </ul>
+          {/* Powered by */}
+          <div className={cls.panel}>
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🤖</span>
+              <div>
+                <div className="text-sm font-medium text-q-text">Powered by AI</div>
+                <div className="text-xs text-q-muted">Results are AI-generated. Always review before using.</div>
+              </div>
+            </div>
           </div>
         </aside>
       </div>
