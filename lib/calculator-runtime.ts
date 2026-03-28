@@ -152,6 +152,14 @@ export function resolveCalculatorRuntime(input: CalculatorRuntimeInput): Calcula
     return { engine_type: "compound-interest-calculator", engine_config: {}, is_supported: true, reason: 'Matched compound-interest-calculator.' };
   }
 
+  if (slug.includes("salary") || slug.includes("take-home") || slug.includes("payroll") || slug.includes("paycheck")) {
+    return { engine_type: "salary-calculator", engine_config: {}, is_supported: true, reason: 'Matched salary-calculator.' };
+  }
+
+  if (slug.includes("retirement") || slug.includes("pension-plan")) {
+    return { engine_type: "retirement-calculator", engine_config: {}, is_supported: true, reason: 'Matched retirement-calculator.' };
+  }
+
   if (hasAny(slug, ["event-duration", "elapsed-time"])) {
     return formulaPreset("datetime-difference", name || "Event Duration Calculator");
   }

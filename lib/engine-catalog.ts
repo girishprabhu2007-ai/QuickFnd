@@ -853,8 +853,8 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
     category: "calculator",
     family: "salary-calculator",
     title: "Salary Calculator",
-    description: "Calculate your in-hand salary from CTC with PF, PT, and HRA breakdowns for India.",
-    keywords: ["salary calculator", "ctc calculator", "take home salary", "in hand salary india"],
+    description: "Calculate your take-home salary after taxes and deductions. Supports US, UK, India, Australia, Germany, and more.",
+    keywords: ["salary calculator", "take home salary", "paycheck calculator", "net salary", "after tax calculator", "ctc calculator"],
     defaultConfig: {},
   }),
   "calorie-calculator": createDefinition({

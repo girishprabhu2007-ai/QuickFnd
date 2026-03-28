@@ -228,121 +228,451 @@ function RetirementCalculator({ title }: { title: string }) {
 }
 
 
-function SalaryCalculator({ title }: { title: string }) {
-  const [ctc, setCtc] = useState("1200000");
-  const [city, setCity] = useState<"metro" | "non-metro">("metro");
-  const [rentPaid, setRentPaid] = useState("25000");
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MULTI-COUNTRY SALARY CALCULATOR
+   Supports: US, UK, India, Australia, Germany, Generic
+   Auto-detects country from slug (e.g. "salary-calculator-washington-dc" → US)
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
-  const result = useMemo(() => {
-    const annual = safeNumber(ctc);
-    if (!annual || annual <= 0) return null;
+type SalaryCountry = "US" | "UK" | "IN" | "AU" | "DE" | "GENERIC";
 
-    // Typical CTC breakdown
-    const basicPct = 0.40;
-    const hraRatePct = city === "metro" ? 0.50 : 0.40;
-    const specialPct = 0.20;
-    const pfPct = 0.12;
+const COUNTRY_INFO: Record<SalaryCountry, { label: string; flag: string; currency: string; symbol: string; defaultSalary: string; period: string }> = {
+  US:      { label: "United States", flag: "🇺🇸", currency: "USD", symbol: "$",  defaultSalary: "75000",   period: "Annual" },
+  UK:      { label: "United Kingdom", flag: "🇬🇧", currency: "GBP", symbol: "£",  defaultSalary: "45000",   period: "Annual" },
+  IN:      { label: "India",          flag: "🇮🇳", currency: "INR", symbol: "₹",  defaultSalary: "1200000", period: "Annual CTC" },
+  AU:      { label: "Australia",      flag: "🇦🇺", currency: "AUD", symbol: "$",  defaultSalary: "90000",   period: "Annual" },
+  DE:      { label: "Germany",        flag: "🇩🇪", currency: "EUR", symbol: "€",  defaultSalary: "55000",   period: "Annual Brutto" },
+  GENERIC: { label: "Other Country",  flag: "🌍", currency: "",    symbol: "",   defaultSalary: "60000",   period: "Annual" },
+};
 
-    const basicAnnual = annual * basicPct;
-    const hraAnnual = basicAnnual * hraRatePct;
-    const specialAnnual = annual * specialPct;
-    const lta = annual * 0.05;
-    const medAllowance = 15000;
+function detectCountryFromSlug(slug: string): SalaryCountry {
+  const s = slug.toLowerCase();
+  // US states / cities
+  if (s.includes("washington") || s.includes("maryland") || s.includes("virginia") ||
+      s.includes("california") || s.includes("new-york") || s.includes("texas") ||
+      s.includes("florida") || s.includes("illinois") || s.includes("usa") ||
+      s.includes("united-states") || s.includes("-us-") || s.endsWith("-us")) return "US";
+  // UK
+  if (s.includes("uk") || s.includes("united-kingdom") || s.includes("paye") ||
+      s.includes("london") || s.includes("england") || s.includes("scotland")) return "UK";
+  // India
+  if (s.includes("india") || s.includes("ctc") || s.includes("in-hand") ||
+      s.includes("-in-") || s.endsWith("-in") || s.includes("inr")) return "IN";
+  // Australia
+  if (s.includes("australia") || s.includes("-au-") || s.endsWith("-au") ||
+      s.includes("superannuation")) return "AU";
+  // Germany
+  if (s.includes("germany") || s.includes("deutschland") || s.includes("-de-") ||
+      s.endsWith("-de") || s.includes("brutto")) return "DE";
+  return "GENERIC";
+}
 
-    // PF — 12% of basic (capped at ₹1800/month)
-    const pfMonthly = Math.min(basicAnnual / 12 * pfPct, 1800);
-    const pfAnnual = pfMonthly * 12;
+// ── US Federal Tax 2025 ──
+function calcUS(salary: number, filingStatus: string) {
+  // Federal brackets (2025, Single)
+  const singleBrackets = [
+    { limit: 11600, rate: 0.10 },
+    { limit: 47150, rate: 0.12 },
+    { limit: 100525, rate: 0.22 },
+    { limit: 191950, rate: 0.24 },
+    { limit: 243725, rate: 0.32 },
+    { limit: 609350, rate: 0.35 },
+    { limit: Infinity, rate: 0.37 },
+  ];
+  const marriedBrackets = [
+    { limit: 23200, rate: 0.10 },
+    { limit: 94300, rate: 0.12 },
+    { limit: 201050, rate: 0.22 },
+    { limit: 383900, rate: 0.24 },
+    { limit: 487450, rate: 0.32 },
+    { limit: 731200, rate: 0.35 },
+    { limit: Infinity, rate: 0.37 },
+  ];
 
-    // HRA exemption (least of 3 conditions)
-    const rentAnnual = safeNumber(rentPaid) ? (safeNumber(rentPaid) as number) * 12 : 0;
-    const hraExemption = Math.min(
-      hraAnnual,
-      rentAnnual - basicAnnual * 0.10,
-      basicAnnual * (city === "metro" ? 0.50 : 0.40)
-    );
-    const hraExemptionFinal = Math.max(0, hraExemption);
+  const standardDeduction = filingStatus === "married" ? 29200 : 14600;
+  const brackets = filingStatus === "married" ? marriedBrackets : singleBrackets;
+  const taxableIncome = Math.max(0, salary - standardDeduction);
 
-    const grossSalary = basicAnnual + hraAnnual + specialAnnual + lta + medAllowance;
-    const taxableIncome = grossSalary - hraExemptionFinal - pfAnnual - 50000; // standard deduction
-    const taxableIncomePos = Math.max(0, taxableIncome);
+  let federalTax = 0;
+  let prev = 0;
+  for (const bracket of brackets) {
+    if (taxableIncome <= prev) break;
+    const taxable = Math.min(taxableIncome, bracket.limit) - prev;
+    federalTax += taxable * bracket.rate;
+    prev = bracket.limit;
+  }
 
-    // New Tax Regime FY 2025-26
-    let taxNewRegime = 0;
-    if (taxableIncomePos <= 300000) taxNewRegime = 0;
-    else if (taxableIncomePos <= 600000) taxNewRegime = (taxableIncomePos - 300000) * 0.05;
-    else if (taxableIncomePos <= 900000) taxNewRegime = 15000 + (taxableIncomePos - 600000) * 0.10;
-    else if (taxableIncomePos <= 1200000) taxNewRegime = 45000 + (taxableIncomePos - 900000) * 0.15;
-    else if (taxableIncomePos <= 1500000) taxNewRegime = 90000 + (taxableIncomePos - 1200000) * 0.20;
-    else taxNewRegime = 150000 + (taxableIncomePos - 1500000) * 0.30;
+  // FICA: Social Security 6.2% (capped at $168,600) + Medicare 1.45%
+  const ssCap = 168600;
+  const socialSecurity = Math.min(salary, ssCap) * 0.062;
+  const medicare = salary * 0.0145;
+  const additionalMedicare = salary > 200000 ? (salary - 200000) * 0.009 : 0;
+  const fica = socialSecurity + medicare + additionalMedicare;
 
-    const cess = taxNewRegime * 0.04;
-    const totalTax = taxNewRegime + cess;
+  const totalTax = federalTax + fica;
+  const annualNet = salary - totalTax;
 
-    // Professional tax (state — avg ₹200/month)
-    const ptAnnual = 2400;
+  return {
+    grossMonthly: salary / 12,
+    netMonthly: annualNet / 12,
+    rows: [
+      { label: "Gross Annual Salary", value: salary, type: "income" as const },
+      { label: `Standard Deduction (${filingStatus === "married" ? "Married" : "Single"})`, value: -standardDeduction, type: "deduction" as const },
+      { label: "Federal Income Tax", value: -federalTax, type: "deduction" as const },
+      { label: "Social Security (6.2%)", value: -socialSecurity, type: "deduction" as const },
+      { label: "Medicare (1.45%)", value: -medicare, type: "deduction" as const },
+      ...(additionalMedicare > 0 ? [{ label: "Additional Medicare (0.9%)", value: -additionalMedicare, type: "deduction" as const }] : []),
+      { label: "Annual Take-Home", value: annualNet, type: "final" as const },
+    ],
+    effectiveTaxRate: salary > 0 ? (totalTax / salary * 100) : 0,
+    note: "Federal tax only. State/local taxes vary. Based on 2025 brackets.",
+  };
+}
 
-    const inHandAnnual = grossSalary - pfAnnual - totalTax - ptAnnual;
-    const inHandMonthly = inHandAnnual / 12;
+// ── UK PAYE 2025-26 ──
+function calcUK(salary: number) {
+  const personalAllowance = salary <= 100000 ? 12570 : Math.max(0, 12570 - (salary - 100000) / 2);
+  const taxableIncome = Math.max(0, salary - personalAllowance);
 
-    return {
-      grossMonthly: grossSalary / 12,
-      basicMonthly: basicAnnual / 12,
-      hraMonthly: hraAnnual / 12,
-      specialMonthly: specialAnnual / 12,
-      pfMonthly,
-      taxMonthly: totalTax / 12,
-      ptMonthly: ptAnnual / 12,
-      hraExemptionMonthly: hraExemptionFinal / 12,
-      inHandMonthly,
-      effectiveTaxRate: grossSalary > 0 ? (totalTax / grossSalary * 100) : 0,
-    };
-  }, [ctc, city, rentPaid]);
+  let incomeTax = 0;
+  if (taxableIncome <= 37700) {
+    incomeTax = taxableIncome * 0.20;
+  } else if (taxableIncome <= 125140) {
+    incomeTax = 37700 * 0.20 + (taxableIncome - 37700) * 0.40;
+  } else {
+    incomeTax = 37700 * 0.20 + (125140 - 37700) * 0.40 + (taxableIncome - 125140) * 0.45;
+  }
 
-  const fmt = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
+  // National Insurance (Class 1, 2025-26)
+  let ni = 0;
+  const weeklyPay = salary / 52;
+  const weeklyPT = 242; // Primary Threshold
+  const weeklyUEL = 967; // Upper Earnings Limit
+  if (weeklyPay > weeklyPT) {
+    ni = Math.min(weeklyPay - weeklyPT, weeklyUEL - weeklyPT) * 0.08;
+    if (weeklyPay > weeklyUEL) ni += (weeklyPay - weeklyUEL) * 0.02;
+    ni *= 52;
+  }
+
+  const totalDeductions = incomeTax + ni;
+  const annualNet = salary - totalDeductions;
+
+  return {
+    grossMonthly: salary / 12,
+    netMonthly: annualNet / 12,
+    rows: [
+      { label: "Gross Annual Salary", value: salary, type: "income" as const },
+      { label: `Personal Allowance`, value: -personalAllowance, type: "deduction" as const },
+      { label: "Income Tax (PAYE)", value: -incomeTax, type: "deduction" as const },
+      { label: "National Insurance", value: -ni, type: "deduction" as const },
+      { label: "Annual Take-Home", value: annualNet, type: "final" as const },
+    ],
+    effectiveTaxRate: salary > 0 ? (totalDeductions / salary * 100) : 0,
+    note: "Based on PAYE 2025-26 tax year. Excludes student loan, pension, and salary sacrifice.",
+  };
+}
+
+// ── India CTC → In-Hand ──
+function calcIndia(annual: number, city: "metro" | "non-metro", rentPaid: number) {
+  const basicPct = 0.40;
+  const hraRatePct = city === "metro" ? 0.50 : 0.40;
+  const pfPct = 0.12;
+
+  const basicAnnual = annual * basicPct;
+  const hraAnnual = basicAnnual * hraRatePct;
+  const specialAnnual = annual * 0.20;
+  const lta = annual * 0.05;
+  const medAllowance = 15000;
+
+  const pfMonthly = Math.min(basicAnnual / 12 * pfPct, 1800);
+  const pfAnnual = pfMonthly * 12;
+
+  const rentAnnual = rentPaid * 12;
+  const hraExemption = Math.max(0, Math.min(hraAnnual, rentAnnual - basicAnnual * 0.10, basicAnnual * (city === "metro" ? 0.50 : 0.40)));
+
+  const grossSalary = basicAnnual + hraAnnual + specialAnnual + lta + medAllowance;
+  const taxableIncome = Math.max(0, grossSalary - hraExemption - pfAnnual - 50000);
+
+  let tax = 0;
+  if (taxableIncome <= 300000) tax = 0;
+  else if (taxableIncome <= 600000) tax = (taxableIncome - 300000) * 0.05;
+  else if (taxableIncome <= 900000) tax = 15000 + (taxableIncome - 600000) * 0.10;
+  else if (taxableIncome <= 1200000) tax = 45000 + (taxableIncome - 900000) * 0.15;
+  else if (taxableIncome <= 1500000) tax = 90000 + (taxableIncome - 1200000) * 0.20;
+  else tax = 150000 + (taxableIncome - 1500000) * 0.30;
+
+  const cess = tax * 0.04;
+  const totalTax = tax + cess;
+  const ptAnnual = 2400;
+  const inHandAnnual = grossSalary - pfAnnual - totalTax - ptAnnual;
+
+  return {
+    grossMonthly: grossSalary / 12,
+    netMonthly: inHandAnnual / 12,
+    rows: [
+      { label: "Basic Salary", value: basicAnnual / 12, type: "income" as const },
+      { label: "HRA", value: hraAnnual / 12, type: "income" as const },
+      { label: "Special Allowance", value: specialAnnual / 12, type: "income" as const },
+      { label: "Gross Monthly", value: grossSalary / 12, type: "total" as const },
+      { label: "Provident Fund (12%)", value: -pfMonthly, type: "deduction" as const },
+      { label: "Income Tax (New Regime)", value: -(totalTax / 12), type: "deduction" as const },
+      { label: "Professional Tax", value: -(ptAnnual / 12), type: "deduction" as const },
+      { label: "Monthly In-Hand", value: inHandAnnual / 12, type: "final" as const },
+    ],
+    effectiveTaxRate: grossSalary > 0 ? (totalTax / grossSalary * 100) : 0,
+    note: "New Tax Regime FY 2025-26. Assumes 40% Basic, standard CTC structure.",
+  };
+}
+
+// ── Australia PAYG 2025-26 ──
+function calcAustralia(salary: number) {
+  let incomeTax = 0;
+  if (salary <= 18200) incomeTax = 0;
+  else if (salary <= 45000) incomeTax = (salary - 18200) * 0.16;
+  else if (salary <= 135000) incomeTax = 4288 + (salary - 45000) * 0.30;
+  else if (salary <= 190000) incomeTax = 31288 + (salary - 135000) * 0.37;
+  else incomeTax = 51638 + (salary - 190000) * 0.45;
+
+  // Medicare Levy 2%
+  const medicare = salary > 24276 ? salary * 0.02 : 0;
+  const superannuation = salary * 0.115; // 11.5% SG from 1 July 2025
+
+  const totalTax = incomeTax + medicare;
+  const annualNet = salary - totalTax;
+
+  return {
+    grossMonthly: salary / 12,
+    netMonthly: annualNet / 12,
+    rows: [
+      { label: "Gross Annual Salary", value: salary, type: "income" as const },
+      { label: "Income Tax (PAYG)", value: -incomeTax, type: "deduction" as const },
+      { label: "Medicare Levy (2%)", value: -medicare, type: "deduction" as const },
+      { label: `Super Guarantee (11.5%)`, value: superannuation, type: "income" as const },
+      { label: "Annual Take-Home", value: annualNet, type: "final" as const },
+    ],
+    effectiveTaxRate: salary > 0 ? (totalTax / salary * 100) : 0,
+    note: "Based on 2025-26 PAYG rates. Super is employer-paid on top of salary. Excludes HECS/HELP.",
+  };
+}
+
+// ── Germany Brutto → Netto ──
+function calcGermany(salary: number, taxClass: string) {
+  // Simplified German income tax (2025)
+  const grundfreibetrag = 11784;
+  const taxable = Math.max(0, salary - grundfreibetrag);
+
+  let incomeTax = 0;
+  if (taxable <= 17005) {
+    incomeTax = taxable * 0.14;
+  } else if (taxable <= 66760) {
+    incomeTax = 17005 * 0.14 + (taxable - 17005) * 0.2397;
+  } else if (taxable <= 277826 - grundfreibetrag) {
+    incomeTax = 17005 * 0.14 + (66760 - 17005) * 0.2397 + (taxable - 66760) * 0.42;
+  } else {
+    incomeTax = 17005 * 0.14 + (66760 - 17005) * 0.2397 + (277826 - grundfreibetrag - 66760) * 0.42 + (taxable - (277826 - grundfreibetrag)) * 0.45;
+  }
+
+  if (taxClass === "III") incomeTax *= 0.65; // rough approximation for married
+  const soli = incomeTax > 18130 ? incomeTax * 0.055 : 0;
+
+  // Social contributions (employee share, capped)
+  const healthInsurance = Math.min(salary, 66150) * 0.073; // ~14.6% / 2
+  const nursingCare = Math.min(salary, 66150) * 0.017;
+  const pension = Math.min(salary, 90600) * 0.093;
+  const unemployment = Math.min(salary, 90600) * 0.013;
+
+  const totalDeductions = incomeTax + soli + healthInsurance + nursingCare + pension + unemployment;
+  const annualNet = salary - totalDeductions;
+
+  return {
+    grossMonthly: salary / 12,
+    netMonthly: annualNet / 12,
+    rows: [
+      { label: "Brutto (Gross Annual)", value: salary, type: "income" as const },
+      { label: `Income Tax (Class ${taxClass})`, value: -incomeTax, type: "deduction" as const },
+      { label: "Solidarity Surcharge", value: -soli, type: "deduction" as const },
+      { label: "Health Insurance (7.3%)", value: -healthInsurance, type: "deduction" as const },
+      { label: "Pension (9.3%)", value: -pension, type: "deduction" as const },
+      { label: "Unemployment (1.3%)", value: -unemployment, type: "deduction" as const },
+      { label: "Nursing Care (1.7%)", value: -nursingCare, type: "deduction" as const },
+      { label: "Netto (Annual Take-Home)", value: annualNet, type: "final" as const },
+    ],
+    effectiveTaxRate: salary > 0 ? (totalDeductions / salary * 100) : 0,
+    note: "Estimated 2025 rates. Actual amounts depend on tax class, church tax, and health insurer.",
+  };
+}
+
+// ── Generic (flat tax estimate) ──
+function calcGeneric(salary: number, taxRate: number) {
+  const tax = salary * (taxRate / 100);
+  const annualNet = salary - tax;
+  return {
+    grossMonthly: salary / 12,
+    netMonthly: annualNet / 12,
+    rows: [
+      { label: "Gross Annual Salary", value: salary, type: "income" as const },
+      { label: `Estimated Tax (${taxRate}%)`, value: -tax, type: "deduction" as const },
+      { label: "Estimated Take-Home", value: annualNet, type: "final" as const },
+    ],
+    effectiveTaxRate: taxRate,
+    note: "Using flat estimated tax rate. For accurate results, select your country above.",
+  };
+}
+
+type CalcResult = {
+  grossMonthly: number;
+  netMonthly: number;
+  rows: Array<{ label: string; value: number; type: "income" | "deduction" | "total" | "final" }>;
+  effectiveTaxRate: number;
+  note: string;
+};
+
+function SalaryCalculator({ title, slug }: { title: string; slug: string }) {
+  const detectedCountry = detectCountryFromSlug(slug);
+  const [country, setCountry] = useState<SalaryCountry>(detectedCountry);
+  const info = COUNTRY_INFO[country];
+
+  const [salary, setSalary] = useState(info.defaultSalary);
+  const [filingStatus, setFilingStatus] = useState("single"); // US
+  const [city, setCity] = useState<"metro" | "non-metro">("metro"); // India
+  const [rentPaid, setRentPaid] = useState("25000"); // India
+  const [taxClass, setTaxClass] = useState("I"); // Germany
+  const [taxRate, setTaxRate] = useState("25"); // Generic
+
+  // Reset defaults when country changes
+  const handleCountryChange = (c: SalaryCountry) => {
+    setCountry(c);
+    setSalary(COUNTRY_INFO[c].defaultSalary);
+  };
+
+  const result: CalcResult | null = useMemo(() => {
+    const s = safeNumber(salary);
+    if (!s || s <= 0) return null;
+
+    switch (country) {
+      case "US": return calcUS(s, filingStatus);
+      case "UK": return calcUK(s);
+      case "IN": return calcIndia(s, city, safeNumber(rentPaid) || 0);
+      case "AU": return calcAustralia(s);
+      case "DE": return calcGermany(s, taxClass);
+      case "GENERIC": return calcGeneric(s, safeNumber(taxRate) || 25);
+    }
+  }, [salary, country, filingStatus, city, rentPaid, taxClass, taxRate]);
+
+  const fmt = (n: number) => {
+    const abs = Math.abs(n);
+    if (country === "IN") {
+      return `${info.symbol}${Math.round(abs).toLocaleString("en-IN")}`;
+    }
+    return `${info.symbol || ""}${Math.round(abs).toLocaleString("en-US")}`;
+  };
 
   return (
     <section className={cardClass()}>
       <h2 className="text-xl font-semibold text-q-text mb-6">{title}</h2>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <div>
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Annual CTC</label>
-          <div className="flex items-center rounded-xl border border-q-border bg-q-bg overflow-hidden">
-            <span className="px-3 text-q-muted text-sm">₹</span>
-            <input type="number" value={ctc} onChange={e => setCtc(e.target.value)}
-              className="flex-1 bg-transparent py-3 px-2 text-q-text outline-none" />
-          </div>
-        </div>
-        <div>
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">City Type</label>
-          <div className="flex gap-2">
-            {(["metro", "non-metro"] as const).map(c => (
-              <button key={c} onClick={() => setCity(c)}
-                className={`flex-1 rounded-xl border py-3 text-sm font-medium transition capitalize ${city === c ? "bg-q-primary border-q-primary text-white" : "border-q-border bg-q-bg text-q-muted hover:text-q-text"}`}>
-                {c === "metro" ? "Metro City" : "Non-Metro"}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Monthly Rent Paid</label>
-          <div className="flex items-center rounded-xl border border-q-border bg-q-bg overflow-hidden">
-            <span className="px-3 text-q-muted text-sm">₹</span>
-            <input type="number" value={rentPaid} onChange={e => setRentPaid(e.target.value)}
-              className="flex-1 bg-transparent py-3 px-2 text-q-text outline-none" />
-          </div>
+      {/* Country selector */}
+      <div className="mb-5">
+        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Country / Tax System</label>
+        <div className="flex flex-wrap gap-2">
+          {(Object.keys(COUNTRY_INFO) as SalaryCountry[]).map(c => (
+            <button key={c} onClick={() => handleCountryChange(c)}
+              className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition ${country === c ? "bg-q-primary border-q-primary text-white" : "border-q-border bg-q-bg text-q-muted hover:text-q-text hover:border-q-text/30"}`}>
+              {COUNTRY_INFO[c].flag} {COUNTRY_INFO[c].label}
+            </button>
+          ))}
         </div>
       </div>
 
+      {/* Inputs */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">{info.period}</label>
+          <div className="flex items-center rounded-xl border border-q-border bg-q-bg overflow-hidden">
+            {info.symbol && <span className="px-3 text-q-muted text-sm">{info.symbol}</span>}
+            <input type="number" value={salary} onChange={e => setSalary(e.target.value)}
+              className="flex-1 bg-transparent py-3 px-2 text-q-text outline-none" />
+          </div>
+        </div>
+
+        {/* US-specific: filing status */}
+        {country === "US" && (
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Filing Status</label>
+            <div className="flex gap-2">
+              {["single", "married"].map(s => (
+                <button key={s} onClick={() => setFilingStatus(s)}
+                  className={`flex-1 rounded-xl border py-3 text-sm font-medium transition capitalize ${filingStatus === s ? "bg-q-primary border-q-primary text-white" : "border-q-border bg-q-bg text-q-muted hover:text-q-text"}`}>
+                  {s === "single" ? "Single" : "Married Filing Jointly"}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* India-specific: city type + rent */}
+        {country === "IN" && (
+          <>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">City Type</label>
+              <div className="flex gap-2">
+                {(["metro", "non-metro"] as const).map(c => (
+                  <button key={c} onClick={() => setCity(c)}
+                    className={`flex-1 rounded-xl border py-3 text-sm font-medium transition capitalize ${city === c ? "bg-q-primary border-q-primary text-white" : "border-q-border bg-q-bg text-q-muted hover:text-q-text"}`}>
+                    {c === "metro" ? "Metro City" : "Non-Metro"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Monthly Rent Paid</label>
+              <div className="flex items-center rounded-xl border border-q-border bg-q-bg overflow-hidden">
+                <span className="px-3 text-q-muted text-sm">₹</span>
+                <input type="number" value={rentPaid} onChange={e => setRentPaid(e.target.value)}
+                  className="flex-1 bg-transparent py-3 px-2 text-q-text outline-none" />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Germany-specific: tax class */}
+        {country === "DE" && (
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Tax Class (Steuerklasse)</label>
+            <div className="flex gap-2">
+              {["I", "III", "V"].map(tc => (
+                <button key={tc} onClick={() => setTaxClass(tc)}
+                  className={`flex-1 rounded-xl border py-3 text-sm font-medium transition ${taxClass === tc ? "bg-q-primary border-q-primary text-white" : "border-q-border bg-q-bg text-q-muted hover:text-q-text"}`}>
+                  Class {tc}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Generic: manual tax rate */}
+        {country === "GENERIC" && (
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Estimated Tax Rate</label>
+            <div className="flex items-center rounded-xl border border-q-border bg-q-bg overflow-hidden">
+              <input type="number" value={taxRate} onChange={e => setTaxRate(e.target.value)}
+                className="flex-1 bg-transparent py-3 px-3 text-q-text outline-none" />
+              <span className="px-3 text-q-muted text-sm">%</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Results */}
       {result && (
         <div className="mt-6 space-y-4">
           {/* In-Hand highlight */}
           <div className="rounded-2xl border-2 border-emerald-400/50 bg-emerald-50/40 dark:bg-emerald-500/10 p-5">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <div className="text-xs font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Monthly In-Hand Salary</div>
-                <div className="mt-1 text-4xl font-black text-emerald-700 dark:text-emerald-300">{fmt(result.inHandMonthly)}</div>
-                <div className="mt-1 text-sm text-q-muted">{fmt(result.inHandMonthly * 12)} per year · Effective tax rate: {result.effectiveTaxRate.toFixed(1)}%</div>
+                <div className="text-xs font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Monthly Take-Home</div>
+                <div className="mt-1 text-4xl font-black text-emerald-700 dark:text-emerald-300">{fmt(result.netMonthly)}</div>
+                <div className="mt-1 text-sm text-q-muted">{fmt(result.netMonthly * 12)} per year · Effective rate: {result.effectiveTaxRate.toFixed(1)}%</div>
               </div>
               <div className="text-right">
                 <div className="text-xs text-q-muted">Gross Monthly</div>
@@ -351,22 +681,13 @@ function SalaryCalculator({ title }: { title: string }) {
             </div>
           </div>
 
-          {/* Breakdown */}
+          {/* Breakdown table */}
           <div className="rounded-2xl border border-q-border bg-q-bg overflow-hidden">
             <div className="px-5 py-3 border-b border-q-border">
-              <div className="text-xs font-semibold uppercase tracking-widest text-q-muted">Monthly Breakdown</div>
+              <div className="text-xs font-semibold uppercase tracking-widest text-q-muted">{country === "IN" ? "Monthly" : "Annual"} Breakdown</div>
             </div>
             <div className="divide-y divide-q-border">
-              {[
-                { label: "Basic Salary", value: result.basicMonthly, type: "income" },
-                { label: "HRA", value: result.hraMonthly, type: "income" },
-                { label: "Special Allowance", value: result.specialMonthly, type: "income" },
-                { label: "Gross Salary", value: result.grossMonthly, type: "total" },
-                { label: "Provident Fund (12%)", value: -result.pfMonthly, type: "deduction" },
-                { label: `Income Tax (New Regime)`, value: -result.taxMonthly, type: "deduction" },
-                { label: "Professional Tax", value: -result.ptMonthly, type: "deduction" },
-                { label: "In-Hand Salary", value: result.inHandMonthly, type: "final" },
-              ].map(row => (
+              {result.rows.map(row => (
                 <div key={row.label} className={`flex items-center justify-between px-5 py-3 ${row.type === "total" || row.type === "final" ? "bg-q-card" : ""}`}>
                   <span className={`text-sm ${row.type === "final" ? "font-semibold text-q-text" : "text-q-muted"}`}>{row.label}</span>
                   <span className={`text-sm font-semibold tabular-nums ${row.type === "deduction" ? "text-red-500" : row.type === "final" ? "text-emerald-600 dark:text-emerald-400 text-base" : "text-q-text"}`}>
@@ -376,7 +697,7 @@ function SalaryCalculator({ title }: { title: string }) {
               ))}
             </div>
           </div>
-          <p className="text-xs text-q-muted">Calculated using New Tax Regime FY 2025-26. Assumes 40% Basic, standard CTC structure. Actual figures may vary by employer.</p>
+          <p className="text-xs text-q-muted">{result.note}</p>
         </div>
       )}
     </section>
@@ -411,9 +732,9 @@ export default function CalculatorEngineRenderer({ item }: Props) {
     return <RetirementCalculator title={title} />;
   }
 
-  // ✅ Salary Calculator (India — exact engine_type match only)
+  // ✅ Salary Calculator (multi-country — auto-detects from slug)
   if (engineType === "salary-calculator") {
-    return <SalaryCalculator title={title} />;
+    return <SalaryCalculator title={title} slug={item.slug} />;
   }
 
   // 👉 Add more mappings here safely later
