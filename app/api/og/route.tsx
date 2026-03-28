@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
 
-// ─── Blog category config (unchanged) ────────────────────────────────────────
+// ─── Blog category config ────────────────────────────────────────────────────
 const BLOG_COLORS: Record<string, string> = {
   "how-to": "#3b82f6",
   "tools-guide": "#8b5cf6",
@@ -27,7 +27,7 @@ const BLOG_LABELS: Record<string, string> = {
   "pillar": "Complete Guide",
 };
 
-// ─── Tool/calc/AI type config (NEW) ──────────────────────────────────────────
+// ─── Tool/calc/AI type config ────────────────────────────────────────────────
 const TYPE_CONFIG: Record<string, { accent: string; icon: string; label: string; tagline: string }> = {
   tools: {
     accent: "#3b82f6",
@@ -160,7 +160,7 @@ export async function GET(req: Request) {
     );
   }
 
-  // ── Tool / Calculator / AI Tool OG image (NEW — upgraded) ──────────────────
+  // ── Tool / Calculator / AI Tool OG image ───────────────────────────────────
   if (isTypedPage) {
     const config = TYPE_CONFIG[type];
     const accent = config.accent;
@@ -225,7 +225,6 @@ export async function GET(req: Request) {
             </span>
           </div>
 
-          {/* Type badge */}
           <div style={{
             display: "flex", alignItems: "center", gap: 8,
             background: `${accent}18`,
@@ -320,7 +319,6 @@ export async function GET(req: Request) {
         overflow: "hidden",
       }}
     >
-      {/* Decorative orbs */}
       <div style={{
         position: "absolute", right: -100, top: -100,
         width: 500, height: 500, borderRadius: "50%",
@@ -334,7 +332,6 @@ export async function GET(req: Request) {
         display: "flex",
       }} />
 
-      {/* Top */}
       <div style={{
         display: "flex", alignItems: "center", gap: 14,
         padding: "48px 56px 0 56px",
@@ -350,7 +347,6 @@ export async function GET(req: Request) {
         </span>
       </div>
 
-      {/* Center */}
       <div style={{
         display: "flex", flexDirection: "column", gap: 20,
         padding: "0 56px",
@@ -370,7 +366,6 @@ export async function GET(req: Request) {
         </div>
       </div>
 
-      {/* Bottom */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "0 56px 40px 56px",
