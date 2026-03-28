@@ -1,10 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import type { PublicContentItem } from "@/lib/content-pages";
 import CurrencyConverterClient from "@/components/tools/CurrencyConverterClient";
 import FileToolRenderer from "@/components/tools/FileToolRenderer";
 import PDFToolRenderer from "@/components/tools/PDFToolRenderer";
+import VideoToolRenderer from "@/components/tools/VideoToolRenderer";
 import { getToolEnginePreset } from "@/lib/tool-engine-presets";
 import {
   getEngineUISchema,
@@ -2537,6 +2538,11 @@ function renderByFamily({
   ]);
   if (PDF_TOOL_FAMILIES.has(family)) {
     return <PDFToolRenderer family={family as "pdf-merger"} title={title} />;
+  }
+
+    const VIDEO_TOOL_FAMILIES = new Set(["video-to-gif", "gif-maker", "video-compressor"]);
+  if (VIDEO_TOOL_FAMILIES.has(family)) {
+    return <VideoToolRenderer family={family as "video-to-gif"} title={title} />;
   }
 
   return <GenericTool title={title} description={description} />;

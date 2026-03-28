@@ -1,4 +1,4 @@
-/**
+﻿/**
  * lib/engine-registry.ts
  * ═══════════════════════════════════════════════════════════════════════════════
  * SINGLE SOURCE OF TRUTH for all engine lists.
@@ -36,6 +36,8 @@ export const LIVE_TOOL_ENGINES = new Set([
   "image-cropper", "image-to-base64", "svg-to-png",
   // PDF tools
   "pdf-merger", "pdf-splitter", "image-to-pdf", "text-to-pdf",
+  // Video / GIF tools
+  "video-to-gif", "gif-maker", "video-compressor",
 ]);
 
 // ── Calculators with working renderers in BuiltInCalculatorClient ────────────
