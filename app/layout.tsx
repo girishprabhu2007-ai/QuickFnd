@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from "next";
+﻿import type { Metadata, Viewport } from "next";
 import { DM_Sans, DM_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -19,12 +19,13 @@ const dmMono = DM_Mono({
 });
 import ThemeProvider from "@/components/theme/ThemeProvider";
 import SiteHeader from "@/components/layout/SiteHeader";
+import ServiceWorkerRegistrar from "@/components/pwa/ServiceWorkerRegistrar";
 import { getSiteUrl } from "@/lib/site-url";
 import { createClient } from "@supabase/supabase-js";
 
 const siteUrl = getSiteUrl();
 
-// ─── Load site settings from DB at build/request time ────────────────────────
+// â”€â”€â”€ Load site settings from DB at build/request time â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function getSettings() {
   try {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
@@ -33,7 +34,6 @@ async function getSettings() {
 
     const supabase = createClient(url, key, { auth: { persistSession: false } });
 
-    // Fetch both site_settings and ad_settings in a single round-trip
     const [siteRes, adsRes] = await Promise.all([
       supabase.from("site_settings").select("value").eq("key", "site_settings").maybeSingle(),
       supabase.from("site_settings").select("value").eq("key", "ad_settings").maybeSingle(),
@@ -48,7 +48,6 @@ async function getSettings() {
   }
 }
 
-// Keep old name as alias so nothing else breaks
 async function getSiteSettings() {
   return (await getSettings()).site;
 }
@@ -65,11 +64,11 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "QuickFnd — Free Tools, Calculators & AI Utilities",
+    default: "QuickFnd â€” Free Tools, Calculators & AI Utilities",
     template: "%s | QuickFnd",
   },
   description:
-    "QuickFnd is a free browser-based platform of 199+ tools, calculators, and AI utilities. No install, no account — just results.",
+    "QuickFnd is a free browser-based platform of 205+ tools, calculators, and AI utilities. No install, no account â€” just results.",
   keywords: [
     "free online tools",
     "browser tools",
@@ -85,6 +84,7 @@ export const metadata: Metadata = {
   authors: [{ name: "QuickFnd", url: siteUrl }],
   creator: "QuickFnd",
   publisher: "QuickFnd",
+  manifest: "/manifest.json",
   robots: {
     index: true,
     follow: true,
@@ -101,22 +101,22 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: siteUrl,
     siteName: "QuickFnd",
-    title: "QuickFnd — Free Tools, Calculators & AI Utilities",
+    title: "QuickFnd â€” Free Tools, Calculators & AI Utilities",
     description:
-      "199+ free browser-based tools, calculators, and AI utilities. No install needed.",
+      "205+ free browser-based tools, calculators, and AI utilities. No install needed.",
     images: [
       {
         url: `${siteUrl}/og-default.png`,
         width: 1200,
         height: 630,
-        alt: "QuickFnd — Free Tools, Calculators & AI Utilities",
+        alt: "QuickFnd â€” Free Tools, Calculators & AI Utilities",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "QuickFnd — Free Tools, Calculators & AI Utilities",
-    description: "199+ free browser-based tools, calculators, and AI utilities. No install needed.",
+    title: "QuickFnd â€” Free Tools, Calculators & AI Utilities",
+    description: "205+ free browser-based tools, calculators, and AI utilities. No install needed.",
     images: [`${siteUrl}/og-default.png`],
     creator: "@quickfnd",
   },
@@ -128,10 +128,8 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Load site settings from DB — drives verification codes, analytics, custom scripts
   const { site: siteSettings, ads: adSettings } = await getSettings();
 
-  // AdSense client: prefer DB value (set via admin), fallback to env var
   const ADSENSE_CLIENT =
     (adSettings as Record<string, unknown> | null)?.adsense_client as string | undefined
     ?? process.env.NEXT_PUBLIC_ADSENSE_CLIENT
@@ -177,7 +175,14 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
-        {/* Search engine verification ───────────────────────────────── */}
+
+        {/* â”€â”€ PWA: apple-touch-icon â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="QuickFnd" />
+
+        {/* Search engine verification â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {googleVerification && (
           <meta name="google-site-verification" content={googleVerification} />
         )}
@@ -191,7 +196,7 @@ export default async function RootLayout({
           <meta name="facebook-domain-verification" content={fbDomainVerification} />
         )}
 
-        {/* ── Google Tag Manager ───────────────────────────────────────── */}
+        {/* â”€â”€ Google Tag Manager â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {hasGTM && (
           <script
             dangerouslySetInnerHTML={{
@@ -200,7 +205,7 @@ export default async function RootLayout({
           />
         )}
 
-        {/* ── Google Analytics 4 (direct, only if no GTM) ─────────────── */}
+        {/* â”€â”€ Google Analytics 4 (direct, only if no GTM) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {hasGA && !hasGTM && (
           <>
             <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
@@ -212,7 +217,7 @@ export default async function RootLayout({
           </>
         )}
 
-        {/* ── Facebook Pixel ───────────────────────────────────────────── */}
+        {/* â”€â”€ Facebook Pixel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {hasFbPixel && (
           <script
             dangerouslySetInnerHTML={{
@@ -221,7 +226,7 @@ export default async function RootLayout({
           />
         )}
 
-        {/* ── Google AdSense ───────────────────────────────────────────── */}
+        {/* â”€â”€ Google AdSense â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {hasAdsense && (
           <script
             dangerouslySetInnerHTML={{
@@ -240,7 +245,7 @@ export default async function RootLayout({
           />
         )}
 
-        {/* ── Custom head scripts (from Admin → Site Settings) ─────────── */}
+        {/* â”€â”€ Custom head scripts (from Admin â†’ Site Settings) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {customHeadScripts && (
           <div
             dangerouslySetInnerHTML={{ __html: customHeadScripts }}
@@ -271,7 +276,10 @@ export default async function RootLayout({
           </div>
         </ThemeProvider>
 
-        {/* ── Custom body scripts (from Admin → Site Settings) ─────────── */}
+        {/* â”€â”€ Service Worker Registration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        <ServiceWorkerRegistrar />
+
+        {/* â”€â”€ Custom body scripts (from Admin â†’ Site Settings) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {customBodyScripts && (
           <div dangerouslySetInnerHTML={{ __html: customBodyScripts }} />
         )}
