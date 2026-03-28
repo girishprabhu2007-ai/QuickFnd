@@ -44,7 +44,7 @@ const WORKING_ENGINES = new Set([
   "age-calculator", "bmi-calculator", "loan-calculator", "emi-calculator",
   "percentage-calculator", "simple-interest-calculator", "compound-interest-calculator",
   "gst-calculator", "sip-calculator", "fd-calculator", "ppf-calculator",
-  "hra-calculator", "income-tax-calculator", "formula-calculator",
+  "hra-calculator", "income-tax-calculator", "formula-calculator", "barcode-generator",
   "discount-calculator", "tip-calculator", "roi-calculator", "savings-calculator",
   "retirement-calculator", "salary-calculator", "calorie-calculator",
   "fuel-cost-calculator", "cagr-calculator", "gratuity-calculator", "rd-calculator",
@@ -108,18 +108,40 @@ const ENGINE_OVERRIDES: Record<string, string> = {
   "investment": "compound-interest-calculator",
   "portfolio": "compound-interest-calculator",
   "cagr": "cagr-calculator",
-  // Tax (India) → income-tax-calculator
+  "sip": "sip-calculator",
+  "fd-calculator": "fd-calculator",
+  "ppf": "ppf-calculator",
+  "rd-calculator": "rd-calculator",
+  "roi": "roi-calculator",
+  "savings": "savings-calculator",
+  // Tax → income-tax-calculator
   "tax-calculator": "income-tax-calculator",
   "income-tax": "income-tax-calculator",
-  // Mortgage (India) → emi-calculator
-  "mortgage": "emi-calculator",
+  "gst": "gst-calculator",
+  "vat": "vat-calculator",
+  "sales-tax": "sales-tax-calculator",
+  "gratuity": "gratuity-calculator",
+  // Mortgage / loan → emi-calculator or loan-calculator
+  "mortgage": "mortgage-calculator",
   "home-loan": "emi-calculator",
+  "emi": "emi-calculator",
+  "loan": "loan-calculator",
+  // Health
+  "bmi": "bmi-calculator",
+  "calorie": "calorie-calculator",
+  "fuel": "fuel-cost-calculator",
+  "tip-calculator": "tip-calculator",
+  "discount": "discount-calculator",
   // Encoder/decoder → base64-encoder
   "encoder-decoder": "base64-encoder",
   "encode-decode": "base64-encoder",
   // Format → json-formatter or text-transformer
   "formatter": "json-formatter",
   "format": "text-transformer",
+  // Percentage / math
+  "percentage": "percentage-calculator",
+  "compound-interest": "compound-interest-calculator",
+  "simple-interest": "simple-interest-calculator",
 };
 
 type QueueItem = {
