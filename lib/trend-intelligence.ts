@@ -176,15 +176,15 @@ const ENGINE_PATTERNS: { pattern: RegExp; engine: string; category: "tool" | "ca
   { pattern: /fd calculator|fixed deposit|fd interest/i, engine: "fd-calculator", category: "calculator" },
   { pattern: /ppf calculator|public provident fund/i, engine: "ppf-calculator", category: "calculator" },
   { pattern: /hra calculator|house rent allowance/i, engine: "hra-calculator", category: "calculator" },
-  { pattern: /mortgage calculator|home loan calculator|property loan/i, engine: "loan-calculator", category: "calculator" },
+  { pattern: /mortgage calculator|home loan calculator|property loan/i, engine: "mortgage-calculator", category: "calculator" },
   { pattern: /loan calculator|personal loan|car loan|education loan/i, engine: "loan-calculator", category: "calculator" },
   { pattern: /compound interest|compound calculator/i, engine: "compound-interest-calculator", category: "calculator" },
   { pattern: /simple interest|si calculator/i, engine: "simple-interest-calculator", category: "calculator" },
-  { pattern: /retirement calculator|pension calculator|nps calculator/i, engine: "compound-interest-calculator", category: "calculator" },
+  { pattern: /retirement calculator|pension calculator|nps calculator/i, engine: "retirement-calculator", category: "calculator" },
   { pattern: /investment calculator|return on investment|roi calculator/i, engine: "compound-interest-calculator", category: "calculator" },
   { pattern: /percentage calculator|percent calculator|percentage of/i, engine: "percentage-calculator", category: "calculator" },
   { pattern: /age calculator|date of birth|age from dob/i, engine: "age-calculator", category: "calculator" },
-  { pattern: /salary calculator|take home salary|net salary|ctc calculator/i, engine: "income-tax-calculator", category: "calculator" },
+  { pattern: /salary calculator|take home salary|net salary|ctc calculator|in.hand salary/i, engine: "salary-calculator", category: "calculator" },
   { pattern: /tip calculator|split bill|restaurant bill/i, engine: "percentage-calculator", category: "calculator" },
   { pattern: /discount calculator|sale price|savings calculator/i, engine: "percentage-calculator", category: "calculator" },
   { pattern: /gpa calculator|grade calculator|cgpa/i, engine: "percentage-calculator", category: "calculator" },
@@ -201,6 +201,37 @@ const ENGINE_PATTERNS: { pattern: RegExp; engine: string; category: "tool" | "ca
   { pattern: /area calculator|volume calculator|perimeter/i, engine: "percentage-calculator", category: "calculator" },
   { pattern: /speed calculator|distance calculator|time calculator/i, engine: "percentage-calculator", category: "calculator" },
   { pattern: /prime number|factor calculator|lcm calculator|gcd calculator/i, engine: "percentage-calculator", category: "calculator" },
+
+  // ── Investment calculators (more specific) ──
+  { pattern: /savings calculator|savings growth|save money/i, engine: "savings-calculator", category: "calculator" },
+  { pattern: /roi calculator|return on investment/i, engine: "roi-calculator", category: "calculator" },
+  { pattern: /cagr calculator|compound annual/i, engine: "cagr-calculator", category: "calculator" },
+  { pattern: /gratuity calculator|gratuity amount/i, engine: "gratuity-calculator", category: "calculator" },
+  { pattern: /fuel cost|petrol cost|trip cost|fuel calculator/i, engine: "fuel-cost-calculator", category: "calculator" },
+  { pattern: /tip calculator|split bill/i, engine: "tip-calculator", category: "calculator" },
+  { pattern: /discount calculator|sale price|percent off/i, engine: "discount-calculator", category: "calculator" },
+  { pattern: /vat calculator/i, engine: "vat-calculator", category: "calculator" },
+  { pattern: /sales tax/i, engine: "sales-tax-calculator", category: "calculator" },
+  { pattern: /rd calculator|recurring deposit/i, engine: "rd-calculator", category: "calculator" },
+  // ── Developer tools (more specific) ──
+  { pattern: /barcode generator|barcode online/i, engine: "barcode-generator", category: "tool" },
+  { pattern: /diff checker|code compare|text diff|compare code/i, engine: "diff-checker", category: "tool" },
+  { pattern: /jwt decoder|jwt token|json web token/i, engine: "jwt-decoder", category: "tool" },
+  { pattern: /cron expression|cron job|cron builder/i, engine: "cron-builder", category: "tool" },
+  { pattern: /css gradient|gradient generator/i, engine: "css-gradient-generator", category: "tool" },
+  { pattern: /box shadow|css shadow/i, engine: "box-shadow-generator", category: "tool" },
+  { pattern: /email validator|validate email|check email/i, engine: "email-validator", category: "tool" },
+  { pattern: /yaml to json|json to yaml/i, engine: "yaml-json-converter", category: "tool" },
+  { pattern: /json to csv|csv from json/i, engine: "json-to-csv", category: "tool" },
+  { pattern: /html minif|css minif|js minif|minify html|minify css/i, engine: "html-minifier", category: "tool" },
+  { pattern: /robots.txt|robots txt generator/i, engine: "robots-txt-generator", category: "tool" },
+  { pattern: /open graph|og preview|social preview/i, engine: "open-graph-tester", category: "tool" },
+  { pattern: /color contrast|wcag contrast|contrast check/i, engine: "color-contrast-checker", category: "tool" },
+  { pattern: /lorem ipsum|placeholder text/i, engine: "lorem-ipsum-generator", category: "tool" },
+  { pattern: /binary|hexadecimal|octal|number base|base convert/i, engine: "number-base-converter", category: "tool" },
+  { pattern: /html entity|html encode|html escape/i, engine: "html-entity-encoder", category: "tool" },
+  { pattern: /string escape|escape string/i, engine: "string-escape-tool", category: "tool" },
+  { pattern: /line sort|sort lines|remove duplicate lines/i, engine: "line-sorter", category: "tool" },
 
   // ── AI tools ──
   { pattern: /ai email|email writer ai|write email|email generator/i, engine: "ai-email-writer", category: "ai_tool" },
@@ -242,17 +273,25 @@ export function inferEngineAndCategory(query: string): {
     return { engine: "unit-converter", category: "tool", confidence: "medium" };
   }
   if (/generator|maker|creator/.test(lower)) {
-    return { engine: "random-string-generator", category: "tool", confidence: "low" };
+    return { engine: "qr-generator", category: "tool", confidence: "low" };
   }
   if (/checker|validator|tester/.test(lower)) {
-    return { engine: "text-transformer", category: "tool", confidence: "low" };
+    return { engine: "password-strength-checker", category: "tool", confidence: "low" };
   }
   if (/editor|formatter|beautifier/.test(lower)) {
+    return { engine: "json-formatter", category: "tool", confidence: "low" };
+  }
+  if (/encoder|decoder|encode|decode/.test(lower)) {
+    return { engine: "base64-encoder", category: "tool", confidence: "medium" };
+  }
+
+  // Final fallback — only use text-transformer for genuinely text-related queries
+  if (/text|word|string|character|line/.test(lower)) {
     return { engine: "text-transformer", category: "tool", confidence: "low" };
   }
 
-  // Generic fallback — low confidence
-  return { engine: "text-transformer", category: "tool", confidence: "low" };
+  // Default: word-counter is safer than text-transformer for unknown tools
+  return { engine: "word-counter", category: "tool", confidence: "low" };
 }
 
 // ─── Supabase client ──────────────────────────────────────────────────────────
