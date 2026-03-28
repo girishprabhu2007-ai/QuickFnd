@@ -2097,98 +2097,343 @@ function HRACalculator({ name = "" }: { name?: string }) {
   );
 }
 
-// ─── Income Tax Calculator ────────────────────────────────────────────────────
-function IncomeTaxCalculator() {
-  const [income, setIncome] = useState("");
+// ─── MULTI-COUNTRY INCOME TAX CALCULATOR ─────────────────────────────────────
+type TaxCountry = "US" | "UK" | "IN" | "CA" | "AU" | "DE" | "GENERIC";
+
+const TAX_COUNTRY_INFO: Record<TaxCountry, { label: string; flag: string; symbol: string; defaultIncome: string }> = {
+  US: { label: "United States", flag: "🇺🇸", symbol: "$", defaultIncome: "75000" },
+  UK: { label: "United Kingdom", flag: "🇬🇧", symbol: "£", defaultIncome: "45000" },
+  IN: { label: "India", flag: "🇮🇳", symbol: "₹", defaultIncome: "1200000" },
+  CA: { label: "Canada", flag: "🇨🇦", symbol: "$", defaultIncome: "65000" },
+  AU: { label: "Australia", flag: "🇦🇺", symbol: "$", defaultIncome: "90000" },
+  DE: { label: "Germany", flag: "🇩🇪", symbol: "€", defaultIncome: "55000" },
+  GENERIC: { label: "Other", flag: "🌍", symbol: "", defaultIncome: "60000" },
+};
+
+function detectTaxCountry(slug: string): TaxCountry {
+  const s = slug.toLowerCase();
+  if (s.includes("canada") || s.includes("-ca-") || s.endsWith("-ca") || s.includes("canadian")) return "CA";
+  if (s.includes("usa") || s.includes("united-states") || s.includes("-us-") || s.endsWith("-us") ||
+      s.includes("federal") || s.includes("irs")) return "US";
+  if (s.includes("uk") || s.includes("united-kingdom") || s.includes("hmrc") || s.includes("paye")) return "UK";
+  if (s.includes("india") || s.includes("-in-") || s.endsWith("-in") || s.includes("itr")) return "IN";
+  if (s.includes("australia") || s.includes("-au-") || s.endsWith("-au") || s.includes("ato")) return "AU";
+  if (s.includes("germany") || s.includes("deutschland") || s.includes("-de-") || s.endsWith("-de")) return "DE";
+  return "GENERIC";
+}
+
+type TaxResult = {
+  tax: number;
+  netIncome: number;
+  effectiveRate: number;
+  rows: Array<{ label: string; value: number; type: "income" | "deduction" | "total" | "final" }>;
+  note: string;
+};
+
+function calcTaxUS(income: number, filing: string): TaxResult {
+  const sd = filing === "married" ? 29200 : 14600;
+  const ti = Math.max(0, income - sd);
+  const sB = [{ l: 11600, r: 0.10 },{ l: 47150, r: 0.12 },{ l: 100525, r: 0.22 },{ l: 191950, r: 0.24 },{ l: 243725, r: 0.32 },{ l: 609350, r: 0.35 },{ l: Infinity, r: 0.37 }];
+  const mB = [{ l: 23200, r: 0.10 },{ l: 94300, r: 0.12 },{ l: 201050, r: 0.22 },{ l: 383900, r: 0.24 },{ l: 487450, r: 0.32 },{ l: 731200, r: 0.35 },{ l: Infinity, r: 0.37 }];
+  const brackets = filing === "married" ? mB : sB;
+  let tax = 0; let prev = 0;
+  for (const b of brackets) { if (ti <= prev) break; tax += (Math.min(ti, b.l) - prev) * b.r; prev = b.l; }
+  return {
+    tax, netIncome: income - tax, effectiveRate: income > 0 ? tax / income * 100 : 0,
+    note: "Federal income tax only (2025). Does not include state tax, FICA, or AMT.",
+    rows: [
+      { label: "Gross Income", value: income, type: "income" },
+      { label: `Standard Deduction (${filing === "married" ? "MFJ" : "Single"})`, value: -sd, type: "deduction" },
+      { label: "Taxable Income", value: ti, type: "total" },
+      { label: "Federal Income Tax", value: -tax, type: "deduction" },
+      { label: "After-Tax Income", value: income - tax, type: "final" },
+    ],
+  };
+}
+
+function calcTaxUK(income: number): TaxResult {
+  const pa = income <= 100000 ? 12570 : Math.max(0, 12570 - (income - 100000) / 2);
+  const ti = Math.max(0, income - pa);
+  let tax = 0;
+  if (ti <= 37700) tax = ti * 0.20;
+  else if (ti <= 125140) tax = 37700 * 0.20 + (ti - 37700) * 0.40;
+  else tax = 37700 * 0.20 + (125140 - 37700) * 0.40 + (ti - 125140) * 0.45;
+  return {
+    tax, netIncome: income - tax, effectiveRate: income > 0 ? tax / income * 100 : 0,
+    note: "HMRC income tax 2025-26. Does not include National Insurance.",
+    rows: [
+      { label: "Gross Income", value: income, type: "income" },
+      { label: "Personal Allowance", value: -pa, type: "deduction" },
+      { label: "Taxable Income", value: ti, type: "total" },
+      { label: "Income Tax", value: -tax, type: "deduction" },
+      { label: "After-Tax Income", value: income - tax, type: "final" },
+    ],
+  };
+}
+
+function calcTaxIN(income: number, regime: string, deductions80c: number): TaxResult {
+  let taxable = income;
+  let tax = 0;
+  if (regime === "new") {
+    taxable = Math.max(0, income - 75000);
+    const slabs = [{ u: 400000, r: 0 },{ u: 800000, r: 0.05 },{ u: 1200000, r: 0.10 },{ u: 1600000, r: 0.15 },{ u: 2000000, r: 0.20 },{ u: 2400000, r: 0.25 },{ u: Infinity, r: 0.30 }];
+    let prev = 0;
+    for (const s of slabs) { if (taxable > prev) { tax += (Math.min(taxable, s.u) - prev) * s.r; prev = s.u; } }
+    if (taxable <= 1200000) tax = 0;
+  } else {
+    const ded = Math.min(deductions80c, 150000);
+    taxable = Math.max(0, income - 50000 - ded);
+    if (taxable <= 250000) tax = 0;
+    else if (taxable <= 500000) tax = (taxable - 250000) * 0.05;
+    else if (taxable <= 1000000) tax = 12500 + (taxable - 500000) * 0.20;
+    else tax = 112500 + (taxable - 1000000) * 0.30;
+    if (taxable <= 500000) tax = 0;
+  }
+  const cess = tax * 0.04;
+  const total = tax + cess;
+  return {
+    tax: total, netIncome: income - total, effectiveRate: income > 0 ? total / income * 100 : 0,
+    note: `India FY2025-26 (${regime === "new" ? "New" : "Old"} Regime). Includes 4% cess.`,
+    rows: [
+      { label: "Gross Income", value: income, type: "income" },
+      { label: regime === "new" ? "Standard Deduction (₹75,000)" : `Deductions (Std + 80C)`, value: -(income - taxable), type: "deduction" },
+      { label: "Taxable Income", value: taxable, type: "total" },
+      { label: "Income Tax", value: -tax, type: "deduction" },
+      { label: "Health & Education Cess (4%)", value: -cess, type: "deduction" },
+      { label: "After-Tax Income", value: income - total, type: "final" },
+    ],
+  };
+}
+
+function calcTaxCA(income: number): TaxResult {
+  // Federal brackets 2025
+  const brackets = [
+    { l: 57375, r: 0.15 },
+    { l: 114750, r: 0.205 },
+    { l: 158468, r: 0.26 },
+    { l: 220000, r: 0.29 },
+    { l: Infinity, r: 0.33 },
+  ];
+  const bpa = 16129; // Basic Personal Amount 2025
+  const ti = Math.max(0, income - bpa);
+  let tax = 0; let prev = 0;
+  for (const b of brackets) { if (ti <= prev) break; tax += (Math.min(ti, b.l) - prev) * b.r; prev = b.l; }
+  // CPP contribution (employee share, 2025)
+  const cppMax = 4034.10;
+  const cpp = Math.min(Math.max(0, income - 3500) * 0.0595, cppMax);
+  // EI contribution (employee share, 2025)
+  const eiMax = 1077.48;
+  const ei = Math.min(income * 0.0163, eiMax);
+  const totalTax = tax + cpp + ei;
+  return {
+    tax: totalTax, netIncome: income - totalTax, effectiveRate: income > 0 ? totalTax / income * 100 : 0,
+    note: "Federal tax only (2025). Provincial tax varies by province — typically adds 5-20%. CPP2 not included.",
+    rows: [
+      { label: "Gross Income", value: income, type: "income" },
+      { label: "Basic Personal Amount", value: -bpa, type: "deduction" },
+      { label: "Taxable Income", value: ti, type: "total" },
+      { label: "Federal Income Tax", value: -tax, type: "deduction" },
+      { label: "CPP Contribution", value: -cpp, type: "deduction" },
+      { label: "EI Premium", value: -ei, type: "deduction" },
+      { label: "After Federal Deductions", value: income - totalTax, type: "final" },
+    ],
+  };
+}
+
+function calcTaxAU(income: number): TaxResult {
+  let tax = 0;
+  if (income <= 18200) tax = 0;
+  else if (income <= 45000) tax = (income - 18200) * 0.16;
+  else if (income <= 135000) tax = 4288 + (income - 45000) * 0.30;
+  else if (income <= 190000) tax = 31288 + (income - 135000) * 0.37;
+  else tax = 51638 + (income - 190000) * 0.45;
+  const ml = income > 24276 ? income * 0.02 : 0;
+  const total = tax + ml;
+  return {
+    tax: total, netIncome: income - total, effectiveRate: income > 0 ? total / income * 100 : 0,
+    note: "ATO 2025-26 resident rates. Includes Medicare Levy. Excludes HELP/HECS.",
+    rows: [
+      { label: "Gross Income", value: income, type: "income" },
+      { label: "Tax-Free Threshold", value: -18200, type: "deduction" },
+      { label: "Income Tax", value: -tax, type: "deduction" },
+      { label: "Medicare Levy (2%)", value: -ml, type: "deduction" },
+      { label: "After-Tax Income", value: income - total, type: "final" },
+    ],
+  };
+}
+
+function calcTaxDE(income: number): TaxResult {
+  const gf = 11784; const taxable = Math.max(0, income - gf);
+  let tax = 0;
+  if (taxable <= 17005) tax = taxable * 0.14;
+  else if (taxable <= 66760) tax = 17005 * 0.14 + (taxable - 17005) * 0.2397;
+  else if (taxable <= 277826 - gf) tax = 17005 * 0.14 + (66760 - 17005) * 0.2397 + (taxable - 66760) * 0.42;
+  else tax = 17005 * 0.14 + (66760 - 17005) * 0.2397 + (277826 - gf - 66760) * 0.42 + (taxable - (277826 - gf)) * 0.45;
+  const soli = tax > 18130 ? tax * 0.055 : 0;
+  const total = tax + soli;
+  return {
+    tax: total, netIncome: income - total, effectiveRate: income > 0 ? total / income * 100 : 0,
+    note: "Estimated 2025 Einkommensteuer (Class I). Excludes Kirchensteuer, social contributions.",
+    rows: [
+      { label: "Gross Income", value: income, type: "income" },
+      { label: "Grundfreibetrag", value: -gf, type: "deduction" },
+      { label: "Taxable Income", value: taxable, type: "total" },
+      { label: "Income Tax", value: -tax, type: "deduction" },
+      { label: "Solidarity Surcharge", value: -soli, type: "deduction" },
+      { label: "After-Tax Income", value: income - total, type: "final" },
+    ],
+  };
+}
+
+function calcTaxGeneric(income: number, rate: number): TaxResult {
+  const tax = income * (rate / 100);
+  return {
+    tax, netIncome: income - tax, effectiveRate: rate,
+    note: "Using flat estimated rate. Select your country for accurate tax brackets.",
+    rows: [
+      { label: "Gross Income", value: income, type: "income" },
+      { label: `Estimated Tax (${rate}%)`, value: -tax, type: "deduction" },
+      { label: "After-Tax Income", value: income - tax, type: "final" },
+    ],
+  };
+}
+
+function IncomeTaxCalculator({ slug = "" }: { slug?: string }) {
+  const detected = detectTaxCountry(slug);
+  const [country, setCountry] = useState<TaxCountry>(detected);
+  const info = TAX_COUNTRY_INFO[country];
+  const [income, setIncome] = useState(info.defaultIncome);
+  const [filing, setFiling] = useState("single");
   const [regime, setRegime] = useState("new");
   const [deductions, setDeductions] = useState("");
+  const [taxRate, setTaxRate] = useState("25");
 
-  const result = useMemo<InterpretedResult | null>(() => {
-    const gross = Number(income);
-    if (!gross || gross <= 0) return null;
+  const handleCountry = (c: TaxCountry) => { setCountry(c); setIncome(TAX_COUNTRY_INFO[c].defaultIncome); };
 
-    let taxable = gross;
-    let tax = 0;
-
-    if (regime === "new") {
-      // New regime FY2025-26 slabs
-      taxable = Math.max(0, gross - 75000); // Standard deduction ₹75,000
-      const slabs = [
-        { upto: 400000, rate: 0 },
-        { upto: 800000, rate: 0.05 },
-        { upto: 1200000, rate: 0.10 },
-        { upto: 1600000, rate: 0.15 },
-        { upto: 2000000, rate: 0.20 },
-        { upto: 2400000, rate: 0.25 },
-        { upto: Infinity, rate: 0.30 },
-      ];
-      let prev = 0;
-      for (const slab of slabs) {
-        if (taxable > prev) {
-          tax += (Math.min(taxable, slab.upto) - prev) * slab.rate;
-          prev = slab.upto;
-        }
-      }
-      // Rebate u/s 87A — zero tax if taxable income ≤ ₹12,00,000
-      if (taxable <= 1200000) tax = 0;
-    } else {
-      // Old regime
-      const ded = Math.min(Number(deductions) || 0, 150000);
-      taxable = Math.max(0, gross - 50000 - ded); // Standard deduction + 80C
-      if (taxable <= 250000) tax = 0;
-      else if (taxable <= 500000) tax = (taxable - 250000) * 0.05;
-      else if (taxable <= 1000000) tax = 12500 + (taxable - 500000) * 0.20;
-      else tax = 112500 + (taxable - 1000000) * 0.30;
-      // Rebate u/s 87A for old regime ≤ ₹5L
-      if (taxable <= 500000) tax = 0;
+  const result: TaxResult | null = useMemo(() => {
+    const inc = parseFloat(income);
+    if (!isFinite(inc) || inc <= 0) return null;
+    switch (country) {
+      case "US": return calcTaxUS(inc, filing);
+      case "UK": return calcTaxUK(inc);
+      case "IN": return calcTaxIN(inc, regime, parseFloat(deductions) || 0);
+      case "CA": return calcTaxCA(inc);
+      case "AU": return calcTaxAU(inc);
+      case "DE": return calcTaxDE(inc);
+      case "GENERIC": return calcTaxGeneric(inc, parseFloat(taxRate) || 25);
     }
+  }, [income, country, filing, regime, deductions, taxRate]);
 
-    const cess = tax * 0.04;
-    const total = tax + cess;
-    const effective = gross > 0 ? (total / gross) * 100 : 0;
-    const monthly = total / 12;
-
-    return {
-      primary: `₹${total.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`,
-      secondary: `Total tax payable (FY2025-26, ${regime === "new" ? "New" : "Old"} Regime)`,
-      extra: `Base tax: ₹${tax.toLocaleString("en-IN", { maximumFractionDigits: 0 })} + Cess (4%): ₹${cess.toLocaleString("en-IN", { maximumFractionDigits: 0 })} · Monthly TDS: ₹${monthly.toLocaleString("en-IN", { maximumFractionDigits: 0 })} · Effective rate: ${effective.toFixed(1)}%`,
-      insight: regime === "new"
-        ? `Under the new regime, standard deduction of ₹75,000 applies. ${taxable <= 1200000 ? "Your net taxable income is ₹" + taxable.toLocaleString("en-IN") + " — within the ₹12L rebate limit under Sec 87A, so zero tax applies." : "No rebate applies at your income level — tax calculated on full taxable income."}`
-        : `Under the old regime with ₹${(50000 + Math.min(Number(deductions) || 0, 150000)).toLocaleString("en-IN")} in deductions, your taxable income is ₹${taxable.toLocaleString("en-IN")}.`,
-      recommendation: total === 0
-        ? "Your income falls within the zero-tax bracket under the selected regime. File your ITR by July 31 even if tax payable is nil — it establishes your financial record."
-        : `Compare both regimes. The new regime is simpler and better if your deductions are low. The old regime saves more if you have high 80C, HRA, and home loan deductions. Always consult a CA for final planning.`,
-    };
-  }, [income, regime, deductions]);
+  const fmt = (n: number) => {
+    const abs = Math.abs(n);
+    if (country === "IN") return `₹${Math.round(abs).toLocaleString("en-IN")}`;
+    return `${info.symbol}${Math.round(abs).toLocaleString("en-US")}`;
+  };
 
   return (
     <Workspace title="Income Tax Calculator">
+      {/* Country selector */}
+      <div className="mb-5">
+        <div className="mb-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-q-muted">Country / Tax System</div>
+        <div className="flex flex-wrap gap-2">
+          {(Object.keys(TAX_COUNTRY_INFO) as TaxCountry[]).map(c => (
+            <button key={c} onClick={() => handleCountry(c)}
+              className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition ${country === c ? "bg-q-primary border-q-primary text-white" : "border-q-border bg-q-bg text-q-muted hover:text-q-text hover:border-q-text/30"}`}>
+              {TAX_COUNTRY_INFO[c].flag} {TAX_COUNTRY_INFO[c].label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <CalculatorGrid
         left={
-          <InputPanel subtitle="Estimate income tax for FY2025-26 under the new or old tax regime.">
+          <InputPanel subtitle="Enter your income to estimate tax liability.">
             <div className="grid gap-4">
               <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Annual Gross Income (₹)</label>
-                <input type="number" value={income} onChange={e => setIncome(e.target.value)} placeholder="e.g. 1200000" className={fieldClass()} />
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Annual Gross Income</label>
+                <div className="flex items-center rounded-2xl border border-q-border bg-q-card overflow-hidden">
+                  {info.symbol && <span className="px-3 text-q-muted text-sm">{info.symbol}</span>}
+                  <input type="number" value={income} onChange={e => setIncome(e.target.value)}
+                    className="flex-1 bg-transparent py-3.5 px-2 text-q-text outline-none" />
+                </div>
               </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Tax Regime</label>
-                <select value={regime} onChange={e => setRegime(e.target.value)} className={fieldClass()}>
-                  <option value="new">New Regime (FY2025-26) — Default</option>
-                  <option value="old">Old Regime (with deductions)</option>
-                </select>
-              </div>
-              {regime === "old" && (
+
+              {country === "US" && (
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Section 80C Deductions (₹ max 1,50,000)</label>
-                  <input type="number" value={deductions} onChange={e => setDeductions(e.target.value)} placeholder="e.g. 150000" className={fieldClass()} />
-                  <p className="mt-1 text-xs text-q-muted">Includes PPF, ELSS, LIC, EPF, home loan principal etc.</p>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Filing Status</label>
+                  <div className="flex gap-2">
+                    {["single", "married"].map(s => (
+                      <button key={s} onClick={() => setFiling(s)}
+                        className={`flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition ${filing === s ? "border-blue-400 bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400" : "border-q-border bg-q-card text-q-text hover:bg-q-card-hover"}`}>
+                        {s === "single" ? "Single" : "Married Filing Jointly"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {country === "IN" && (
+                <>
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Tax Regime</label>
+                    <div className="flex gap-2">
+                      {[["new", "New Regime"], ["old", "Old Regime"]].map(([val, lbl]) => (
+                        <button key={val} onClick={() => setRegime(val)}
+                          className={`flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition ${regime === val ? "border-blue-400 bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400" : "border-q-border bg-q-card text-q-text hover:bg-q-card-hover"}`}>
+                          {lbl}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {regime === "old" && (
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Section 80C Deductions (max ₹1,50,000)</label>
+                      <input type="number" value={deductions} onChange={e => setDeductions(e.target.value)} placeholder="e.g. 150000" className={fieldClass()} />
+                    </div>
+                  )}
+                </>
+              )}
+
+              {country === "GENERIC" && (
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-q-muted">Estimated Tax Rate</label>
+                  <div className="flex items-center rounded-2xl border border-q-border bg-q-card overflow-hidden">
+                    <input type="number" value={taxRate} onChange={e => setTaxRate(e.target.value)}
+                      className="flex-1 bg-transparent py-3.5 px-3 text-q-text outline-none" />
+                    <span className="px-3 text-q-muted text-sm">%</span>
+                  </div>
                 </div>
               )}
             </div>
           </InputPanel>
         }
-        right={<ResultsStage title="Tax estimate" result={result} emptyText="Enter your annual income and select a tax regime to estimate tax." />}
+        right={
+          result ? (
+            <section className="rounded-[26px] border border-q-border bg-gradient-to-br from-q-card to-q-bg p-5 shadow-sm md:p-6 space-y-4">
+              <div className="rounded-2xl border-2 border-blue-400/40 bg-blue-50/40 dark:bg-blue-500/10 p-5">
+                <div className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400">Total Tax</div>
+                <div className="mt-1 text-3xl font-bold text-blue-700 dark:text-blue-300">{fmt(result.tax)}</div>
+                <div className="mt-1 text-sm text-q-muted">Effective rate: {result.effectiveRate.toFixed(1)}% · After tax: {fmt(result.netIncome)}</div>
+              </div>
+              <div className="rounded-2xl border border-q-border bg-q-bg overflow-hidden">
+                <div className="px-4 py-2.5 border-b border-q-border text-xs font-semibold uppercase tracking-widest text-q-muted">Tax Breakdown</div>
+                <div className="divide-y divide-q-border">
+                  {result.rows.map(row => (
+                    <div key={row.label} className={`flex items-center justify-between px-4 py-2.5 ${row.type === "total" || row.type === "final" ? "bg-q-card" : ""}`}>
+                      <span className={`text-sm ${row.type === "final" ? "font-semibold text-q-text" : "text-q-muted"}`}>{row.label}</span>
+                      <span className={`text-sm font-semibold tabular-nums ${row.type === "deduction" ? "text-red-500" : row.type === "final" ? "text-emerald-600 dark:text-emerald-400" : "text-q-text"}`}>
+                        {row.value < 0 ? `-${fmt(-row.value)}` : fmt(row.value)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <p className="text-xs text-q-muted">{result.note}</p>
+            </section>
+          ) : (
+            <ResultsStage title="Tax estimate" result={null} emptyText="Enter your annual income to estimate tax." />
+          )
+        }
       />
     </Workspace>
   );
@@ -3100,7 +3345,7 @@ export default function BuiltInCalculatorClient({ item }: Props) {
   if (engine === "fd-calculator") return <FDCalculator name={name} />;
   if (engine === "ppf-calculator") return <PPFCalculator name={name} />;
   if (engine === "hra-calculator") return <HRACalculator name={name} />;
-  if (engine === "income-tax-calculator") return <IncomeTaxCalculator />;
+  if (engine === "income-tax-calculator") return <IncomeTaxCalculator slug={item.slug} />;
   if (engine === "compound-interest-calculator") return <CompoundInterestCalculator name={name} />;
   if (engine === "discount-calculator") return <DiscountCalculator name={name} />;
   if (engine === "tip-calculator") return <TipCalculator name={name} />;
