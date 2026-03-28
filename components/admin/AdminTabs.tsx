@@ -21,6 +21,7 @@ const tabs = [
   { href: "/admin/subscribers", label: "Subscribers" },
   { href: "/admin/site-settings", label: "Site Settings" },
   { href: "/admin/seo-content", label: "SEO Content" },
+  { href: "/admin/seo-dashboard", label: "SEO Dashboard" },
   { href: "/admin/intelligence", label: "Intelligence" },
   { href: "/admin/diagnostics", label: "Diagnostics" },
   { href: "/admin/operations", label: "Operations" },
