@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { buildHomepageTaxonomy } from "@/lib/admin-taxonomy";
 import { getTools, getCalculators, getAITools } from "@/lib/db";
 import {
@@ -17,6 +17,9 @@ const CATEGORY_ICONS: Record<string, string> = {
   "Developer Tools": "💻",
   "SEO & Marketing": "📈",
   "YouTube & Video": "🎬",
+  "Image Tools": "🖼️",
+  "PDF Tools": "📄",
+  "Video & GIF Tools": "🎬",
   "Generators": "⚡",
   "Other Tools": "🔧",
   "Finance Calculators": "💰",

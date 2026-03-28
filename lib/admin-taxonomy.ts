@@ -1,4 +1,4 @@
-type TaxonomyEntry = {
+﻿type TaxonomyEntry = {
   key: string;
   label: string;
   include: RegExp[];

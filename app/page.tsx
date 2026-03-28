@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
 import HomeSearch from "@/components/search/HomeSearch";
 import SiteFooter from "@/components/site/SiteFooter";
@@ -36,9 +36,8 @@ export const metadata: Metadata = {
 };
 
 const UNIVERSAL_TOOL_SLUGS = [
-  "password-generator", "json-formatter", "word-counter",
-  "base64-encoder", "uuid-generator", "text-case-converter",
-  "qr-code-generator", "sha256-generator", "regex-tester",
+  "image-compressor", "pdf-merger", "video-to-gif", "json-formatter", "password-generator", "qr-code-generator",
+  "salary-calculator", "word-counter", "ai-email-writer",
 ];
 const PINNED_AI_SLUGS = [
   "ai-email-writer", "ai-prompt-generator", "ai-blog-outline-generator",
@@ -86,6 +85,11 @@ const TOOL_ACCENT: Record<string, { bg: string; text: string; border: string }> 
   "base64-encoder":       { bg: "bg-purple-500/10",  text: "text-purple-500", border: "group-hover:border-purple-400/50" },
   "uuid-generator":       { bg: "bg-rose-500/10",    text: "text-rose-500",   border: "group-hover:border-rose-400/50" },
   "text-case-converter":  { bg: "bg-cyan-500/10",    text: "text-cyan-500",   border: "group-hover:border-cyan-400/50" },
+  "image-compressor":    { bg: "bg-pink-500/10",    text: "text-pink-500",   border: "group-hover:border-pink-400/50" },
+  "pdf-merger":          { bg: "bg-red-500/10",     text: "text-red-500",    border: "group-hover:border-red-400/50" },
+  "video-to-gif":        { bg: "bg-violet-500/10",  text: "text-violet-500", border: "group-hover:border-violet-400/50" },
+  "salary-calculator":   { bg: "bg-teal-500/10",    text: "text-teal-500",   border: "group-hover:border-teal-400/50" },
+  "ai-email-writer":     { bg: "bg-indigo-500/10",  text: "text-indigo-500", border: "group-hover:border-indigo-400/50" },
 };
 const CALC_ACCENT = [
   { bg: "bg-violet-500/10",  text: "text-violet-500",  border: "group-hover:border-violet-400/50" },
