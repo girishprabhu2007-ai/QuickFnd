@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -11,6 +11,7 @@ const navItems = [
   { href: "/ai-tools",    label: "AI Tools",    accent: "green"  },
   { href: "/topics",      label: "Topics",      accent: "orange" },
   { href: "/blog",        label: "Blog",        accent: "rose"   },
+  { href: "/compare",     label: "Compare",     accent: "amber"  },
 ];
 
 
