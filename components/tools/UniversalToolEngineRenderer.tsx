@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { PublicContentItem } from "@/lib/content-pages";
 import CurrencyConverterClient from "@/components/tools/CurrencyConverterClient";
+import FileToolRenderer from "@/components/tools/FileToolRenderer";
 import { getToolEnginePreset } from "@/lib/tool-engine-presets";
 import {
   getEngineUISchema,
@@ -2519,6 +2520,15 @@ function renderByFamily({
   }
   if (family === "open-graph-tester") {
     return <OpenGraphTester title={title} />;
+  }
+
+  // ── File-based tools (image, PDF, etc.) ────────────────────────────────────
+  const FILE_TOOL_FAMILIES = new Set([
+    "image-compressor", "image-resizer", "image-converter",
+    "image-cropper", "image-to-base64", "svg-to-png",
+  ]);
+  if (FILE_TOOL_FAMILIES.has(family)) {
+    return <FileToolRenderer family={family as "image-compressor"} title={title} />;
   }
 
   return <GenericTool title={title} description={description} />;

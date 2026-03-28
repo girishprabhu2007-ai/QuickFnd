@@ -31,6 +31,9 @@ export const LIVE_TOOL_ENGINES = new Set([
   "robots-txt-generator", "open-graph-tester",
   "html-minifier", "css-minifier", "js-minifier",
   "email-validator", "line-sorter", "box-shadow-generator", "css-gradient-generator",
+  // Image / File tools
+  "image-compressor", "image-resizer", "image-converter",
+  "image-cropper", "image-to-base64", "svg-to-png",
 ]);
 
 // ── Calculators with working renderers in BuiltInCalculatorClient ────────────

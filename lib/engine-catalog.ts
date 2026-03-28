@@ -90,6 +90,12 @@ export type CalculatorEngineType =
   | "mortgage-calculator"
   | "sales-tax-calculator"
   | "vat-calculator"
+  | "image-compressor"
+  | "image-resizer"
+  | "image-converter"
+  | "image-cropper"
+  | "image-to-base64"
+  | "svg-to-png"
   | "generic-directory";
 
 export type AIToolEngineType =
@@ -992,6 +998,61 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
     keywords: ["vat-calculator", "vat calculator", "value added tax", "vat"],
     defaultConfig: {},
   }),
+  // ── Image / File Tools ────────────────────────────────────────────────────
+  "image-compressor": createDefinition({
+    type: "image-compressor",
+    category: "tool",
+    family: "image-compressor",
+    title: "Image Compressor",
+    description: "Compress images to reduce file size without visible quality loss. Supports JPG, PNG, WebP.",
+    keywords: ["image-compressor", "image compressor", "compress image", "image optimizer", "reduce image size", "compress photo"],
+    defaultConfig: {},
+  }),
+  "image-resizer": createDefinition({
+    type: "image-resizer",
+    category: "tool",
+    family: "image-resizer",
+    title: "Image Resizer",
+    description: "Resize images to exact dimensions with aspect ratio control. Includes social media presets.",
+    keywords: ["image-resizer", "image resizer", "resize image", "resize photo", "image dimensions", "photo resizer"],
+    defaultConfig: {},
+  }),
+  "image-converter": createDefinition({
+    type: "image-converter",
+    category: "tool",
+    family: "image-converter",
+    title: "Image Format Converter",
+    description: "Convert images between JPG, PNG, and WebP formats instantly in your browser.",
+    keywords: ["image-converter", "image converter", "jpg to png", "png to jpg", "convert image", "webp converter", "heic to jpg"],
+    defaultConfig: {},
+  }),
+  "image-cropper": createDefinition({
+    type: "image-cropper",
+    category: "tool",
+    family: "image-cropper",
+    title: "Image Cropper",
+    description: "Crop images visually with preset ratios or custom dimensions. Pixel-perfect results.",
+    keywords: ["image-cropper", "image cropper", "crop image", "crop photo", "image crop tool"],
+    defaultConfig: {},
+  }),
+  "image-to-base64": createDefinition({
+    type: "image-to-base64",
+    category: "tool",
+    family: "image-to-base64",
+    title: "Image to Base64",
+    description: "Convert any image to Base64 data URI for embedding in HTML, CSS, or JSON.",
+    keywords: ["image-to-base64", "image to base64", "img to base64", "base64 image", "data uri"],
+    defaultConfig: {},
+  }),
+  "svg-to-png": createDefinition({
+    type: "svg-to-png",
+    category: "tool",
+    family: "svg-to-png",
+    title: "SVG to PNG Converter",
+    description: "Convert SVG vector graphics to PNG at any resolution. Supports 1x to 4x scaling.",
+    keywords: ["svg-to-png", "svg to png", "convert svg", "svg converter", "svg export"],
+    defaultConfig: {},
+  }),
   "generic-directory": createDefinition({
     type: "generic-directory",
     category: "tool",
@@ -1079,6 +1140,12 @@ const CALCULATOR_ENGINE_ORDER: CalculatorEngineType[] = [
   "mortgage-calculator",
   "sales-tax-calculator",
   "vat-calculator",
+  "image-compressor",
+  "image-resizer",
+  "image-converter",
+  "image-cropper",
+  "image-to-base64",
+  "svg-to-png",
   "generic-directory",
 ];
 
@@ -1306,7 +1373,13 @@ export function inferEngineType(category: EngineCategory, slug: string): EngineT
     if (value.includes("htaccess") || value.includes("nginx-config") || value.includes("server-config")) return "robots-txt-generator";
     if (value.includes("tsv-to-csv") || value.includes("csv-formatter") || value.includes("excel-to-json") || value.includes("spreadsheet-to-json")) return "csv-to-json";
     if (value.includes("random-name") || value.includes("name-generator") || value.includes("fake-name")) return "random-string-generator";
-    if (value.includes("image-converter") || value.includes("image-compressor") || value.includes("image-resize") || value.includes("photo-editor")) return "markdown-editor";
+    if (value.includes("image-compress") || value.includes("image-optimi") || value.includes("photo-compress")) return "image-compressor";
+    if (value.includes("image-resiz") || value.includes("photo-resiz") || value.includes("image-scale")) return "image-resizer";
+    if (value.includes("image-convert") || value.includes("jpg-to-png") || value.includes("png-to-jpg") || value.includes("webp-convert") || value.includes("heic-to-jpg")) return "image-converter";
+    if (value.includes("image-crop") || value.includes("photo-crop")) return "image-cropper";
+    if (value.includes("image-to-base64") || value.includes("img-to-base64")) return "image-to-base64";
+    if (value.includes("svg-to-png") || value.includes("svg-convert")) return "svg-to-png";
+    if (value.includes("photo-editor") || value.includes("image-editor")) return "image-compressor";
 
     for (const engineType of TOOL_ENGINE_ORDER) {
       if (engineType === "generic-directory") continue;
