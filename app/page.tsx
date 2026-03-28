@@ -23,17 +23,27 @@ export const dynamic = "force-dynamic";
 
 const siteUrl = getSiteUrl();
 
-export const metadata: Metadata = {
-  title: "QuickFnd — Free Tools, Calculators & AI Utilities",
-  description:
-    "Free browser-based tools, calculators, and AI utilities. JSON formatter, password generator, EMI calculator, AI email writer, word counter and 205+ more. No install needed.",
-  alternates: { canonical: siteUrl },
-  openGraph: {
-    url: siteUrl,
+// ── Dynamic metadata (uses real DB counts instead of hardcoded "205+") ───────
+export async function generateMetadata(): Promise<Metadata> {
+  const [rawTools, rawCalculators, rawAITools] = await Promise.all([
+    getTools(), getCalculators(), getAITools(),
+  ]);
+  const total = filterVisibleTools(rawTools).length
+    + filterVisibleCalculators(rawCalculators).length
+    + filterVisibleAITools(rawAITools).length;
+
+  return {
     title: "QuickFnd — Free Tools, Calculators & AI Utilities",
-    description: "205+ free browser-based tools, calculators, and AI utilities. No install needed.",
-  },
-};
+    description:
+      `Free browser-based tools, calculators, and AI utilities. JSON formatter, password generator, EMI calculator, AI email writer, word counter and ${total}+ more. No install needed.`,
+    alternates: { canonical: siteUrl },
+    openGraph: {
+      url: siteUrl,
+      title: "QuickFnd — Free Tools, Calculators & AI Utilities",
+      description: `${total}+ free browser-based tools, calculators, and AI utilities. No install needed.`,
+    },
+  };
+}
 
 const UNIVERSAL_TOOL_SLUGS = [
   "image-compressor", "pdf-merger", "video-to-gif", "json-formatter", "password-generator", "qr-code-generator",
@@ -90,6 +100,8 @@ const TOOL_ACCENT: Record<string, { bg: string; text: string; border: string }> 
   "video-to-gif":        { bg: "bg-violet-500/10",  text: "text-violet-500", border: "group-hover:border-violet-400/50" },
   "salary-calculator":   { bg: "bg-teal-500/10",    text: "text-teal-500",   border: "group-hover:border-teal-400/50" },
   "ai-email-writer":     { bg: "bg-indigo-500/10",  text: "text-indigo-500", border: "group-hover:border-indigo-400/50" },
+  "qr-code-generator":   { bg: "bg-orange-500/10",  text: "text-orange-500", border: "group-hover:border-orange-400/50" },
+  "currency-converter":  { bg: "bg-lime-500/10",    text: "text-lime-500",   border: "group-hover:border-lime-400/50" },
 };
 const CALC_ACCENT = [
   { bg: "bg-violet-500/10",  text: "text-violet-500",  border: "group-hover:border-violet-400/50" },
@@ -106,13 +118,6 @@ const CATEGORY_ICONS: Record<string, string> = {
   "Health Calculators": "♡", "Math Calculators": "∑", "Content AI": "✨",
   "Writing AI": "✦", "Date & Time Calculators": "⊙",
 };
-
-const STATS = [
-  { value: "205+", label: "Free tools" },
-  { value: "0", label: "Signup required" },
-  { value: "100%", label: "Browser-based" },
-  { value: "0kb", label: "Data sent" },
-];
 
 export default async function HomePage() {
   const [rawTools, rawCalculators, rawAITools, headersList] = await Promise.all([
@@ -136,6 +141,14 @@ export default async function HomePage() {
   const featuredAITools = getPinned(aiTools, PINNED_AI_SLUGS);
   const totalCount = tools.length + calculators.length + aiTools.length;
   const isLocalised = countryCode !== "US" && geoProfile.calculatorSlugs.length > 0;
+
+  // Dynamic stats — totalCount drives the "Free tools" stat
+  const STATS = [
+    { value: `${totalCount}+`, label: "Free tools" },
+    { value: "0", label: "Signup required" },
+    { value: "100%", label: "Browser-based" },
+    { value: "0kb", label: "Data sent" },
+  ];
 
   return (
     <main className="min-h-screen bg-q-bg text-q-text">

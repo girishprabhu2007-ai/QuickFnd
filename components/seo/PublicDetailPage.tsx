@@ -114,6 +114,22 @@ function actionButtonBase() {
   return "inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition duration-150 ease-out hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-400/40";
 }
 
+/**
+ * Returns true if the item should display a "Featured" badge.
+ * An item is featured if is_featured === true AND either:
+ *   - featured_until is null (permanently featured)
+ *   - featured_until is a date string in the future
+ */
+function isActiveFeatured(item: PublicContentItem): boolean {
+  if (!item.is_featured) return false;
+  if (!item.featured_until) return true; // permanent
+  try {
+    return new Date(item.featured_until).getTime() > Date.now();
+  } catch {
+    return false;
+  }
+}
+
 export default function PublicDetailPage({
   table,
   item,
@@ -139,6 +155,8 @@ export default function PublicDetailPage({
       : table === "calculators"
       ? `${siteUrl}/calculators/${item.slug}`
       : `${siteUrl}/ai-tools/${item.slug}`;
+
+  const featured = isActiveFeatured(item);
 
   return (
     <main className="min-h-screen bg-q-bg text-q-text">
@@ -169,9 +187,16 @@ export default function PublicDetailPage({
 
                 {/* Hero section */}
                 <section className="rounded-3xl border border-q-border bg-q-card p-6 shadow-sm md:p-8 lg:p-10">
-                  <p className="text-sm uppercase tracking-[0.2em] text-blue-500">
-                    QuickFnd {label.slice(0, -1)}
-                  </p>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <p className="text-sm uppercase tracking-[0.2em] text-blue-500">
+                      QuickFnd {label.slice(0, -1)}
+                    </p>
+                    {featured && (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400">
+                        <span aria-hidden="true">⭐</span> Featured
+                      </span>
+                    )}
+                  </div>
 
                   <h1 className="mt-4 text-3xl font-bold md:text-5xl">
                     {item.name}
@@ -322,8 +347,15 @@ export default function PublicDetailPage({
                           href={detailHref(table, related.slug)}
                           className="rounded-2xl border border-q-border bg-q-bg p-5 transition duration-150 ease-out hover:-translate-y-0.5 hover:border-blue-400/50 hover:shadow-sm"
                         >
-                          <div className="text-lg font-semibold text-q-text">
-                            {related.name}
+                          <div className="flex items-center gap-2">
+                            <div className="text-lg font-semibold text-q-text">
+                              {related.name}
+                            </div>
+                            {isActiveFeatured(related) && (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400">
+                                ⭐ Featured
+                              </span>
+                            )}
                           </div>
                           <p className="mt-3 text-sm leading-6 text-q-muted">
                             {getDisplayDescription(table, related, "card")}
