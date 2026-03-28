@@ -3,6 +3,7 @@ import SiteFooter from "@/components/site/SiteFooter";
 import DetailSidebar from "@/components/layout/DetailSidebar";
 import PageSEOSections from "@/components/seo/PageSEOSections";
 import ShareMenu from "@/components/seo/ShareMenu";
+import LikeButton from "@/components/engagement/LikeButton";
 import AdSlot from "@/components/ads/AdSlot";
 import type { ReactNode } from "react";
 import AffiliateCard from "@/components/monetisation/AffiliateCard";
@@ -194,7 +195,8 @@ export default function PublicDetailPage({
                     </Link>
                   </div>
 
-                  <div className="mt-5 flex items-center gap-3">
+                  <div className="mt-5 flex items-center gap-4">
+                    <LikeButton slug={item.slug} table={table} initialLikes={0} />
                     <span className="text-sm font-medium text-q-muted">
                       Share
                     </span>
