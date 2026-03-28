@@ -60,7 +60,7 @@ export default function AboutPage() {
                 {
                   icon: "✨",
                   title: "AI Tools",
-                  desc: "AI-powered writing assistants for emails, prompts, outlines, and content workflows — powered by GPT models, free to use without a subscription.",
+                  desc: "AI-powered writing assistants for emails, prompts, outlines, and content workflows — built on QuickFnd, free to use without a subscription.",
                   href: "/ai-tools",
                   color: "rgba(16,185,129,0.06)",
                 },
@@ -84,7 +84,7 @@ export default function AboutPage() {
               {[
                 { icon: "🔒", title: "Privacy by default", desc: "Most tools process your data entirely in your browser. Text you enter into the JSON Formatter, Password Generator, Word Counter, and similar tools never leaves your device." },
                 { icon: "⚡", title: "No friction", desc: "No signup, no login, no subscription. Open a tool page and start using it immediately. Everything works on desktop and mobile." },
-                { icon: "🤖", title: "AI where it helps", desc: "AI tools use OpenAI's API to generate drafts for emails, prompts, and content. We use AI where it genuinely saves time — not as a gimmick." },
+                { icon: "🤖", title: "AI where it helps", desc: "AI tools generate drafts for emails, prompts, and content. We use AI where it genuinely saves time — not as a gimmick." },
                 { icon: "📈", title: "Community-driven", desc: "Users can request new tools, report issues, and suggest improvements. The tools we build next are driven by what people actually need." },
               ].map((item) => (
                 <div key={item.title} className="rounded-xl border border-q-border bg-q-bg p-4">
@@ -107,7 +107,7 @@ export default function AboutPage() {
               QuickFnd is built on modern, reliable technology chosen for speed, security, and scalability:
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              {["Next.js 16", "React 19", "TypeScript", "Tailwind CSS", "Supabase", "OpenAI API", "Vercel"].map((tech) => (
+              {["Next.js 16", "React 19", "TypeScript", "Tailwind CSS", "Supabase", "AI Engine", "Vercel"].map((tech) => (
                 <span key={tech}
                   className="rounded-full border border-q-border bg-q-bg px-3 py-1 text-sm font-medium text-q-muted">
                   {tech}

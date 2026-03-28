@@ -70,7 +70,7 @@ const ENGINE_DESCRIPTIONS: Record<string, string> = {
   "age-calculator": "Calculates exact age from date of birth",
   "formula-calculator": "Evaluates mathematical formulas and expressions",
   "ai-email-writer": "AI writes professional emails from a short prompt",
-  "ai-prompt-generator": "AI generates ChatGPT/LLM prompts for any task",
+  "ai-prompt-generator": "AI generates ready-to-use prompts for any task",
   "ai-blog-outline-generator": "AI creates structured blog post outlines",
   "openai-text-tool": "AI processes text — summarize, paraphrase, rewrite, explain",
 };

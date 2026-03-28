@@ -6,7 +6,7 @@
  * Full pipeline:
  *   1. Calls selectTopicsForToday() — pulls GSC data, Serper PAA, rotates seed bank
  *   2. Enriches each topic with related tool links
- *   3. Generates 2 articles with GPT-4o-mini (varied temperature)
+ *   3. Generates 2 articles with AI (varied temperature)
  *   4. Quality gate: min 600 words, min 2 H2s
  *   5. Publishes to blog_posts + pings IndexNow + Google sitemap
  *   6. Logs to cron_runs

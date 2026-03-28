@@ -128,7 +128,7 @@ Generate 16 high-demand QuickFnd ideas.
 Rules:
 - tools and calculators must map to a realistic live reusable utility
 - do not suggest ideas that require complex external APIs or custom engines not already available
-- AI tools are allowed if they can work as an OpenAI text workflow
+- AI tools are allowed if they can work as an AI text workflow
 - keep names concise and product-ready
 - keep reason to one sentence
           `.trim(),

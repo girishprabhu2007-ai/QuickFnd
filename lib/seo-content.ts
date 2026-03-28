@@ -409,11 +409,11 @@ const UNIQUE_CONTENT: Record<string, UniqueContent> = {
     ],
   },
   "ai-prompt-generator": {
-    intro: "AI Prompt Generator creates better, more effective prompts for ChatGPT, Claude, Midjourney, and other AI tools. Describe your goal and get a well-structured prompt with clear instructions, context, and format — ready to paste.",
+    intro: "AI Prompt Generator creates better, more effective prompts for any AI tool � text, image, and code assistants. Describe your goal and get a well-structured prompt with clear instructions, context, and format — ready to paste.",
     benefits: [
       "Turn vague ideas into specific, effective AI prompts with clear structure.",
       "Prompts include role-setting, context, constraints, and output format instructions.",
-      "Works for text AI (ChatGPT, Claude), image AI (Midjourney), and code AI (Copilot).",
+      "Works for text AI, image AI, and code AI assistants.",
       "Learn prompt engineering patterns by studying the generated structure.",
     ],
     steps: [
@@ -423,7 +423,7 @@ const UNIQUE_CONTENT: Record<string, UniqueContent> = {
       "Click Generate Prompt, review it, then paste into your AI tool.",
     ],
     useCases: [
-      "Creating detailed prompts for writing blog posts or marketing copy with ChatGPT",
+      "Creating detailed prompts for writing blog posts or marketing copy with AI",
       "Generating image prompts for Midjourney with proper style and composition details",
       "Building system prompts for custom AI assistants and chatbots",
       "Learning prompt engineering by analysing well-structured example prompts",

@@ -117,7 +117,7 @@ function getTaskIdentity(task: string, itemName: string): TaskIdentity {
         description: "Turn a rough idea into a strong, structured prompt ready for any AI tool.",
         fields: [
           { key: "goal", label: "What do you want the prompt to achieve?", placeholder: "Generate a landing page hero section for a developer tools startup", type: "textarea", rows: 2, required: true },
-          { key: "targetAI", label: "Target AI system", placeholder: "", type: "select", options: ["ChatGPT / Claude", "Midjourney / DALL-E", "Code assistant", "Any AI"] },
+          { key: "targetAI", label: "Target AI system", placeholder: "", type: "select", options: ["Text AI (GPT, Claude)", "Midjourney / DALL-E", "Code assistant", "Any AI"] },
           { key: "constraints", label: "Constraints or requirements", placeholder: "Output should be valid HTML with Tailwind classes", type: "textarea", rows: 2 },
         ],
         tips: ["Describe the end result, not the process", "Include output format expectations", "Add constraints to avoid generic results"],
