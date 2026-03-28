@@ -221,10 +221,11 @@ export async function GET(req: Request) {
       // Step 1: Should we reject?
       const { reject, reason: rejectReason } = shouldReject(item);
       if (reject) {
-        await supabase.from("demand_queue")
-          .update({ status: "rejected", rejection_reason: rejectReason, updated_at: new Date().toISOString() })
+        const { error: rejectErr } = await supabase.from("demand_queue")
+          .update({ status: "rejected", updated_at: new Date().toISOString() })
           .eq("id", item.id);
-        results.rejected++;
+        if (rejectErr) { results.errors++; }
+        else { results.rejected++; }
         log.push(`REJECT: ${item.suggested_name} — ${rejectReason}`);
         continue;
       }
@@ -243,8 +244,9 @@ export async function GET(req: Request) {
         if (engineChanged) {
           update.suggested_engine = resolvedEngine;
         }
-        await supabase.from("demand_queue").update(update).eq("id", item.id);
-        results.approved++;
+        const { error: approveErr } = await supabase.from("demand_queue").update(update).eq("id", item.id);
+        if (approveErr) { results.errors++; console.error("approve failed:", approveErr.message); }
+        else { results.approved++; }
         log.push(`APPROVE: ${item.suggested_name} (engine: ${resolvedEngine}${engineChanged ? ` fixed from ${item.suggested_engine}` : ""}) — ${approveReason}`);
         continue;
       }
