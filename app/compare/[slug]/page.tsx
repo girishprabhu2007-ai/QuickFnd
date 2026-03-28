@@ -279,7 +279,7 @@ export default async function ComparePage({ params }: Props) {
           </section>
         )}
 
-        <AdSlot slot="compare-mid" className="my-8" />
+        <AdSlot type="in-article" className="my-8" />
 
         {/* FAQs */}
         {page.faqs && page.faqs.length > 0 && (
