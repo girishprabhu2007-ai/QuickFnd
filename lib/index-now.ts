@@ -1,118 +1,131 @@
 /**
- * app/api/cron/blog-publish/route.ts
+ * lib/index-now.ts
  * ─────────────────────────────────────────────────────────────────────────────
- * Vercel Cron — daily at 4am UTC
- *
- * Full pipeline:
- *   1. Calls selectTopicsForToday() — pulls GSC data, Serper PAA, rotates seed bank
- *   2. Enriches each topic with related tool links
- *   3. Generates 2 articles with AI (varied temperature)
- *   4. Quality gate: min 600 words, min 2 H2s
- *   5. Publishes to blog_posts + pings IndexNow + Google sitemap
- *   6. Logs to cron_runs
- *
- * vercel.json: { "path": "/api/cron/blog-publish", "schedule": "0 4 * * *" }
+ * Phase 4: Ping Bing and Yandex via IndexNow protocol when new pages publish.
+ * IndexNow is free and gets pages indexed within hours (vs days for sitemap).
+ * 
+ * Setup: Add INDEXNOW_KEY to Vercel env vars (any random string, 8-128 chars)
+ * Then create a file at /public/<your-key>.txt containing just the key.
  */
 
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { generateBlogPost, selectTopicsForToday, recordFailedTopic } from "@/lib/blog-generator";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://quickfnd.com";
+const INDEXNOW_KEY = process.env.INDEXNOW_KEY || "";
 
-export const maxDuration = 300;
-export const dynamic = "force-dynamic";
+// ─── IndexNow submission ──────────────────────────────────────────────────────
 
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-  return createClient(url, key, { auth: { persistSession: false } });
+async function submitToIndexNow(urls: string[]): Promise<{
+  bing: boolean;
+  yandex: boolean;
+  errors: string[];
+}> {
+  if (!INDEXNOW_KEY) {
+    return { bing: false, yandex: false, errors: ["INDEXNOW_KEY not set"] };
+  }
+
+  const errors: string[] = [];
+  const payload = {
+    host: SITE_URL.replace("https://", "").replace("http://", ""),
+    key: INDEXNOW_KEY,
+    keyLocation: `${SITE_URL}/${INDEXNOW_KEY}.txt`,
+    urlList: urls,
+  };
+
+  // Submit to Bing (also covers DuckDuckGo, Yahoo, Ecosia)
+  let bing = false;
+  try {
+    const res = await fetch("https://www.bing.com/indexnow", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(10000),
+    });
+    bing = res.ok || res.status === 202;
+    if (!bing) {
+      const body = await res.text().catch(() => "");
+      errors.push(`Bing IndexNow: ${res.status} — ${body.slice(0, 200)}`);
+    }
+  } catch (e) {
+    errors.push(`Bing IndexNow error: ${e instanceof Error ? e.message : "unknown"}`);
+  }
+
+  // Submit to Yandex
+  let yandex = false;
+  try {
+    const res = await fetch("https://yandex.com/indexnow", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(10000),
+    });
+    yandex = res.ok || res.status === 202;
+    if (!yandex) errors.push(`Yandex IndexNow: ${res.status}`);
+  } catch (e) {
+    errors.push(`Yandex IndexNow error: ${e instanceof Error ? e.message : "unknown"}`);
+  }
+
+  return { bing, yandex, errors };
 }
 
-export async function GET(req: Request) {
-  const startTime = Date.now();
-  const supabase = getSupabase();
+// ─── Ping Google Search Console (sitemap refresh) ────────────────────────────
+// Google doesn't support IndexNow — best approach is to ping sitemap
 
-  const isVercelCron = req.headers.get("x-vercel-cron") === "1";
-  const cronSecret = process.env.CRON_SECRET;
-  const authHeader = req.headers.get("authorization");
-  const isAuthorized = isVercelCron || (cronSecret && authHeader === `Bearer ${cronSecret}`);
-  if (!isAuthorized) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { data: run } = await supabase
-    .from("cron_runs")
-    .insert({ job_name: "blog-publish", status: "running" })
-    .select("id")
-    .single();
-  const runId = run?.id;
-
+async function pingGoogleSitemap(): Promise<boolean> {
   try {
-    // Step 1: Research + select 2 topics per run
-    // 5 cron runs × 2 articles = 10 posts/day
-    // Each run fires at a different hour so publish times are spread across the day
-    const publishHour = new Date().getUTCHours();
-    const topics = await selectTopicsForToday(2);
-
-    if (!topics.length) {
-      await supabase.from("cron_runs").update({
-        status: "success",
-        items_published: 0,
-        error_message: "No unpublished topics available",
-        completed_at: new Date().toISOString(),
-        duration_ms: Date.now() - startTime,
-      }).eq("id", runId);
-      return NextResponse.json({ success: true, published: 0, message: "All topics published — seed bank exhausted" });
-    }
-
-    // Step 2: Generate articles
-    const results: {
-      keyword: string;
-      success: boolean;
-      slug?: string;
-      title?: string;
-      word_count?: number;
-      error?: string;
-    }[] = [];
-
-    for (const topic of topics) {
-      const result = await generateBlogPost({
-        ...topic,
-        source: "auto-pipeline",
-        publish_hour: publishHour,
-      });
-      results.push({ keyword: topic.keyword, ...result });
-      // Rate limit between generations
-      if (topics.indexOf(topic) < topics.length - 1) {
-        await new Promise(r => setTimeout(r, 3000));
-      }
-    }
-
-    const published = results.filter(r => r.success).length;
-    const errors = results.filter(r => !r.success).map(r => `${r.keyword}: ${r.error}`);
-    const totalWords = results.filter(r => r.success).reduce((sum, r) => sum + (r.word_count || 0), 0);
-
-    await supabase.from("cron_runs").update({
-      status: errors.length > 0 && published === 0 ? "failed" : "success",
-      items_published: published,
-      error_message: errors.length ? errors.join("; ") : null,
-      completed_at: new Date().toISOString(),
-      duration_ms: Date.now() - startTime,
-    }).eq("id", runId);
-
-    return NextResponse.json({
-      success: true,
-      published,
-      total_words: totalWords,
-      results,
-      duration_ms: Date.now() - startTime,
-    });
-
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    await supabase.from("cron_runs").update({
-      status: "failed",
-      error_message: message,
-      completed_at: new Date().toISOString(),
-      duration_ms: Date.now() - startTime,
-    }).eq("id", runId);
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    const sitemapUrl = encodeURIComponent(`${SITE_URL}/sitemap.xml`);
+    const res = await fetch(
+      `https://www.google.com/ping?sitemap=${sitemapUrl}`,
+      { signal: AbortSignal.timeout(8000) }
+    );
+    return res.ok;
+  } catch {
+    return false;
   }
+}
+
+// ─── Main function: index a new tool page ─────────────────────────────────────
+
+export async function indexNewPage(
+  slug: string,
+  type: "tools" | "calculators" | "ai-tools"
+): Promise<{
+  url: string;
+  bing: boolean;
+  yandex: boolean;
+  google_sitemap: boolean;
+  errors: string[];
+}> {
+  const url = `${SITE_URL}/${type}/${slug}`;
+  const urls = [url];
+
+  const [indexNowResult, googleResult] = await Promise.all([
+    submitToIndexNow(urls),
+    pingGoogleSitemap(),
+  ]);
+
+  return {
+    url,
+    bing: indexNowResult.bing,
+    yandex: indexNowResult.yandex,
+    google_sitemap: googleResult,
+    errors: indexNowResult.errors,
+  };
+}
+
+// ─── Batch index multiple new pages ──────────────────────────────────────────
+
+export async function indexMultiplePages(
+  items: { slug: string; type: "tools" | "calculators" | "ai-tools" }[]
+): Promise<{ submitted: number; errors: string[] }> {
+  if (!items.length) return { submitted: 0, errors: [] };
+
+  const urls = items.map(i => `${SITE_URL}/${i.type}/${i.slug}`);
+  const result = await submitToIndexNow(urls);
+
+  // One sitemap ping covers all
+  await pingGoogleSitemap();
+
+  return {
+    submitted: result.bing || result.yandex ? urls.length : 0,
+    errors: result.errors,
+  };
 }
