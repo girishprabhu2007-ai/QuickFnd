@@ -11,6 +11,7 @@ import {
 import { getOpenAIClient } from "@/lib/openai-server";
 import { normalizeGeneratedContent } from "@/lib/admin-content";
 import { suggestAdminEngine } from "@/lib/admin-engine-assistant";
+import { generateToolDescription } from "@/lib/content-engine";
 
 type GeneratedItem = {
   name: string;
@@ -107,6 +108,31 @@ async function generateItemFromIdea(
   idea: string,
   category: AdminCategory
 ): Promise<GeneratedItem | null> {
+  // Try content engine first (centralised brand voice)
+  try {
+    const result = await generateToolDescription({
+      query: idea,
+      suggested_name: idea,
+      suggested_slug: idea.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+      engine_type: "",
+      category: category === "ai-tool" ? "ai-tool" : category === "calculator" ? "calculator" : "tool",
+    });
+
+    if (result.success) {
+      return {
+        name: result.output.name,
+        slug: result.output.slug,
+        description: result.output.description,
+        related_slugs: [],
+        engine_type: "",
+        engine_config: {},
+      };
+    }
+  } catch {
+    // Content engine failed — fall back to inline OpenAI
+  }
+
+  // Fallback: direct OpenAI call
   const engineList = Object.entries(ENGINE_CAPABILITY_MAP)
     .map(([type, desc]) => `  ${type}: ${desc}`)
     .join("\n");

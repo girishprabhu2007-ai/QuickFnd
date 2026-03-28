@@ -6,6 +6,7 @@ import {
 } from "@/lib/admin-engine-assistant";
 import { slugify } from "@/lib/admin-content";
 import { resolveCalculatorEngine } from "@/lib/calculator-engine-map";
+import { generateToolDescription } from "@/lib/content-engine";
 
 export type BulkGeneratedItem = {
   name: string;

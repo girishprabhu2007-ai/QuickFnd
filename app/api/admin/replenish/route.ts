@@ -1,39 +1,48 @@
 /**
  * app/api/admin/replenish/route.ts
  * Checks TOOL_CATALOG against live DB and publishes any missing Priority 1 tools.
+ * Wired to centralised content-engine for consistent brand voice.
  */
 
 import { NextResponse } from "next/server";
 import { getAdminUser } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/admin-publishing";
-import { getOpenAIClient } from "@/lib/openai-server";
 import { getMissingTools, type CatalogEntry } from "@/lib/replenishment-catalog";
 import { runQualityGate } from "@/lib/quality-gate";
 import { indexNewPage } from "@/lib/index-now";
+import { generateToolDescription } from "@/lib/content-engine";
 
 export const maxDuration = 120;
 
 async function generateSEOContent(entry: CatalogEntry) {
-  const openai = getOpenAIClient();
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    temperature: 0.4,
-    response_format: { type: "json_object" },
-    messages: [{ role: "user", content: `Write SEO content for this QuickFnd tool:
-Name: ${entry.name}
-Description: ${entry.description}
-Group: ${entry.group}
-
-Return JSON:
-{
-  "intro": "2-3 sentences specific to this tool",
-  "benefits": ["4 specific benefits"],
-  "steps": ["4 clear how-to steps"],
-  "use_cases": ["4 real-world use cases"],
-  "faqs": [{"question":"...","answer":"..."},{"question":"...","answer":"..."},{"question":"...","answer":"..."},{"question":"...","answer":"..."}]
-}` }],
+  const result = await generateToolDescription({
+    query: entry.name,
+    suggested_name: entry.name,
+    suggested_slug: entry.slug,
+    engine_type: entry.engine_type,
+    category: "tool",
   });
-  return JSON.parse(response.choices[0]?.message?.content || "{}");
+
+  if (result.success) {
+    return {
+      intro: result.output.seo_intro || entry.description,
+      benefits: [] as string[],
+      steps: [] as string[],
+      use_cases: [] as string[],
+      faqs: result.output.seo_faqs || [],
+      description: result.output.description,
+    };
+  }
+
+  // Fallback — return minimal content so publishing still works
+  return {
+    intro: entry.description,
+    benefits: [],
+    steps: [],
+    use_cases: [],
+    faqs: [],
+    description: entry.description,
+  };
 }
 
 export async function POST() {

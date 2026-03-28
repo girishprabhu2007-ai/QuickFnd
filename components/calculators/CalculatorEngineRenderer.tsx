@@ -407,12 +407,12 @@ export default function CalculatorEngineRenderer({ item }: Props) {
   }
 
   // ✅ Retirement Calculator
-  if (engineType === "retirement-calculator" || engineType === "compound-interest-calculator" && item.slug.includes("retirement")) {
+  if (engineType === "retirement-calculator" || (engineType === "compound-interest-calculator" && item.slug.includes("retirement"))) {
     return <RetirementCalculator title={title} />;
   }
 
-  // ✅ Salary Calculator
-  if (engineType === "salary-calculator" || item.slug.includes("salary-calculator")) {
+  // ✅ Salary Calculator (India — exact engine_type match only)
+  if (engineType === "salary-calculator") {
     return <SalaryCalculator title={title} />;
   }
 
