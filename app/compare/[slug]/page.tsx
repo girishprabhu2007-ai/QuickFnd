@@ -141,188 +141,224 @@ export default async function ComparePage({ params }: Props) {
       : null;
 
   return (
-    <main className="min-h-screen bg-q-bg px-4 py-8 text-q-text sm:px-6 lg:px-8 lg:py-12">
+    <main className="min-h-screen bg-q-bg text-q-text">
       <JsonLd id="breadcrumb" data={breadcrumbSchema} />
       {faqSchema && <JsonLd id="faq" data={faqSchema} />}
 
-      <article className="mx-auto max-w-4xl">
-        {/* Breadcrumb */}
-        <nav className="mb-6 flex items-center gap-2 text-xs text-q-muted">
-          <Link href="/" className="hover:text-q-text transition">Home</Link>
-          <span>/</span>
-          <Link href="/compare" className="hover:text-q-text transition">Compare</Link>
-          <span>/</span>
-          <span className="text-q-text">{page.title}</span>
-        </nav>
+      <section className="px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+        <article className="mx-auto max-w-5xl">
 
-        {/* Header */}
-        <div className="mb-8">
-          <div className="inline-flex rounded-full border border-amber-300/40 bg-amber-50/50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-amber-700 dark:border-amber-500/30 dark:bg-amber-900/20 dark:text-amber-300">
-            Comparison
-          </div>
-          <h1 className="mt-4 text-3xl font-bold tracking-tight text-q-text md:text-4xl">
-            {page.title}
-          </h1>
-          {page.intro && (
-            <p className="mt-4 max-w-3xl text-base leading-7 text-q-muted">
-              {page.intro}
+          {/* Breadcrumb */}
+          <nav className="mb-8 text-sm text-q-muted">
+            <Link href="/" className="transition hover:text-q-text">Home</Link>
+            <span className="mx-2">/</span>
+            <Link href="/compare" className="transition hover:text-q-text">Compare</Link>
+            <span className="mx-2">/</span>
+            <span className="text-q-text">{page.title}</span>
+          </nav>
+
+          {/* Hero */}
+          <section className="rounded-3xl border border-q-border bg-q-card p-6 shadow-sm md:p-8 lg:p-10">
+            <p className="text-sm uppercase tracking-[0.2em] text-amber-500">
+              Comparison
             </p>
-          )}
-        </div>
+            <h1 className="mt-4 text-3xl font-bold md:text-5xl">
+              {page.title}
+            </h1>
+            {page.intro && (
+              <p className="mt-4 max-w-3xl text-base leading-7 text-q-muted md:text-lg md:leading-8">
+                {page.intro}
+              </p>
+            )}
 
-        {/* Comparison Grid */}
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Tool A */}
-          <div className="rounded-2xl border border-blue-200/50 bg-blue-50/30 p-6 dark:border-blue-800/40 dark:bg-blue-900/10">
-            <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-lg text-blue-600 dark:text-blue-400">
-                A
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-q-text">{page.tool_a_name}</h2>
-                {isInternal(page.tool_a_type) && (
-                  <Link
-                    href={toolHref(page.tool_a_slug, page.tool_a_type)}
-                    className="text-xs text-blue-600 hover:underline dark:text-blue-400"
-                  >
-                    Try it free →
-                  </Link>
-                )}
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-400">
-                Pros
-              </h3>
-              <ul className="space-y-2">
-                {page.tool_a_pros.map((pro, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm leading-6 text-q-text">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
-                    {pro}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-red-500 dark:text-red-400">
-                Cons
-              </h3>
-              <ul className="space-y-2">
-                {page.tool_a_cons.map((con, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm leading-6 text-q-muted">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" />
-                    {con}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          {/* Tool B */}
-          <div className="rounded-2xl border border-purple-200/50 bg-purple-50/30 p-6 dark:border-purple-800/40 dark:bg-purple-900/10">
-            <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-lg text-purple-600 dark:text-purple-400">
-                B
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-q-text">{page.tool_b_name}</h2>
-                {isInternal(page.tool_b_type) && (
-                  <Link
-                    href={toolHref(page.tool_b_slug, page.tool_b_type)}
-                    className="text-xs text-purple-600 hover:underline dark:text-purple-400"
-                  >
-                    Try it free →
-                  </Link>
-                )}
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-400">
-                Pros
-              </h3>
-              <ul className="space-y-2">
-                {page.tool_b_pros.map((pro, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm leading-6 text-q-text">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
-                    {pro}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-red-500 dark:text-red-400">
-                Cons
-              </h3>
-              <ul className="space-y-2">
-                {page.tool_b_cons.map((con, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm leading-6 text-q-muted">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" />
-                    {con}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {/* Verdict */}
-        {page.verdict && (
-          <section className="mt-8 rounded-2xl border border-amber-200/50 bg-amber-50/30 p-6 dark:border-amber-700/40 dark:bg-amber-900/10">
-            <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">
-              Our Verdict
-            </h2>
-            <p className="text-base leading-7 text-q-text">{page.verdict}</p>
-          </section>
-        )}
-
-        <AdSlot type="in-article" className="my-8" />
-
-        {/* FAQs */}
-        {page.faqs && page.faqs.length > 0 && (
-          <section className="mt-8">
-            <h2 className="mb-6 text-xl font-semibold text-q-text">
-              Frequently Asked Questions
-            </h2>
-            <div className="space-y-4">
-              {page.faqs.map((faq, i) => (
-                <details
-                  key={i}
-                  className="group rounded-xl border border-q-border bg-q-card p-5 transition-colors hover:bg-q-card-hover"
+            <div className="mt-6 flex flex-wrap gap-3">
+              {isInternal(page.tool_a_type) && (
+                <Link
+                  href={toolHref(page.tool_a_slug, page.tool_a_type)}
+                  className="inline-flex items-center justify-center rounded-xl bg-q-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition duration-150 ease-out hover:-translate-y-0.5 hover:bg-q-primary-hover hover:shadow-md"
                 >
-                  <summary className="cursor-pointer text-sm font-medium leading-6 text-q-text">
-                    {faq.question}
-                  </summary>
-                  <p className="mt-3 text-sm leading-7 text-q-muted">{faq.answer}</p>
-                </details>
-              ))}
+                  Try {page.tool_a_name} →
+                </Link>
+              )}
+              <Link
+                href="/compare"
+                className="inline-flex items-center justify-center rounded-xl border border-q-border bg-q-bg px-4 py-2.5 text-sm font-medium text-q-text transition hover:bg-q-card-hover"
+              >
+                All Comparisons
+              </Link>
             </div>
           </section>
-        )}
 
-        {/* CTA */}
-        <section className="mt-10 flex flex-wrap gap-3">
-          {isInternal(page.tool_a_type) && (
-            <Link
-              href={toolHref(page.tool_a_slug, page.tool_a_type)}
-              className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md"
-            >
-              Try {page.tool_a_name} Free →
-            </Link>
+          {/* VS Divider */}
+          <div className="relative my-8 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-q-border" />
+            </div>
+            <div className="relative flex h-10 w-10 items-center justify-center rounded-full border border-q-border bg-q-card text-sm font-bold text-amber-500 shadow-sm">
+              VS
+            </div>
+          </div>
+
+          {/* Comparison Cards */}
+          <div className="grid gap-6 md:grid-cols-2">
+
+            {/* Tool A Card */}
+            <section className="rounded-2xl border border-q-border bg-q-card p-6 shadow-sm md:p-8">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-500/10 text-sm font-bold text-blue-600 dark:text-blue-400">
+                  A
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-q-text">{page.tool_a_name}</h2>
+                  {isInternal(page.tool_a_type) && (
+                    <Link
+                      href={toolHref(page.tool_a_slug, page.tool_a_type)}
+                      className="text-xs font-medium text-blue-500 transition hover:text-blue-600"
+                    >
+                      Open tool →
+                    </Link>
+                  )}
+                </div>
+              </div>
+
+              <div className="mb-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="h-1 w-8 rounded-full bg-emerald-500" />
+                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400">
+                    Strengths
+                  </span>
+                </div>
+                <div className="space-y-2.5">
+                  {page.tool_a_pros.map((pro, i) => (
+                    <div key={i} className="flex items-start gap-3 rounded-xl border border-q-border bg-q-bg p-3.5 text-sm leading-6 text-q-text">
+                      <span className="mt-0.5 text-emerald-500">+</span>
+                      {pro}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="h-1 w-8 rounded-full bg-red-400" />
+                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-red-500 dark:text-red-400">
+                    Limitations
+                  </span>
+                </div>
+                <div className="space-y-2.5">
+                  {page.tool_a_cons.map((con, i) => (
+                    <div key={i} className="flex items-start gap-3 rounded-xl border border-q-border bg-q-bg p-3.5 text-sm leading-6 text-q-muted">
+                      <span className="mt-0.5 text-red-400">&minus;</span>
+                      {con}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* Tool B Card */}
+            <section className="rounded-2xl border border-q-border bg-q-card p-6 shadow-sm md:p-8">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-purple-500/10 text-sm font-bold text-purple-600 dark:text-purple-400">
+                  B
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-q-text">{page.tool_b_name}</h2>
+                  {isInternal(page.tool_b_type) && (
+                    <Link
+                      href={toolHref(page.tool_b_slug, page.tool_b_type)}
+                      className="text-xs font-medium text-purple-500 transition hover:text-purple-600"
+                    >
+                      Open tool →
+                    </Link>
+                  )}
+                </div>
+              </div>
+
+              <div className="mb-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="h-1 w-8 rounded-full bg-emerald-500" />
+                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400">
+                    Strengths
+                  </span>
+                </div>
+                <div className="space-y-2.5">
+                  {page.tool_b_pros.map((pro, i) => (
+                    <div key={i} className="flex items-start gap-3 rounded-xl border border-q-border bg-q-bg p-3.5 text-sm leading-6 text-q-text">
+                      <span className="mt-0.5 text-emerald-500">+</span>
+                      {pro}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="h-1 w-8 rounded-full bg-red-400" />
+                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-red-500 dark:text-red-400">
+                    Limitations
+                  </span>
+                </div>
+                <div className="space-y-2.5">
+                  {page.tool_b_cons.map((con, i) => (
+                    <div key={i} className="flex items-start gap-3 rounded-xl border border-q-border bg-q-bg p-3.5 text-sm leading-6 text-q-muted">
+                      <span className="mt-0.5 text-red-400">&minus;</span>
+                      {con}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          </div>
+
+          {/* Verdict */}
+          {page.verdict && (
+            <section className="mt-8 rounded-3xl border border-q-border bg-q-card p-6 shadow-sm md:p-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-1 w-8 rounded-full bg-amber-500" />
+                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-500">
+                  Our Verdict
+                </span>
+              </div>
+              <p className="text-base leading-8 text-q-text md:text-lg">{page.verdict}</p>
+            </section>
           )}
-          <Link
-            href="/compare"
-            className="rounded-xl border border-q-border bg-q-bg px-5 py-3 text-sm font-medium text-q-text transition hover:bg-q-card-hover"
-          >
-            Browse All Comparisons
-          </Link>
-        </section>
 
-        <div className="mt-10"><EmailCapture /></div>
-      </article>
+          <div className="my-8">
+            <AdSlot type="in-article" />
+          </div>
+
+          {/* FAQs */}
+          {page.faqs && page.faqs.length > 0 && (
+            <section className="rounded-2xl border border-q-border bg-q-card p-6 shadow-sm md:p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="h-1 w-8 rounded-full bg-blue-500" />
+                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">
+                  Frequently Asked Questions
+                </span>
+              </div>
+              <div className="space-y-3">
+                {page.faqs.map((faq, i) => (
+                  <details
+                    key={i}
+                    className="group rounded-xl border border-q-border bg-q-bg p-5 transition duration-150 ease-out hover:-translate-y-0.5 hover:border-blue-400/50 hover:shadow-sm"
+                  >
+                    <summary className="cursor-pointer text-sm font-semibold leading-6 text-q-text">
+                      {faq.question}
+                    </summary>
+                    <p className="mt-3 text-sm leading-7 text-q-muted">{faq.answer}</p>
+                  </details>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <div className="mt-10">
+            <EmailCapture />
+          </div>
+
+        </article>
+      </section>
 
       <SiteFooter />
     </main>
