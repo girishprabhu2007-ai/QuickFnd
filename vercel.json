@@ -39,6 +39,10 @@
     {
       "path": "/api/cron/email-nurture",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/admin/seo-backfill?run=true&limit=10",
+      "schedule": "0 5 * * 0"
     }
   ]
 }

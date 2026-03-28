@@ -1,5 +1,5 @@
 ﻿/**
- * lib/blog-generator.ts  v2
+ * lib/blog-generator.ts  v3
  * ─────────────────────────────────────────────────────────────────────────────
  * Fully autonomous blog generation pipeline.
  *
@@ -18,6 +18,12 @@
  *   - 3-6 internal tool links per article
  *   - People Also Ask answers embedded naturally
  *   - Pillar / spoke topic clusters
+ *
+ * v3 changes (Session 7):
+ *   - Failed topic tracking via blog_failed_topics table
+ *   - Topics that fail quality gate are skipped for 7 days
+ *   - generateBlogPost() logs failures to DB
+ *   - selectTopicsForToday() excludes recently-failed topics
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -421,6 +427,55 @@ function getSupabaseAdmin() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
+// ─── Failed topic tracking (Session 7) ───────────────────────────────────────
+
+/**
+ * Record a topic that failed quality gate so it gets skipped for 7 days.
+ * Uses upsert — if the same slug fails again, we reset retry_after.
+ */
+export async function recordFailedTopic(
+  keyword: string,
+  slug: string,
+  errorMessage: string
+): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  try {
+    await supabase
+      .from("blog_failed_topics")
+      .upsert(
+        {
+          keyword,
+          slug,
+          error_message: errorMessage.slice(0, 500),
+          failed_at: new Date().toISOString(),
+          retry_after: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        },
+        { onConflict: "slug" }
+      );
+  } catch {
+    // Silent — failed-topic tracking is best-effort
+    console.error(`[blog-generator] Could not record failed topic: ${slug}`);
+  }
+}
+
+/**
+ * Get slugs of topics that failed recently (retry_after still in the future).
+ * Used by selectTopicsForToday() to skip them.
+ */
+async function getFailedTopicSlugs(): Promise<Set<string>> {
+  const supabase = getSupabaseAdmin();
+  try {
+    const { data } = await supabase
+      .from("blog_failed_topics")
+      .select("slug")
+      .gt("retry_after", new Date().toISOString());
+    return new Set((data || []).map(r => String(r.slug)));
+  } catch {
+    // If table doesn't exist yet, return empty set
+    return new Set();
+  }
+}
+
 // ─── Research: fetch PAA questions from Serper ────────────────────────────────
 
 async function fetchPeopleAlsoAsk(keyword: string, apiKey: string): Promise<string[]> {
@@ -637,11 +692,16 @@ Writing style instruction: ${author.writing_style}`;
   });
 
   if (!engineResult.success) {
+    // Record this topic as failed so it gets skipped for 7 days
+    await recordFailedTopic(input.keyword, slug, engineResult.error || "Content engine failed");
     return { success: false, error: engineResult.error };
   }
 
   const generated = engineResult.success ? engineResult.output : null;
-  if (!generated) return { success: false, error: "Content engine returned no output" };
+  if (!generated) {
+    await recordFailedTopic(input.keyword, slug, "Content engine returned no output");
+    return { success: false, error: "Content engine returned no output" };
+  }
   try {
 
     const readingTime = estimateReadingTime(generated.content);
@@ -706,7 +766,10 @@ Writing style instruction: ${author.writing_style}`;
 
     return { success: true, slug, title: generated.title, word_count: generated.content.trim().split(/\s+/).length };
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : "Generation failed" };
+    const errMsg = err instanceof Error ? err.message : "Generation failed";
+    // Record this topic as failed so it gets skipped for 7 days
+    await recordFailedTopic(input.keyword, slug, errMsg).catch(() => null);
+    return { success: false, error: errMsg };
   }
 }
 
@@ -726,11 +789,17 @@ export async function selectTopicsForToday(count = 2): Promise<BlogGenerationInp
   );
   const publishedSlugs = new Set<string>((published || []).map(p => String(p.slug || "")));
 
+  // Get recently-failed topic slugs (skip for 7 days after failure)
+  const failedSlugs = await getFailedTopicSlugs();
+  console.log(`[blog-generator] Skipping ${failedSlugs.size} recently-failed topics`);
+
   // Build seed keyword list — map from SEED_BANK (keyword → tool info)
   const seedKeywordList = SEED_BANK
     .filter(t => {
       const slug = keywordToSlug(t.keyword);
-      return !publishedKeywords.has(t.keyword.toLowerCase()) && !publishedSlugs.has(slug);
+      return !publishedKeywords.has(t.keyword.toLowerCase())
+        && !publishedSlugs.has(slug)
+        && !failedSlugs.has(slug);
     })
     .map(t => t.keyword);
 

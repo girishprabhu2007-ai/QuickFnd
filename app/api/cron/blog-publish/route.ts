@@ -16,7 +16,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { generateBlogPost, selectTopicsForToday } from "@/lib/blog-generator";
+import { generateBlogPost, selectTopicsForToday, recordFailedTopic } from "@/lib/blog-generator";
 
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
