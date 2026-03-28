@@ -207,11 +207,14 @@ function shouldApprove(item: QueueItem, resolvedEngine: string): { approve: bool
   const isIndiaFocused = INDIA_GOOD_PATTERNS.some(p => p.test(text));
   const threshold = isIndiaFocused ? 30 : 40;
 
-  if (item.demand_score >= threshold) {
-    return { approve: true, reason: `Score ${item.demand_score} >= threshold ${threshold}` };
+  // Treat null/undefined score as 45 (the default autocomplete score)
+  const score = item.demand_score ?? 45;
+
+  if (score >= threshold) {
+    return { approve: true, reason: `Score ${score} >= threshold ${threshold}` };
   }
 
-  return { approve: false, reason: `Score ${item.demand_score} below threshold ${threshold}` };
+  return { approve: false, reason: `Score ${score} below threshold ${threshold}` };
 }
 
 export async function GET(req: Request) {
@@ -227,15 +230,34 @@ export async function GET(req: Request) {
   const log: string[] = [];
 
   // Fetch all pending items
-  const { data: pending } = await supabase
+  const { data: pending, error: fetchErr } = await supabase
     .from("demand_queue")
     .select("id, query, suggested_name, suggested_slug, suggested_engine, suggested_category, demand_score")
     .eq("status", "pending")
     .order("demand_score", { ascending: false })
     .limit(200);
 
+  if (fetchErr) {
+    return NextResponse.json({ success: false, error: `Fetch failed: ${fetchErr.message}`, ...results });
+  }
+
   if (!pending?.length) {
     return NextResponse.json({ success: true, message: "No pending items", ...results });
+  }
+
+  // Debug: test a single update immediately to verify DB write access
+  const testItem = pending[0];
+  const { error: testErr } = await supabase
+    .from("demand_queue")
+    .update({ status: "pending" })
+    .eq("id", testItem.id);
+  if (testErr) {
+    return NextResponse.json({
+      success: false,
+      error: `DB write test failed: ${testErr.message} (code: ${testErr.code})`,
+      hint: "Check RLS policies on demand_queue table",
+      ...results
+    });
   }
 
   for (const item of pending as QueueItem[]) {
