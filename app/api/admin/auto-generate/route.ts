@@ -20,6 +20,7 @@ import { getAdminUser } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/admin-publishing";
 import { getOpenAIClient } from "@/lib/openai-server";
 import { runQualityGate, type GeneratedTool } from "@/lib/quality-gate";
+import { generateToolDescription, generateAIToolConfig } from "@/lib/content-engine";
 import { indexNewPage } from "@/lib/index-now";
 
 export const maxDuration = 120;
@@ -81,79 +82,61 @@ async function generateToolSpec(queueItem: {
   suggested_category: string;
   suggested_engine: string;
 }): Promise<GeneratedTool | null> {
-  const openai = getOpenAIClient();
-
-  const engineDesc = ENGINE_DESCRIPTIONS[queueItem.suggested_engine] ||
-    `A browser-based ${queueItem.suggested_category} tool`;
-
   const isAITool = queueItem.suggested_category === "ai_tool";
 
-  // engine_config shape differs by category:
-  // - tools/calculators: {} (engine handles its own UI)
-  // - ai_tool: must have systemPrompt + buttonLabel + placeholder + outputLabel
-  //   WITHOUT these, visibility.ts filters the tool as generic → invisible on site
-  const engineConfigInstructions = isAITool
-    ? `- engine_config: REQUIRED — must be a JSON object with ALL of these fields:
-    {
-      "systemPrompt": "A detailed, expert system prompt that makes this AI tool a specialist. 3-5 sentences. Tell the AI exactly what role it plays, what it must output, format rules, quality standards. Make it genuinely useful and specific to the tool's purpose.",
-      "buttonLabel": "Action verb label for the generate button (e.g. 'Write Email', 'Generate Bio', 'Summarize', 'Rewrite')",
-      "placeholder": "Helpful example placeholder text for the main input field — what the user should type (e.g. 'Describe your startup in 2-3 sentences...')",
-      "outputLabel": "Label shown above the AI output (e.g. 'Your LinkedIn Bio', 'Generated Summary', 'Rewritten Text')",
-      "task": "openai-text-tool"
-    }
-    CRITICAL: systemPrompt must NOT be empty. A tool with empty systemPrompt is invisible to users.`
-    : `- engine_config: {} (empty object — the engine manages its own configuration)`;
+  // AI tools need engine_config with systemPrompt — use dedicated generator
+  if (isAITool) {
+    const [descResult, aiConfig] = await Promise.all([
+      generateToolDescription({
+        query: queueItem.query,
+        suggested_name: queueItem.suggested_name,
+        suggested_slug: queueItem.suggested_slug,
+        engine_type: queueItem.suggested_engine,
+        category: "ai-tool",
+      }),
+      generateAIToolConfig({
+        name: queueItem.suggested_name,
+        purpose: queueItem.query,
+        target_user: "professionals, writers, and developers",
+      }),
+    ]);
 
-  const prompt = `You are a product writer for QuickFnd, a free browser-based tools platform.
+    if (!descResult.success) return null;
 
-Generate a complete tool entry for this search query: "${queueItem.query}"
-
-ASSIGNED ENGINE: ${queueItem.suggested_engine}
-ENGINE DESCRIPTION: ${engineDesc}
-SUGGESTED NAME: ${queueItem.suggested_name}
-SUGGESTED SLUG: ${queueItem.suggested_slug}
-CATEGORY: ${queueItem.suggested_category}
-
-REQUIREMENTS:
-- name: Clear, specific, 2-5 words (e.g. "LinkedIn Bio Writer" not "Bio Tool")
-- slug: lowercase-hyphenated, 3-6 words, matches name
-- description: Exactly 2 sentences. Sentence 1: what it does. Sentence 2: who uses it and why.
-- engine_type: Use exactly: ${queueItem.suggested_engine}
-${engineConfigInstructions}
-- related_slugs: 3 real QuickFnd tool slugs that make sense as related tools
-- seo_intro: 2-3 sentences, more detailed than description, naturally includes the query
-- seo_faqs: 4 specific Q&A pairs users would actually search
-
-Return JSON only — no markdown fences, no explanation:
-{
-  "name": "string",
-  "slug": "string",
-  "description": "string",
-  "engine_type": "${queueItem.suggested_engine}",
-  "engine_config": ${isAITool ? '{"systemPrompt": "...", "buttonLabel": "...", "placeholder": "...", "outputLabel": "...", "task": "openai-text-tool"}' : "{}"},
-  "related_slugs": ["slug-1", "slug-2", "slug-3"],
-  "seo_intro": "string",
-  "seo_faqs": [
-    {"question": "string", "answer": "string"},
-    {"question": "string", "answer": "string"},
-    {"question": "string", "answer": "string"},
-    {"question": "string", "answer": "string"}
-  ]
-}`;
-
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      temperature: 0.4,
-      response_format: { type: "json_object" },
-      messages: [{ role: "user", content: prompt }],
-    });
-
-    const raw = response.choices[0]?.message?.content || "";
-    return JSON.parse(raw) as GeneratedTool;
-  } catch {
-    return null;
+    return {
+      name: descResult.output.name,
+      slug: descResult.output.slug,
+      description: descResult.output.description,
+      engine_type: queueItem.suggested_engine,
+      engine_config: aiConfig,
+      related_slugs: [],
+      seo_intro: descResult.output.seo_intro,
+      seo_faqs: descResult.output.seo_faqs,
+    };
   }
+
+  // Tools and calculators — use centralised content engine
+  const category = queueItem.suggested_category === "calculator" ? "calculator" : "tool";
+  const result = await generateToolDescription({
+    query: queueItem.query,
+    suggested_name: queueItem.suggested_name,
+    suggested_slug: queueItem.suggested_slug,
+    engine_type: queueItem.suggested_engine,
+    category,
+  });
+
+  if (!result.success) return null;
+
+  return {
+    name: result.output.name,
+    slug: result.output.slug,
+    description: result.output.description,
+    engine_type: queueItem.suggested_engine,
+    engine_config: {},
+    related_slugs: [],
+    seo_intro: result.output.seo_intro,
+    seo_faqs: result.output.seo_faqs,
+  };
 }
 
 // ─── Publish a tool to Supabase ───────────────────────────────────────────────

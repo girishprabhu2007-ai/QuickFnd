@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminUser } from "@/lib/admin-auth";
 import { getOpenAIClient } from "@/lib/openai-server";
+import { isContentUnique } from "@/lib/content-engine";
 import { getSupabaseAdmin } from "@/lib/admin-publishing";
 import {
   filterSupportedBulkTools,
@@ -141,8 +142,17 @@ Spread the engine types — use as many different engines as possible.`;
     const parsedItems = parseBulkGeneratedTools(raw);
 
     // Post-generation dedup — remove any that clash with existing tools
+    const existingDescriptions = parsedItems
+      .filter(i => existingSlugs.includes(i.slug))
+      .map(i => i.description || "");
+
     const deduped = parsedItems.filter((item) => {
       if (existingSlugs.includes(item.slug)) return false;
+      // Uniqueness check via content engine fingerprinting
+      if (item.description) {
+        const { unique } = isContentUnique(item.description, existingDescriptions);
+        if (!unique) return false;
+      }
       if (existingNames.includes(item.name.toLowerCase())) return false;
       return true;
     });

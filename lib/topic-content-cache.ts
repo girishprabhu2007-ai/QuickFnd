@@ -33,19 +33,9 @@ export async function getCachedTopicContent(topicKey: string, label: string) {
   const payload: CachedTopicContent = {
     topic_key: topicKey,
     topic_label: label,
-    intro:
-      typeof generated?.intro === "string"
-        ? generated.intro
-        : typeof generated?.description === "string"
-        ? generated.description
-        : "",
-    description:
-      typeof generated?.description === "string"
-        ? generated.description
-        : typeof generated?.intro === "string"
-        ? generated.intro
-        : "",
-    use_cases: Array.isArray(generated?.use_cases) ? generated.use_cases : [],
+    intro: generated?.description || "",
+    description: generated?.description || "",
+    use_cases: [],
     faqs: Array.isArray(generated?.faqs) ? generated.faqs : [],
     benefits: Array.isArray(generated?.benefits) ? generated.benefits : [],
     steps: Array.isArray(generated?.steps) ? generated.steps : [],

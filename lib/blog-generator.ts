@@ -26,6 +26,7 @@ import { estimateReadingTime, type BlogCategory } from "@/lib/blog";
 import { selectAuthorForTopic, randomPublishTime, getAuthorById, type Author } from "@/lib/authors";
 import { getTopTopicsForToday, type ScoredTopic, type SERPAnalysis } from "@/lib/seo-intelligence";
 import { indexNewPage } from "@/lib/index-now";
+import { generateBlogPost as engineGenerateBlogPost } from "@/lib/content-engine";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -509,75 +510,25 @@ Writing style instruction: ${author.writing_style}`;
     serpContext = `\n\nCOMPETITOR INTELLIGENCE (do NOT copy — use this to write something BETTER):\nTop ranking pages for this keyword:\n${topPages}\n\nWhat these pages are MISSING (your article MUST cover these gaps):\n${gaps}\n\nTarget word count: ${sa.recommended_word_count}+ words (beat the current top result)\nDifficulty: ${sa.difficulty_score}/10 — ${diffLabel}`;
   }
 
-  const prompt = `You are ${author.name}, ${author.title}. You write for QuickFnd.com — a free browser-based tools platform for developers, students, and professionals.${authorSection}${serpContext}
+  // Use centralised content engine — handles research, quality, uniqueness
+  const engineResult = await engineGenerateBlogPost({
+    keyword: input.keyword,
+    tool_slug: input.tool_slug,
+    tool_name: input.tool_name,
+    author_name: (author as { name: string }).name,
+    author_title: (author as { title: string }).title,
+    author_expertise: (author as { expertise: string[] }).expertise || [],
+    category: category ?? "how-to",
+    serper_key: process.env.SERPER_API_KEY,
+  });
 
-TARGET KEYWORD: "${input.keyword}"
-ARTICLE TYPE: ${category}
-${toolLinksSection}
-${paaSection}
-${secondarySection}
+  if (!engineResult.success) {
+    return { success: false, error: engineResult.error };
+  }
 
-WRITING REQUIREMENTS:
-1. Title: Contains the exact keyword. Compelling and specific. 55-70 characters. No clickbait. Written from ${author.name}'s perspective where natural. Must be DIFFERENT from the competitor titles above.
-2. Excerpt: 2 punchy sentences, 140-160 chars. Includes keyword. Makes reader want to read more.
-3. Content requirements:
-   - MINIMUM ${input.serp_analysis ? input.serp_analysis.recommended_word_count : 950} words — must be longer and better than the current top result
-   - Write like a knowledgeable friend explaining this — conversational but authoritative
-   - Use first person sparingly ("In my experience...", "I find that...")
-   - Include at least ONE concrete real-world example with actual numbers or specifics
-   - Include a step-by-step section (numbered list) for the main task
-   - 4-6 H2 subheadings using ## 
-   - Use ### for sub-sections where it adds clarity
-   - Bold (**text**) only truly important terms, not random words
-   - Mix paragraph lengths: some 2 sentences, some 4-5. Vary rhythm.
-   - NO generic AI phrases: "In today's digital world", "In conclusion, it's clear that", "As we can see"
-   - End with a specific, useful conclusion that includes a natural CTA to try the QuickFnd tool
-   - Mention specific tools, versions, or features when relevant (makes content feel current and researched)
-4. og_title: 45-58 chars, different from article title, more click-bait appropriate for social
-5. og_description: 145-158 chars, includes keyword, communicates clear value
-6. secondary_keywords: 6-8 related long-tail phrases that would naturally appear in this article
-7. tags: 5-7 lowercase hyphenated tags
-
-Return ONLY valid JSON (no markdown fences, no explanation):
-{
-  "title": "...",
-  "excerpt": "...",
-  "content": "full markdown here — minimum 950 words...",
-  "og_title": "...",
-  "og_description": "...",
-  "target_keyword": "${input.keyword}",
-  "secondary_keywords": ["...", "..."],
-  "tags": ["...", "..."]
-}`;
-
+  const generated = engineResult.success ? engineResult.output : null;
+  if (!generated) return { success: false, error: "Content engine returned no output" };
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      temperature,
-      response_format: { type: "json_object" },
-      messages: [{ role: "user", content: prompt }],
-      max_tokens: 3000,
-    });
-
-    const raw = response.choices[0]?.message?.content || "";
-    const generated = JSON.parse(raw) as {
-      title: string; excerpt: string; content: string;
-      og_title: string; og_description: string;
-      target_keyword: string; secondary_keywords: string[]; tags: string[];
-    };
-
-    // Quality gate
-    if (!generated.title || !generated.content) {
-      return { success: false, error: "Missing title or content in GPT response" };
-    }
-    const wordCount = generated.content.trim().split(/\s+/).length;
-    if (wordCount < 600) {
-      return { success: false, error: `Content too short: ${wordCount} words (min 600)` };
-    }
-    const h2Count = (generated.content.match(/^## /gm) || []).length;
-    if (h2Count < 2) {
-      return { success: false, error: `Too few headings: ${h2Count} H2s (min 2)` };
-    }
 
     const readingTime = estimateReadingTime(generated.content);
     const publishHour = input.publish_hour ?? new Date().getUTCHours();
@@ -639,7 +590,7 @@ Return ONLY valid JSON (no markdown fences, no explanation):
     // Ping IndexNow (Bing + Yandex) + Google sitemap
     await indexNewPage(slug, "tools").catch(() => null);
 
-    return { success: true, slug, title: generated.title, word_count: wordCount };
+    return { success: true, slug, title: generated.title, word_count: generated.content.trim().split(/\s+/).length };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Generation failed" };
   }

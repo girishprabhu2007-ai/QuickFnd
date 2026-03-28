@@ -59,7 +59,7 @@ async function findLinkOpportunities(
   const candidates = relatedPosts.filter(p => !alreadyLinked.has(p.slug)).slice(0, 4);
   if (candidates.length === 0) return [];
 
-  const prompt = `You are an SEO internal linking specialist.
+  const prompt = `You are an SEO internal linking specialist for QuickFnd.com — a free browser-based tools platform with 130+ tools, calculators and AI utilities.
 
 ARTICLE CONTENT (first 2000 chars):
 ${content.slice(0, 2000)}
