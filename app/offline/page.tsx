@@ -1,9 +1,4 @@
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Offline — QuickFnd",
-  description: "You appear to be offline. Please check your connection.",
-};
+"use client";
 
 export default function OfflinePage() {
   return (
