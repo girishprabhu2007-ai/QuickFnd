@@ -1,4 +1,4 @@
-export type EngineCategory = "tool" | "calculator" | "ai-tool";
+﻿export type EngineCategory = "tool" | "calculator" | "ai-tool";
 
 export type ToolEngineType =
   | "password-strength-checker"
@@ -1092,6 +1092,33 @@ export const ENGINE_CATALOG: Record<EngineType, CatalogEngineDefinition> = {
     title: "Text to PDF",
     description: "Convert plain text to a downloadable PDF document with clean formatting.",
     keywords: ["text-to-pdf", "text to pdf", "convert text to pdf", "create pdf from text", "txt to pdf"],
+    defaultConfig: {},
+  }),
+  "video-to-gif": createDefinition({
+    type: "video-to-gif",
+    category: "tool",
+    family: "video-to-gif",
+    title: "Video to GIF Converter",
+    description: "Convert video clips to animated GIFs with trim, resize, and frame rate controls.",
+    keywords: ["video-to-gif", "video to gif", "mp4 to gif", "convert video to gif", "gif converter"],
+    defaultConfig: {},
+  }),
+  "gif-maker": createDefinition({
+    type: "gif-maker",
+    category: "tool",
+    family: "gif-maker",
+    title: "GIF Maker",
+    description: "Create animated GIFs from multiple images with adjustable delay and loop settings.",
+    keywords: ["gif-maker", "gif maker", "create gif", "make gif", "animated gif", "gif from images"],
+    defaultConfig: {},
+  }),
+  "video-compressor": createDefinition({
+    type: "video-compressor",
+    category: "tool",
+    family: "video-compressor",
+    title: "Video Compressor",
+    description: "Compress video files to reduce size without visible quality loss. 100% browser-based.",
+    keywords: ["video-compressor", "video compressor", "compress video", "reduce video size", "shrink video"],
     defaultConfig: {},
   }),
   "generic-directory": createDefinition({
