@@ -308,6 +308,11 @@ export default function AdminDashboardPage() {
                   ))}
                   {loading && <div className="p-5 text-sm text-q-muted">Loading...</div>}
                 </div>
+                <div className="border-t border-q-border px-5 py-3">
+                  <Link href="/admin/recently-added" className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 font-medium">
+                    View all + check live status →
+                  </Link>
+                </div>
               </Card>
 
               {/* Blog + Backlinks quick stats */}

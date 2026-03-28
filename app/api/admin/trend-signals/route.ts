@@ -40,6 +40,17 @@ export async function GET(req: Request) {
       return NextResponse.json({ items: data || [] });
     }
 
+    if (view === "recent") {
+      const table = (searchParams.get("table") || "tools") as "tools" | "calculators" | "ai_tools";
+      const limit = parseInt(searchParams.get("limit") || "20");
+      const supabase = getSupabaseAdmin();
+      const { data } = await supabase.from(table)
+        .select("id, slug, name, description, engine_type, created_at")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      return NextResponse.json({ items: data || [] });
+    }
+
     if (view === "cron-log") {
       const { data } = await supabase
         .from("cron_runs")
