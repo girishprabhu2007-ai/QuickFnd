@@ -22,10 +22,29 @@ export async function GET(req: Request) {
     const text = await res.text();
 
     // Detect placeholder — tool page with no working UI
-    const isPlaceholder =
+    // A page is a "placeholder" if it has the generic directory placeholder text
+    // and does NOT have any real tool renderer markers
+    const hasPlaceholderText =
       text.includes("This utility is available as an indexable QuickFnd tool entry") ||
-      text.includes("Tool ready") ||
-      text.includes("Adjust the inputs and run the tool") === false && text.includes("Tool Workspace");
+      text.includes("Tool ready — the live interactive version");
+
+    // Real tool renderers leave these markers in SSR output
+    const hasRealRenderer =
+      text.includes("Tool Workspace") ||
+      text.includes("video-to-gif") ||
+      text.includes("gif-maker") ||
+      text.includes("video-compressor") ||
+      text.includes("VideoToolRenderer") ||
+      text.includes("FileToolRenderer") ||
+      text.includes("PDFToolRenderer") ||
+      text.includes("BuiltInCalculatorClient") ||
+      text.includes("UniversalToolEngineRenderer") ||
+      text.includes("AIToolRenderer") ||
+      text.includes("CurrencyConverterClient") ||
+      text.includes("PasswordStrengthChecker") ||
+      text.includes("data-tool-renderer");
+
+    const isPlaceholder = hasPlaceholderText && !hasRealRenderer;
 
     return NextResponse.json({
       status: isPlaceholder ? "placeholder" : "ok",

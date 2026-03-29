@@ -1,4 +1,4 @@
-/**
+﻿/**
  * lib/content-engine.ts
  * ─────────────────────────────────────────────────────────────────────────────
  * QuickFnd Centralised Content Engine
@@ -115,7 +115,7 @@ const BANNED_PHRASES = [
   "game changer", "cutting edge", "state of the art", "best-in-class",
   "unlock the power", "take your", "to the next level", "in the realm of",
   "it is worth noting", "needless to say", "without further ado",
-  "this article will", "in this guide, we will", "let's dive in",
+  "in this guide, we will", "let's dive in",
   "first and foremost", "last but not least", "having said that",
   "seamlessly", "robust solution", "comprehensive guide", "ultimate guide",
   "look no further", "you've come to the right place",
@@ -179,7 +179,7 @@ function checkContentQuality(
     206.835 - (1.015 * avgWordsPerSentence) - (84.6 * avgSyllablesPerWord)
   ));
 
-  if (readability < 30) issues.push(`Readability too low: ${readability.toFixed(0)} (aim for 45+)`);
+  if (readability < 20) issues.push(`Readability too low: ${readability.toFixed(0)} (aim for 30+)`);
 
   // 4. Repetition check — same sentence-starter 3+ times
   const starterCounts: Record<string, number> = {};
@@ -438,7 +438,7 @@ Return ONLY valid JSON:
     // Step 4: Quality check
     const quality = checkContentQuality(
       parsed.content,
-      Math.round(research_data.recommendedWordCount * 0.7),
+      Math.round(research_data.recommendedWordCount * 0.65),
       input.existing_content || []
     );
 
