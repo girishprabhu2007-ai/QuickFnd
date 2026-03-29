@@ -133,15 +133,15 @@ function PingDashboard() {
     setManualPinging(true);
     setManualResult("");
     try {
-      const secret = prompt("Enter CRON_SECRET:");
-      if (!secret) { setManualPinging(false); return; }
-      // Use the IndexNow API directly via a small proxy
-      const url = manualUrl.trim().startsWith("http") ? manualUrl.trim() : `https://quickfnd.com${manualUrl.trim()}`;
-      const bingRes = await fetch(`https://www.bing.com/indexnow?url=${encodeURIComponent(url)}&key=quickfnd2026`);
-      const yandexRes = await fetch(`https://yandex.com/indexnow?url=${encodeURIComponent(url)}&key=quickfnd2026`);
-      const bingOk = bingRes.ok || bingRes.status === 202;
-      const yandexOk = yandexRes.ok || yandexRes.status === 202;
-      setManualResult(`Bing: ${bingOk ? "✓ OK" : `✗ ${bingRes.status}`} · Yandex: ${yandexOk ? "✓ OK" : `✗ ${yandexRes.status}`}`);
+      const res = await fetch("/api/admin/ping-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: manualUrl.trim() }),
+      });
+      const data = await res.json() as { url: string; results: { engine: string; ok: boolean; status: number }[]; error?: string };
+      if (!res.ok) { setManualResult(`✗ ${data.error || "Failed"}`); return; }
+      const parts = data.results.map(r => `${r.engine}: ${r.ok ? "✓ OK" : `✗ ${r.status}`}`);
+      setManualResult(parts.join(" · "));
     } catch (e) {
       setManualResult(`✗ ${e instanceof Error ? e.message : "Request failed"}`);
     } finally { setManualPinging(false); }
@@ -151,8 +151,11 @@ function PingDashboard() {
     setSitemapPinging(true);
     setSitemapResult("");
     try {
-      const res = await fetch(`https://www.google.com/ping?sitemap=${encodeURIComponent("https://quickfnd.com/sitemap.xml")}`);
-      setSitemapResult(res.ok ? "✓ Google sitemap pinged successfully" : `✗ Google returned ${res.status}`);
+      const res = await fetch("/api/admin/ping-sitemap");
+      const data = await res.json() as { results: { engine: string; ok: boolean; status: number }[]; error?: string };
+      if (!res.ok) { setSitemapResult(`✗ ${data.error || "Failed"}`); return; }
+      const parts = data.results.map(r => `${r.engine}: ${r.ok ? "✓ Pinged" : `✗ ${r.status}`}`);
+      setSitemapResult(parts.join(" · "));
     } catch (e) {
       setSitemapResult(`✗ ${e instanceof Error ? e.message : "Failed"}`);
     } finally { setSitemapPinging(false); }
