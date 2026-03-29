@@ -270,15 +270,5 @@ export async function GET(req: Request) {
     } catch { results.errors++; }
   }
 
-  // Log completion
-  const totalSent = results.day1 + results.day3 + results.weekly;
-  await supabase.from("cron_runs").update({
-    status: results.errors > totalSent ? "failed" : "success",
-    items_published: totalSent,
-    error_message: results.errors > 0 ? `${results.errors} send failures` : null,
-    completed_at: new Date().toISOString(),
-    duration_ms: 0,
-  }).eq("id", runId);
-
   return NextResponse.json({ success: true, ...results, timestamp: now.toISOString() });
 }
