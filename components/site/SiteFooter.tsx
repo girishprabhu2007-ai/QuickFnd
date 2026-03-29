@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import AdSlot from "@/components/ads/AdSlot";
 
 export default function SiteFooter() {
@@ -17,7 +17,7 @@ export default function SiteFooter() {
       <div className="mx-auto max-w-7xl px-4 py-12 text-sm text-q-muted sm:px-6 lg:px-8">
 
         {/* Main footer grid */}
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
 
           {/* Brand */}
           <div className="lg:col-span-2">

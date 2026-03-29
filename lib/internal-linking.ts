@@ -401,17 +401,39 @@ export function getRelatedVisibleTools(
   limit = 6
 ): InternalLinkItem[] {
   const context = getTopicContext(allTools, calculators, aiTools);
+  const currentTopicKey = getTopicKeyForSlug(currentTool.slug, context.slugToTopicKey);
+  const getTopicKey = (slug: string) => getTopicKeyForSlug(slug, context.slugToTopicKey);
 
-  const related = rankCandidates(currentTool, context.visibleTools, {
+  // Primary: same-type tools
+  const sameType = rankCandidates(currentTool, context.visibleTools, {
     basePath: "tools",
-    currentTopicKey: getTopicKeyForSlug(currentTool.slug, context.slugToTopicKey),
-    getTopicKey: (slug) => getTopicKeyForSlug(slug, context.slugToTopicKey),
+    currentTopicKey,
+    getTopicKey,
     currentEngine: normalizeText(currentTool.engine_type),
     getCandidateEngine: (tool) => normalizeText(tool.engine_type),
     limit,
   });
 
-  return dedupeInternalLinkItems(related, [currentTool.slug]);
+  // Cross-type: related calculators
+  const crossCalcs = rankCandidates(currentTool, context.visibleCalculators, {
+    basePath: "calculators",
+    currentTopicKey,
+    getTopicKey,
+    limit: 3,
+  });
+
+  // Merge: same-type first, then fill with cross-type up to limit
+  const merged = [...sameType];
+  const usedSlugs = new Set(merged.map((item) => item.slug));
+  for (const item of crossCalcs) {
+    if (merged.length >= limit) break;
+    if (!usedSlugs.has(item.slug)) {
+      merged.push(item);
+      usedSlugs.add(item.slug);
+    }
+  }
+
+  return dedupeInternalLinkItems(merged, [currentTool.slug]);
 }
 
 export function getRelatedVisibleCalculators(
@@ -422,15 +444,37 @@ export function getRelatedVisibleCalculators(
   limit = 6
 ): InternalLinkItem[] {
   const context = getTopicContext(allTools, allCalculators, aiTools);
+  const currentTopicKey = getTopicKeyForSlug(currentCalculator.slug, context.slugToTopicKey);
+  const getTopicKey = (slug: string) => getTopicKeyForSlug(slug, context.slugToTopicKey);
 
-  const related = rankCandidates(currentCalculator, context.visibleCalculators, {
+  // Primary: same-type calculators
+  const sameType = rankCandidates(currentCalculator, context.visibleCalculators, {
     basePath: "calculators",
-    currentTopicKey: getTopicKeyForSlug(currentCalculator.slug, context.slugToTopicKey),
-    getTopicKey: (slug) => getTopicKeyForSlug(slug, context.slugToTopicKey),
+    currentTopicKey,
+    getTopicKey,
     limit,
   });
 
-  return dedupeInternalLinkItems(related, [currentCalculator.slug]);
+  // Cross-type: related tools
+  const crossTools = rankCandidates(currentCalculator, context.visibleTools, {
+    basePath: "tools",
+    currentTopicKey,
+    getTopicKey,
+    limit: 3,
+  });
+
+  // Merge: same-type first, then fill with cross-type up to limit
+  const merged = [...sameType];
+  const usedSlugs = new Set(merged.map((item) => item.slug));
+  for (const item of crossTools) {
+    if (merged.length >= limit) break;
+    if (!usedSlugs.has(item.slug)) {
+      merged.push(item);
+      usedSlugs.add(item.slug);
+    }
+  }
+
+  return dedupeInternalLinkItems(merged, [currentCalculator.slug]);
 }
 
 export function getRelatedVisibleAITools(
@@ -441,15 +485,44 @@ export function getRelatedVisibleAITools(
   limit = 6
 ): InternalLinkItem[] {
   const context = getTopicContext(allTools, calculators, allAITools);
+  const currentTopicKey = getTopicKeyForSlug(currentAITool.slug, context.slugToTopicKey);
+  const getTopicKey = (slug: string) => getTopicKeyForSlug(slug, context.slugToTopicKey);
 
-  const related = rankCandidates(currentAITool, context.visibleAITools, {
+  // Primary: same-type AI tools
+  const sameType = rankCandidates(currentAITool, context.visibleAITools, {
     basePath: "ai-tools",
-    currentTopicKey: getTopicKeyForSlug(currentAITool.slug, context.slugToTopicKey),
-    getTopicKey: (slug) => getTopicKeyForSlug(slug, context.slugToTopicKey),
+    currentTopicKey,
+    getTopicKey,
     limit,
   });
 
-  return dedupeInternalLinkItems(related, [currentAITool.slug]);
+  // Cross-type: related tools + calculators
+  const crossTools = rankCandidates(currentAITool, context.visibleTools, {
+    basePath: "tools",
+    currentTopicKey,
+    getTopicKey,
+    limit: 3,
+  });
+
+  const crossCalcs = rankCandidates(currentAITool, context.visibleCalculators, {
+    basePath: "calculators",
+    currentTopicKey,
+    getTopicKey,
+    limit: 2,
+  });
+
+  // Merge: same-type first, then fill with cross-type up to limit
+  const merged = [...sameType];
+  const usedSlugs = new Set(merged.map((item) => item.slug));
+  for (const item of [...crossTools, ...crossCalcs]) {
+    if (merged.length >= limit) break;
+    if (!usedSlugs.has(item.slug)) {
+      merged.push(item);
+      usedSlugs.add(item.slug);
+    }
+  }
+
+  return dedupeInternalLinkItems(merged, [currentAITool.slug]);
 }
 
 function buildTopicLinksForSlug(

@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import type { InternalLinkItem, TopicLinkItem } from "@/lib/internal-linking";
 import {
   dedupeInternalLinkItems,
@@ -61,6 +61,34 @@ export function RelatedToolsSection({
       <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {dedupedItems.map((item) => (
           <LinkCard key={item.href} item={item} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export function ComparisonLinksSection({
+  items,
+  toolName,
+}: {
+  items: { slug: string; title: string }[];
+  toolName: string;
+}) {
+  if (items.length === 0) return null;
+
+  return (
+    <section className="rounded-2xl border border-q-border bg-q-card p-6 md:p-8">
+      <h2 className="text-2xl font-semibold text-q-text">See How {toolName} Compares</h2>
+      <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {items.map((item) => (
+          <Link
+            key={item.slug}
+            href={`/compare/${item.slug}`}
+            className="rounded-2xl border border-q-border bg-q-bg p-5 transition hover:-translate-y-0.5 hover:border-blue-400/50"
+          >
+            <div className="text-lg font-semibold text-q-text">{item.title}</div>
+            <div className="mt-4 text-sm font-medium text-blue-500">Read comparison →</div>
+          </Link>
         ))}
       </div>
     </section>
