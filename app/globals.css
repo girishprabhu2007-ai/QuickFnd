@@ -249,11 +249,17 @@ main { animation: fadeIn 0.3s ease-out; }
   background: linear-gradient(90deg, transparent, var(--q-border), transparent);
 }
 
-/* Embed mode — ?embed=1 strips page to tool-only */
+/* Embed mode — ?embed=1 shows ONLY the tool workspace */
 body.qf-embed header.sticky { display:none!important }
 body.qf-embed footer { display:none!important }
 body.qf-embed .xl\:grid-cols-\[minmax\(0\2c 1fr\)_320px\] { display:block!important }
 body.qf-embed .xl\:grid-cols-\[minmax\(0\2c 1fr\)_320px\] > :last-child { display:none!important }
 body.qf-embed [data-ad-slot] { display:none!important }
-body.qf-embed .border-b.border-q-border.py-4 { display:none!important }
 body.qf-embed nav.sticky { display:none!important }
+body.qf-embed .border-b.border-q-border.py-4 { display:none!important }
+body.qf-embed nav[aria-label="Breadcrumb"] { display:none!important }
+body.qf-embed .text-xs.text-q-muted.flex.items-center.gap-1 { display:none!important }
+body.qf-embed section > div > div > .rounded-3xl:first-child { display:none!important }
+body.qf-embed .rounded-3xl:has(h1) { display:none!important }
+body.qf-embed .text-center:has(.ADVERTISEMENT) { display:none!important }
+body.qf-embed .text-center.text-xs.uppercase { display:none!important }
