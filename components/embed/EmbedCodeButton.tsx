@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState } from "react";
 
 type Props = {
@@ -37,10 +37,11 @@ export default function EmbedCodeButton({ slug, name, section }: Props) {
 
       {open && (
         <div className="mt-3 rounded-xl border border-q-border bg-q-card p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3 mb-2">
             <p className="text-xs font-semibold text-q-text uppercase tracking-wider">
               Embed code
             </p>
+            <button onClick={() => setOpen(false)} className="text-q-muted hover:text-q-text text-lg leading-none px-1" title="Close">&times;</button>
             <button
               onClick={handleCopy}
               className="rounded-md bg-q-primary px-3 py-1 text-xs font-medium text-white hover:bg-q-primary-hover transition"
