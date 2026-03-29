@@ -1,4 +1,4 @@
-/**
+﻿/**
  * app/api/cron/email-nurture/route.ts
  * Sends automated nurture emails to subscribers based on how they joined.
  * Day 1: Welcome + top tools for their category
@@ -298,7 +298,7 @@ export async function GET(req: Request) {
       error_message: errorMsg.slice(0, 500),
       started_at: startedAt.toISOString(),
       duration_ms: durationMs,
-    }).catch(() => {});
+    }).then(() => {});
 
     return NextResponse.json({ error: errorMsg }, { status: 500 });
   }
