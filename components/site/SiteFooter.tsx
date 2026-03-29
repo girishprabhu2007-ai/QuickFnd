@@ -67,7 +67,7 @@ export default function SiteFooter() {
             </div>
           </div>
 
-          {/* Popular */}
+          {/* Popular Tools */}
           <div>
             <h3 className="font-semibold text-q-text">Popular Tools</h3>
             <div className="mt-3 space-y-2">
@@ -75,8 +75,35 @@ export default function SiteFooter() {
                 { href: "/tools/password-generator", label: "Password Generator" },
                 { href: "/tools/json-formatter", label: "JSON Formatter" },
                 { href: "/tools/word-counter", label: "Word Counter" },
+                { href: "/tools/image-compressor", label: "Image Compressor" },
+                { href: "/tools/qr-code-generator", label: "QR Code Generator" },
+                { href: "/tools/base64-encoder", label: "Base64 Encoder" },
+                { href: "/tools/color-picker", label: "Color Picker" },
+                { href: "/tools/markdown-editor", label: "Markdown Editor" },
+                { href: "/tools/csv-to-json", label: "CSV to JSON" },
+                { href: "/tools/regex-tester", label: "Regex Tester" },
+              ].map((link) => (
+                <div key={link.href}>
+                  <Link href={link.href} className="transition hover:text-blue-500">{link.label}</Link>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Popular Calculators */}
+          <div>
+            <h3 className="font-semibold text-q-text">Popular Calculators</h3>
+            <div className="mt-3 space-y-2">
+              {[
                 { href: "/calculators/bmi-calculator", label: "BMI Calculator" },
                 { href: "/calculators/emi-calculator", label: "EMI Calculator" },
+                { href: "/calculators/loan-calculator", label: "Loan Calculator" },
+                { href: "/calculators/percentage-calculator", label: "Percentage Calculator" },
+                { href: "/calculators/compound-interest-calculator", label: "Compound Interest" },
+                { href: "/calculators/age-calculator", label: "Age Calculator" },
+                { href: "/calculators/mortgage-calculator", label: "Mortgage Calculator" },
+                { href: "/calculators/salary-calculator", label: "Salary Calculator" },
+                { href: "/calculators/roi-calculator", label: "ROI Calculator" },
                 { href: "/ai-tools/ai-email-writer", label: "AI Email Writer" },
               ].map((link) => (
                 <div key={link.href}>
