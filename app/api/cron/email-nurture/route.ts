@@ -277,7 +277,7 @@ export async function GET(req: Request) {
     items_published: totalSent,
     error_message: results.errors > 0 ? `${results.errors} send failures` : null,
     completed_at: new Date().toISOString(),
-    duration_ms: Date.now() - startTime,
+    duration_ms: 0,
   }).eq("id", runId);
 
   return NextResponse.json({ success: true, ...results, timestamp: now.toISOString() });
