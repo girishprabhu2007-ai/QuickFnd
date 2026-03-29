@@ -22,7 +22,7 @@ export default function EmbedCodeButton({ slug, name, section }: Props) {
   }
 
   return (
-    <>
+    <div className="relative">
       <button
         onClick={() => setOpen(!open)}
         className="inline-flex items-center gap-1.5 rounded-lg border border-q-border bg-q-bg px-3 py-1.5 text-xs font-medium text-q-muted transition hover:border-blue-400/50 hover:text-q-text"
@@ -36,28 +36,30 @@ export default function EmbedCodeButton({ slug, name, section }: Props) {
       </button>
 
       {open && (
-        <div className="mt-3 rounded-xl border border-q-border bg-q-card p-4 shadow-sm">
-          <div className="flex items-center gap-3 mb-2">
+        <div className="absolute right-0 top-10 z-50 w-80 rounded-xl border border-q-border bg-q-card p-4 shadow-lg">
+          <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-semibold text-q-text uppercase tracking-wider">
               Embed code
             </p>
-            <button onClick={() => setOpen(false)} className="text-q-muted hover:text-q-text text-lg leading-none px-1" title="Close">&times;</button>
-            <button
-              onClick={handleCopy}
-              className="rounded-md bg-q-primary px-3 py-1 text-xs font-medium text-white hover:bg-q-primary-hover transition"
-            >
-              {copied ? "Copied!" : "Copy"}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleCopy}
+                className="rounded-md bg-q-primary px-3 py-1 text-xs font-medium text-white hover:bg-q-primary-hover transition"
+              >
+                {copied ? "Copied!" : "Copy"}
+              </button>
+              <button onClick={() => setOpen(false)} className="text-q-muted hover:text-q-text text-lg leading-none px-1" title="Close">&times;</button>
+            </div>
           </div>
           <pre className="rounded-lg bg-q-bg border border-q-border p-3 text-xs text-q-muted overflow-x-auto font-mono leading-5 whitespace-pre-wrap">
             {code}
           </pre>
           <p className="mt-2 text-xs text-q-muted">
-            Paste this code into your website HTML. The tool will load in an iframe with a &quot;Powered by QuickFnd&quot; footer.{" "}
+            Paste into your HTML.{" "}
             <a href="/embed" className="text-blue-500 hover:underline">Learn more →</a>
           </p>
         </div>
       )}
-    </>
+    </div>
   );
 }
