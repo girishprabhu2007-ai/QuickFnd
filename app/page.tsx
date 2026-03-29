@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import HomeSearch from "@/components/search/HomeSearch";
 import SiteFooter from "@/components/site/SiteFooter";
@@ -18,12 +18,10 @@ import { getCountryProfile } from "@/lib/geo-personalisation";
 import { headers } from "next/headers";
 import RecentlyUsedTools from "@/components/history/RecentlyUsedTools";
 
-// Geo-personalisation requires dynamic rendering (reads request headers)
 export const dynamic = "force-dynamic";
 
 const siteUrl = getSiteUrl();
 
-// ── Dynamic metadata (uses real DB counts instead of hardcoded "205+") ───────
 export async function generateMetadata(): Promise<Metadata> {
   const [rawTools, rawCalculators, rawAITools] = await Promise.all([
     getTools(), getCalculators(), getAITools(),
@@ -68,19 +66,16 @@ function getGeoTools<T extends { slug: string }>(items: T[], prioritySlugs: stri
   const map = new Map(items.map(i => [i.slug, i]));
   const seen = new Set<string>();
   const result: T[] = [];
-  // Priority slugs first
   for (const slug of prioritySlugs) {
     if (result.length >= limit) break;
     const item = map.get(slug);
     if (item && !seen.has(slug)) { result.push(item); seen.add(slug); }
   }
-  // Fill from fallback
   for (const slug of fallbackSlugs) {
     if (result.length >= limit) break;
     const item = map.get(slug);
     if (item && !seen.has(slug)) { result.push(item); seen.add(slug); }
   }
-  // Fill from full list
   for (const item of items) {
     if (result.length >= limit) break;
     if (!seen.has(item.slug)) { result.push(item); seen.add(item.slug); }
@@ -88,35 +83,24 @@ function getGeoTools<T extends { slug: string }>(items: T[], prioritySlugs: stri
   return result.slice(0, limit);
 }
 
-const TOOL_ACCENT: Record<string, { bg: string; text: string; border: string }> = {
-  "password-generator":   { bg: "bg-blue-500/10",   text: "text-blue-500",   border: "group-hover:border-blue-400/50" },
-  "json-formatter":       { bg: "bg-amber-500/10",   text: "text-amber-500",  border: "group-hover:border-amber-400/50" },
-  "word-counter":         { bg: "bg-emerald-500/10", text: "text-emerald-500",border: "group-hover:border-emerald-400/50" },
-  "base64-encoder":       { bg: "bg-purple-500/10",  text: "text-purple-500", border: "group-hover:border-purple-400/50" },
-  "uuid-generator":       { bg: "bg-rose-500/10",    text: "text-rose-500",   border: "group-hover:border-rose-400/50" },
-  "text-case-converter":  { bg: "bg-cyan-500/10",    text: "text-cyan-500",   border: "group-hover:border-cyan-400/50" },
-  "image-compressor":    { bg: "bg-pink-500/10",    text: "text-pink-500",   border: "group-hover:border-pink-400/50" },
-  "pdf-merger":          { bg: "bg-red-500/10",     text: "text-red-500",    border: "group-hover:border-red-400/50" },
-  "video-to-gif":        { bg: "bg-violet-500/10",  text: "text-violet-500", border: "group-hover:border-violet-400/50" },
-  "salary-calculator":   { bg: "bg-teal-500/10",    text: "text-teal-500",   border: "group-hover:border-teal-400/50" },
-  "ai-email-writer":     { bg: "bg-indigo-500/10",  text: "text-indigo-500", border: "group-hover:border-indigo-400/50" },
-  "qr-code-generator":   { bg: "bg-orange-500/10",  text: "text-orange-500", border: "group-hover:border-orange-400/50" },
-  "currency-converter":  { bg: "bg-lime-500/10",    text: "text-lime-500",   border: "group-hover:border-lime-400/50" },
-};
-const CALC_ACCENT = [
-  { bg: "bg-violet-500/10",  text: "text-violet-500",  border: "group-hover:border-violet-400/50" },
-  { bg: "bg-indigo-500/10",  text: "text-indigo-500",  border: "group-hover:border-indigo-400/50" },
-  { bg: "bg-teal-500/10",    text: "text-teal-500",    border: "group-hover:border-teal-400/50" },
-  { bg: "bg-orange-500/10",  text: "text-orange-500",  border: "group-hover:border-orange-400/50" },
-  { bg: "bg-pink-500/10",    text: "text-pink-500",    border: "group-hover:border-pink-400/50" },
-  { bg: "bg-lime-500/10",    text: "text-lime-500",    border: "group-hover:border-lime-400/50" },
-];
-
-const CATEGORY_ICONS: Record<string, string> = {
-  "Encoders & Converters": "⇄", "Text & Writing": "✍", "Developer Tools": "</>",
-  "SEO & Marketing": "◈", "Generators": "✦", "Finance Calculators": "₹",
-  "Health Calculators": "♡", "Math Calculators": "∑", "Content AI": "✨",
-  "Writing AI": "✦", "Date & Time Calculators": "⊙",
+/* ── SVG Icon Components (replace emoji with crisp vectors) ─────────────── */
+const Icons = {
+  wrench: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>,
+  calc: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>,
+  sparkles: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"/></svg>,
+  book: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>,
+  zap: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+  shield: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  monitor: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>,
+  gift: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>,
+  arrow: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>,
+  lock: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>,
+  code: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>,
+  image: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
+  home: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+  dollar: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>,
+  mail: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>,
+  pen: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>,
 };
 
 export default async function HomePage() {
@@ -131,8 +115,6 @@ export default async function HomePage() {
   const taxonomy = buildHomepageTaxonomy({ tools, calculators, aiTools });
   const topics = getTopicCollections({ tools, calculators, aiTools }).slice(0, 6);
 
-  // Geo-personalisation — Vercel injects x-vercel-ip-country into every request header.
-  // No middleware needed — server components can read it directly.
   const countryCode = (headersList.get("x-vercel-ip-country") || "US").toUpperCase().slice(0, 2);
   const geoProfile = getCountryProfile(countryCode);
 
@@ -140,43 +122,24 @@ export default async function HomePage() {
   const featuredCalculators = getGeoTools(calculators, geoProfile.calculatorSlugs, [], 6);
   const featuredAITools = getPinned(aiTools, PINNED_AI_SLUGS);
   const totalCount = tools.length + calculators.length + aiTools.length;
-  const isLocalised = countryCode !== "US" && geoProfile.calculatorSlugs.length > 0;
-
-  // Dynamic stats — totalCount drives the "Free tools" stat
-  const STATS = [
-    { value: `${totalCount}+`, label: "Free tools" },
-    { value: "0", label: "Signup required" },
-    { value: "100%", label: "Browser-based" },
-    { value: "0kb", label: "Data sent" },
-  ];
 
   return (
     <main className="min-h-screen bg-q-bg text-q-text">
 
-      {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden border-b border-q-border">
+      {/* ══ HERO ══════════════════════════════════════════════════════════════ */}
+      <section className="relative overflow-hidden">
+        <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-14 sm:px-6 lg:px-8 lg:pb-24 lg:pt-20">
+          <div className="grid items-center gap-12 lg:grid-cols-[1fr_400px]">
 
-        {/* Mesh background */}
-        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-          <div className="absolute -top-40 left-1/2 -translate-x-1/2 h-[600px] w-[800px] rounded-full opacity-[0.035] blur-3xl"
-            style={{ background: "radial-gradient(ellipse, #2563eb 0%, #7c3aed 50%, transparent 70%)" }} />
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-q-border to-transparent" />
-        </div>
-
-        <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-14 sm:px-6 lg:px-8 lg:pb-20 lg:pt-20">
-
-          {/* Two-column hero */}
-          <div className="grid items-center gap-12 lg:grid-cols-[1fr_420px]">
-
-            {/* Left — headline + search */}
+            {/* Left — Headline */}
             <div>
-              {/* Tag */}
-              <div className="inline-flex items-center gap-2 rounded-full border border-q-border bg-q-card px-4 py-1.5 text-xs font-medium text-q-muted mb-6">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="font-semibold text-q-text">{totalCount}+</span> free tools live · No signup needed
+              <div className="glass-card inline-flex items-center gap-2.5 rounded-full px-4 py-2 text-xs font-medium" style={{ borderRadius: "100px" }}>
+                <span className="status-dot" />
+                <span className="font-semibold text-q-text">{totalCount}+</span>
+                <span className="text-q-muted">free tools live · No signup needed</span>
               </div>
 
-              <h1 className="text-5xl font-extrabold tracking-tight leading-[1.05] md:text-6xl xl:text-7xl">
+              <h1 className="mt-8 text-5xl font-extrabold tracking-tight leading-[1.05] md:text-6xl xl:text-[4.5rem]">
                 <span className="text-q-text">Your browser</span>
                 <br />
                 <span className="text-q-text">is your</span>
@@ -189,48 +152,63 @@ export default async function HomePage() {
                 No install. No account. Just results.
               </p>
 
-              {/* Search */}
               <div className="mt-8 max-w-xl">
                 <HomeSearch />
               </div>
 
-              {/* Quick links */}
+              {/* Category pills */}
               <div className="mt-6 flex flex-wrap gap-2">
-                {[
-                  { href: "/tools", label: "⚙️ Tools", count: tools.length },
-                  { href: "/calculators", label: "🧮 Calculators", count: calculators.length },
-                  { href: "/ai-tools", label: "✨ AI Tools", count: aiTools.length },
-                  { href: "/blog", label: "📝 Blog", count: null },
-                ].map(cat => (
-                  <Link key={cat.href} href={cat.href}
-                    className="flex items-center gap-1.5 rounded-xl border border-q-border bg-q-card px-3.5 py-2 text-sm font-medium text-q-muted transition hover:border-blue-400/50 hover:text-q-text">
-                    {cat.label}
-                    {cat.count && <span className="rounded-md bg-q-bg px-1.5 py-0.5 text-xs">{cat.count}</span>}
-                  </Link>
-                ))}
+                <Link href="/tools"
+                  className="glass-card inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-q-muted transition hover:text-q-text" style={{ borderRadius: "12px" }}>
+                  <span style={{ color: "var(--q-tool-color)" }}>{Icons.wrench}</span>
+                  Tools
+                  <span className="rounded-md px-1.5 py-0.5 text-xs font-semibold stat-mono" style={{ background: "var(--q-primary-glow)", color: "var(--q-tool-color)" }}>{tools.length}</span>
+                </Link>
+                <Link href="/calculators"
+                  className="glass-card inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-q-muted transition hover:text-q-text" style={{ borderRadius: "12px" }}>
+                  <span style={{ color: "var(--q-calc-color)" }}>{Icons.calc}</span>
+                  Calculators
+                  <span className="rounded-md px-1.5 py-0.5 text-xs font-semibold stat-mono" style={{ background: "rgba(16,185,129,0.1)", color: "var(--q-calc-color)" }}>{calculators.length}</span>
+                </Link>
+                <Link href="/ai-tools"
+                  className="glass-card inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-q-muted transition hover:text-q-text" style={{ borderRadius: "12px" }}>
+                  <span style={{ color: "var(--q-ai-color)" }}>{Icons.sparkles}</span>
+                  AI Tools
+                  <span className="rounded-md px-1.5 py-0.5 text-xs font-semibold stat-mono" style={{ background: "rgba(139,92,246,0.1)", color: "var(--q-ai-color)" }}>{aiTools.length}</span>
+                </Link>
+                <Link href="/blog"
+                  className="glass-card inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-q-muted transition hover:text-q-text" style={{ borderRadius: "12px" }}>
+                  <span style={{ color: "var(--q-blog-color)" }}>{Icons.book}</span>
+                  Blog
+                </Link>
               </div>
             </div>
 
-            {/* Right — Stats card */}
+            {/* Right — Stats glass card */}
             <div className="hidden lg:block">
-              <div className="rounded-3xl border border-q-border bg-q-card p-8 shadow-xl">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-q-muted mb-6">By the numbers</p>
+              <div className="glass-card p-8" style={{ borderRadius: "24px" }}>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-q-muted mb-6">By the numbers</p>
                 <div className="grid grid-cols-2 gap-6">
-                  {STATS.map(s => (
+                  {[
+                    { value: `${totalCount}+`, label: "Free tools" },
+                    { value: "0", label: "Signup required" },
+                    { value: "100%", label: "Browser-based" },
+                    { value: "0kb", label: "Data sent" },
+                  ].map(s => (
                     <div key={s.label}>
-                      <div className="text-4xl font-black text-q-text tracking-tight">{s.value}</div>
-                      <div className="text-sm text-q-muted mt-1">{s.label}</div>
+                      <div className="text-3xl font-extrabold text-q-text tracking-tight stat-mono">{s.value}</div>
+                      <div className="text-xs text-q-muted mt-1.5">{s.label}</div>
                     </div>
                   ))}
                 </div>
                 <div className="mt-8 space-y-3">
                   {[
-                    { icon: "⚡", text: "Instant — no loading screens" },
-                    { icon: "🔒", text: "Private — nothing leaves your browser" },
-                    { icon: "📱", text: "Works on any device, any OS" },
+                    { icon: Icons.zap, text: "Instant — no loading screens", color: "var(--q-tool-color)" },
+                    { icon: Icons.shield, text: "Private — nothing leaves your browser", color: "var(--q-calc-color)" },
+                    { icon: Icons.monitor, text: "Works on any device, any OS", color: "var(--q-ai-color)" },
                   ].map(item => (
                     <div key={item.text} className="flex items-center gap-3 text-sm">
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-q-bg text-base">{item.icon}</span>
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: "var(--q-card)", color: item.color }}>{item.icon}</span>
                       <span className="text-q-muted">{item.text}</span>
                     </div>
                   ))}
@@ -241,97 +219,79 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── RECENTLY USED (client-side, shows only if history exists) ───── */}
-      <div className="pt-10">
-        <RecentlyUsedTools />
-      </div>
+      {/* Recently used */}
+      <div className="pt-4"><RecentlyUsedTools /></div>
 
-      {/* ── AD ─────────────────────────────────────────────────────────────── */}
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex justify-center">
+      {/* ── Ad (tucked between sections, minimal visual noise) ────────────── */}
+      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 flex justify-center opacity-60 hover:opacity-100 transition-opacity">
         <AdSlot type="leaderboard" pageKey="homepage" />
       </div>
 
-      {/* ── FEATURED TOOLS ──────────────────────────────────────────────────── */}
+      {/* ══ FEATURED TOOLS ════════════════════════════════════════════════════ */}
       <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
         <div className="mb-8 flex items-end justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.25em] text-blue-500 mb-2">Most Popular</p>
-            <h2 className="text-3xl font-bold text-q-text">Featured Tools</h2>
+            <p className="text-[10px] font-bold uppercase tracking-[0.25em] mb-2" style={{ color: "var(--q-tool-color)" }}>Featured</p>
+            <h2 className="text-2xl font-bold text-q-text tracking-tight">Tools</h2>
           </div>
-          <Link href="/tools" className="text-sm font-semibold text-blue-500 hover:text-blue-400 transition">
+          <Link href="/tools" className="text-sm font-semibold transition" style={{ color: "var(--q-tool-color)" }}>
             View all {tools.length} →
           </Link>
         </div>
-
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {featuredTools.map((tool) => {
-            const accent = TOOL_ACCENT[tool.slug] ?? { bg: "bg-blue-500/10", text: "text-blue-500", border: "group-hover:border-blue-400/50" };
-            return (
-              <Link key={tool.slug} href={`/tools/${tool.slug}`}
-                className={`group relative rounded-2xl border border-q-border bg-q-card p-6 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${accent.border}`}>
-                {/* Top accent line */}
-                <div className={`absolute top-0 left-6 right-6 h-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity ${accent.bg.replace("/10", "")}`} />
-                <div className="flex items-start gap-4">
-                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${accent.bg}`}>
-                    <span className={`text-lg font-black ${accent.text}`}>{tool.name.charAt(0)}</span>
-                  </div>
-                  <div className="min-w-0">
-                    <div className={`font-semibold text-q-text transition-colors group-hover:${accent.text}`}>
-                      {tool.name}
-                    </div>
-                    <p className="mt-1 text-sm leading-6 text-q-muted line-clamp-2">
-                      {getDisplayDescription("tools", tool, "card")}
-                    </p>
-                  </div>
+          {featuredTools.map((tool) => (
+            <Link key={tool.slug} href={`/tools/${tool.slug}`}
+              className="glass-card card-shine group relative overflow-hidden p-6 accent-bar-top accent-bar-tool">
+              <div className="flex items-start justify-between">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" style={{ background: "rgba(99,102,241,0.1)", color: "var(--q-tool-color)" }}>
+                  {Icons.code}
                 </div>
-                <div className="mt-4 flex items-center gap-2">
-                  <span className="rounded-full border border-q-border bg-q-bg px-2.5 py-0.5 text-xs text-q-muted">Free</span>
-                  <span className="rounded-full border border-q-border bg-q-bg px-2.5 py-0.5 text-xs text-q-muted">Browser-based</span>
-                  <span className={`ml-auto text-xs font-semibold ${accent.text} opacity-0 group-hover:opacity-100 transition-opacity`}>
-                    Open →
-                  </span>
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: "var(--q-primary-glow)", color: "var(--q-tool-color)" }}>
+                  {Icons.arrow}
                 </div>
-              </Link>
-            );
-          })}
+              </div>
+              <h3 className="mt-3 font-semibold text-q-text text-[15px] tracking-tight">{tool.name}</h3>
+              <p className="mt-1.5 text-sm leading-6 text-q-muted line-clamp-2">
+                {getDisplayDescription("tools", tool, "card")}
+              </p>
+              <div className="mt-4 flex items-center gap-2">
+                <span className="badge-tool rounded-lg px-2.5 py-1 text-[10px] font-semibold">Tool</span>
+                <span className="rounded-lg px-2.5 py-1 text-[10px] font-medium" style={{ background: "var(--q-card)", color: "var(--q-muted)", border: "1px solid var(--q-border)" }}>Free</span>
+              </div>
+            </Link>
+          ))}
         </div>
       </section>
 
-      {/* ── TOPICS ──────────────────────────────────────────────────────────── */}
-      <section className="border-y border-q-border bg-q-card">
+      {/* ══ TOPICS ════════════════════════════════════════════════════════════ */}
+      <section style={{ background: "var(--q-bg-subtle)" }}>
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
           <div className="mb-8 flex items-end justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.25em] text-blue-500 mb-2">Discover by Category</p>
-              <h2 className="text-3xl font-bold text-q-text">Browse Topics</h2>
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-q-muted mb-2">Discover by category</p>
+              <h2 className="text-2xl font-bold text-q-text tracking-tight">Browse Topics</h2>
             </div>
-            <Link href="/topics" className="text-sm font-semibold text-blue-500 hover:text-blue-400 transition">
-              View all →
-            </Link>
+            <Link href="/topics" className="text-sm font-semibold text-q-primary transition hover:opacity-80">View all →</Link>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {topics.map((topic, i) => {
-              const colors = ["blue","purple","emerald","orange","rose","cyan"];
-              const c = colors[i % colors.length];
-              return (
-                <Link key={topic.key} href={`/topics/${topic.key}`}
-                  className="group flex items-center gap-4 rounded-2xl border border-q-border bg-q-bg p-4 transition-all hover:-translate-y-0.5 hover:shadow-sm">
-                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-${c}-500/10 text-${c}-500 font-bold text-lg`}>
-                    {CATEGORY_ICONS[topic.label] ?? topic.label.charAt(0)}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-q-text group-hover:text-blue-500 transition-colors">{topic.label}</div>
-                    <div className="text-xs text-q-muted mt-0.5">{topic.totalCount} items</div>
-                  </div>
-                  <span className="ml-auto text-q-border group-hover:text-blue-500 transition-colors text-lg">›</span>
-                </Link>
-              );
-            })}
+            {topics.map((topic) => (
+              <Link key={topic.key} href={`/topics/${topic.key}`}
+                className="glass-card group flex items-center gap-4 p-4" style={{ borderRadius: "16px" }}>
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-lg font-bold" style={{ background: "var(--q-primary-glow)", color: "var(--q-primary)" }}>
+                  {topic.label.charAt(0)}
+                </div>
+                <div className="min-w-0">
+                  <div className="font-semibold text-q-text text-sm group-hover:text-q-primary transition-colors truncate">{topic.label}</div>
+                  <div className="text-xs text-q-muted mt-0.5 stat-mono">{topic.totalCount} items</div>
+                </div>
+                <span className="ml-auto text-q-muted group-hover:text-q-primary transition-colors text-lg">›</span>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ── CALCULATORS + SIDEBAR ───────────────────────────────────────────── */}
+      {/* ══ CALCULATORS + AI TOOLS + SIDEBAR ══════════════════════════════════ */}
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid gap-12 xl:grid-cols-[1fr_320px]">
           <div className="space-y-16">
@@ -340,29 +300,26 @@ export default async function HomePage() {
             <section>
               <div className="mb-8 flex items-end justify-between">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.25em] text-violet-500 mb-2">{geoProfile.financeLabel}</p>
-                  <h2 className="text-3xl font-bold text-q-text">
-                    Calculators{isLocalised && <span className="ml-2 text-sm font-normal text-q-muted">for {geoProfile.name}</span>}
-                  </h2>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.25em] mb-2" style={{ color: "var(--q-calc-color)" }}>{geoProfile.financeLabel}</p>
+                  <h2 className="text-2xl font-bold text-q-text tracking-tight">Calculators</h2>
                 </div>
-                <Link href="/calculators" className="text-sm font-semibold text-blue-500 hover:text-blue-400 transition">
+                <Link href="/calculators" className="text-sm font-semibold transition" style={{ color: "var(--q-calc-color)" }}>
                   View all {calculators.length} →
                 </Link>
               </div>
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {featuredCalculators.map((item, i) => {
-                  const acc = CALC_ACCENT[i % CALC_ACCENT.length];
-                  return (
-                    <Link key={item.slug} href={`/calculators/${item.slug}`}
-                      className={`group rounded-2xl border border-q-border bg-q-card p-5 transition-all hover:-translate-y-1 hover:shadow-lg ${acc.border}`}>
-                      <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${acc.bg} ${acc.text} font-black text-lg`}>∑</div>
-                      <div className={`mt-3 font-semibold text-q-text transition-colors group-hover:${acc.text}`}>{item.name}</div>
-                      <p className="mt-1.5 text-sm leading-6 text-q-muted line-clamp-2">
-                        {getDisplayDescription("calculators", item, "card")}
-                      </p>
-                    </Link>
-                  );
-                })}
+                {featuredCalculators.map((item) => (
+                  <Link key={item.slug} href={`/calculators/${item.slug}`}
+                    className="glass-card card-shine group relative overflow-hidden p-5 accent-bar-top accent-bar-calc">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: "rgba(16,185,129,0.1)", color: "var(--q-calc-color)" }}>
+                      {Icons.calc}
+                    </div>
+                    <h3 className="mt-3 font-semibold text-q-text text-[15px] tracking-tight">{item.name}</h3>
+                    <p className="mt-1.5 text-sm leading-6 text-q-muted line-clamp-2">
+                      {getDisplayDescription("calculators", item, "card")}
+                    </p>
+                  </Link>
+                ))}
               </div>
             </section>
 
@@ -373,49 +330,52 @@ export default async function HomePage() {
             <section>
               <div className="mb-8 flex items-end justify-between">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.25em] text-emerald-500 mb-2">AI-Powered</p>
-                  <h2 className="text-3xl font-bold text-q-text">AI Tools</h2>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.25em] mb-2" style={{ color: "var(--q-ai-color)" }}>AI-Powered</p>
+                  <h2 className="text-2xl font-bold text-q-text tracking-tight">AI Tools</h2>
                 </div>
-                <Link href="/ai-tools" className="text-sm font-semibold text-blue-500 hover:text-blue-400 transition">
+                <Link href="/ai-tools" className="text-sm font-semibold transition" style={{ color: "var(--q-ai-color)" }}>
                   View all {aiTools.length} →
                 </Link>
               </div>
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {featuredAITools.map((item) => (
                   <Link key={item.slug} href={`/ai-tools/${item.slug}`}
-                    className="group rounded-2xl border border-q-border bg-q-card p-5 transition-all hover:-translate-y-1 hover:border-emerald-400/40 hover:shadow-lg">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 font-black text-lg">✦</div>
-                    <div className="mt-3 font-semibold text-q-text group-hover:text-emerald-500 transition-colors">{item.name}</div>
+                    className="glass-card card-shine group relative overflow-hidden p-5 accent-bar-top accent-bar-ai">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: "rgba(139,92,246,0.1)", color: "var(--q-ai-color)" }}>
+                      {Icons.sparkles}
+                    </div>
+                    <h3 className="mt-3 font-semibold text-q-text text-[15px] tracking-tight">{item.name}</h3>
                     <p className="mt-1.5 text-sm leading-6 text-q-muted line-clamp-2">
                       {getDisplayDescription("ai_tools", item, "card")}
                     </p>
-                    <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />AI Powered
+                    <div className="mt-3 badge-ai inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-semibold">
+                      <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--q-ai-color)" }} />
+                      AI Powered
                     </div>
                   </Link>
                 ))}
               </div>
             </section>
 
-            {/* In-feed ad */}
-            <div className="flex justify-center">
+            {/* Ad — blended into flow */}
+            <div className="flex justify-center opacity-50 hover:opacity-100 transition-opacity">
               <AdSlot type="in-article" pageKey="homepage" />
             </div>
 
             {/* Trust strip */}
-            <section className="rounded-3xl border border-q-border bg-q-card p-8">
-              <h2 className="text-2xl font-bold text-q-text mb-8 text-center">Why thousands use QuickFnd</h2>
+            <section className="glass-card p-8" style={{ borderRadius: "24px" }}>
+              <h2 className="text-xl font-bold text-q-text mb-8 text-center tracking-tight">Why people use QuickFnd</h2>
               <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
                 {[
-                  { icon: "⚡", title: "Instant results", desc: "No loading, no server round-trip. Everything runs in your browser tab." },
-                  { icon: "🔒", title: "100% private", desc: "Your passwords, financial data, and code never leave your device." },
-                  { icon: "📱", title: "Works everywhere", desc: "Desktop, tablet, mobile. Any browser, any OS, even offline." },
-                  { icon: "🆓", title: "Always free", desc: "No account, no paywall, no premium tier. Every tool is free forever." },
+                  { icon: Icons.zap, title: "Instant results", desc: "No loading, no server round-trip. Everything runs in your browser tab.", color: "var(--q-tool-color)" },
+                  { icon: Icons.shield, title: "100% private", desc: "Your passwords, financial data, and code never leave your device.", color: "var(--q-calc-color)" },
+                  { icon: Icons.monitor, title: "Works everywhere", desc: "Desktop, tablet, mobile. Any browser, any OS, even offline.", color: "var(--q-ai-color)" },
+                  { icon: Icons.gift, title: "Always free", desc: "No account, no paywall, no premium tier. Every tool is free forever.", color: "var(--q-compare-color)" },
                 ].map(item => (
                   <div key={item.title} className="flex flex-col items-start gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-q-border bg-q-bg text-xl">{item.icon}</span>
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: "var(--q-card)", color: item.color, border: "1px solid var(--q-border)" }}>{item.icon}</span>
                     <div>
-                      <div className="font-semibold text-q-text">{item.title}</div>
+                      <div className="font-semibold text-q-text text-sm">{item.title}</div>
                       <p className="mt-1 text-sm leading-6 text-q-muted">{item.desc}</p>
                     </div>
                   </div>
@@ -426,28 +386,31 @@ export default async function HomePage() {
           </div>
 
           {/* ── SIDEBAR ──────────────────────────────────────────────────── */}
-          <aside className="self-start xl:sticky xl:top-24 space-y-6">
-            <div className="flex justify-center">
+          <aside className="self-start xl:sticky xl:top-24 space-y-5">
+            <div className="flex justify-center opacity-50 hover:opacity-100 transition-opacity">
               <AdSlot type="rectangle" />
             </div>
 
             {/* Browse by niche */}
-            <div className="rounded-2xl border border-q-border bg-q-card p-5">
-              <h3 className="font-semibold text-q-text mb-4">Browse by niche</h3>
+            <div className="glass-card p-5" style={{ borderRadius: "18px" }}>
+              <h3 className="font-semibold text-q-text text-sm mb-4">Browse by niche</h3>
               <div className="space-y-5">
                 {[
-                  { label: "Tools", items: taxonomy.tools, base: "/tools?group=" },
-                  { label: "Calculators", items: taxonomy.calculators, base: "/calculators?group=" },
-                  { label: "AI Tools", items: taxonomy.aiTools, base: "/ai-tools?group=" },
+                  { label: "Tools", items: taxonomy.tools, base: "/tools?group=", color: "var(--q-tool-color)" },
+                  { label: "Calculators", items: taxonomy.calculators, base: "/calculators?group=", color: "var(--q-calc-color)" },
+                  { label: "AI Tools", items: taxonomy.aiTools, base: "/ai-tools?group=", color: "var(--q-ai-color)" },
                 ].map(section => (
                   <div key={section.label}>
-                    <p className="text-xs font-bold uppercase tracking-widest text-q-muted mb-2">{section.label}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.15em] mb-2" style={{ color: section.color }}>{section.label}</p>
                     <div className="space-y-0.5">
                       {section.items.map(group => (
                         <Link key={group.key} href={`${section.base}${group.key}`}
-                          className="flex items-center justify-between rounded-lg px-3 py-2 text-sm text-q-muted transition hover:bg-q-bg hover:text-q-text">
+                          className="flex items-center justify-between rounded-lg px-3 py-2 text-xs text-q-muted transition hover:text-q-text" style={{ background: "transparent" }}
+                          onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.background = "var(--q-card)"; }}
+                          onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}
+                        >
                           <span>{group.label}</span>
-                          <span className="tabular-nums text-xs">{group.count}</span>
+                          <span className="stat-mono tabular-nums text-[10px]">{group.count}</span>
                         </Link>
                       ))}
                     </div>
@@ -459,14 +422,16 @@ export default async function HomePage() {
             <EmailCapture variant="inline" source="homepage-sidebar" />
 
             {/* Write for us */}
-            <div className="rounded-2xl border border-q-border bg-q-card p-5">
-              <div className="text-2xl mb-3">✍️</div>
-              <h3 className="font-semibold text-q-text">Write for QuickFnd</h3>
-              <p className="text-sm text-q-muted mt-1.5 leading-6">
+            <div className="glass-card p-5" style={{ borderRadius: "18px" }}>
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg mb-3" style={{ background: "var(--q-primary-glow)", color: "var(--q-primary)" }}>
+                {Icons.pen}
+              </div>
+              <h3 className="font-semibold text-q-text text-sm">Write for QuickFnd</h3>
+              <p className="text-xs text-q-muted mt-1.5 leading-5">
                 Share your expertise with our audience of developers and finance professionals.
               </p>
               <Link href="/write-for-us"
-                className="mt-4 flex w-full items-center justify-center rounded-xl bg-q-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-q-primary-hover transition">
+                className="btn-primary mt-4 flex w-full items-center justify-center text-sm">
                 Apply to Write →
               </Link>
             </div>
