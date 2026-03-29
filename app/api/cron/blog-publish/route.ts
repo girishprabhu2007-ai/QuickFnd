@@ -1,17 +1,20 @@
 /**
  * app/api/cron/blog-publish/route.ts
  * ─────────────────────────────────────────────────────────────────────────────
- * Vercel Cron — daily at 4am UTC
+ * Vercel Cron — runs 5x daily at different hours
  *
  * Full pipeline:
  *   1. Calls selectTopicsForToday() — pulls GSC data, Serper PAA, rotates seed bank
  *   2. Enriches each topic with related tool links
- *   3. Generates 2 articles with AI (varied temperature)
+ *   3. Generates 4 articles per run with AI (varied temperature)
  *   4. Quality gate: min 600 words, min 2 H2s
  *   5. Publishes to blog_posts + pings IndexNow + Google sitemap
  *   6. Logs to cron_runs
  *
- * vercel.json: { "path": "/api/cron/blog-publish", "schedule": "0 4 * * *" }
+ * 5 cron runs × 4 articles = 20 posts/day
+ *
+ * vercel.json schedules:
+ *   "17 4 * * *", "43 8 * * *", "7 12 * * *", "31 16 * * *", "53 20 * * *"
  */
 
 import { NextResponse } from "next/server";
@@ -45,11 +48,10 @@ export async function GET(req: Request) {
   const runId = run?.id;
 
   try {
-    // Step 1: Research + select 2 topics per run
-    // 5 cron runs × 2 articles = 10 posts/day
-    // Each run fires at a different hour so publish times are spread across the day
+    // Step 1: Research + select 4 topics per run
+    // 5 cron runs × 4 articles = 20 posts/day
     const publishHour = new Date().getUTCHours();
-    const topics = await selectTopicsForToday(2);
+    const topics = await selectTopicsForToday(4);
 
     if (!topics.length) {
       await supabase.from("cron_runs").update({
