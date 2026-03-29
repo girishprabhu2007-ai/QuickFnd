@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getContentItem } from "@/lib/db";
 
@@ -32,7 +32,7 @@ export default async function EmbedAIToolPage({ params }: Props) {
       </div>
       <div style={{ flex: 1 }}>
         <iframe
-          src={`https://quickfnd.com/ai-tools/${slug}`}
+          src={`https://quickfnd.com/ai-tools/${slug}?embed=1`}
           title={tool.name}
           sandbox="allow-scripts allow-same-origin allow-forms"
           style={{ width: "100%", height: "calc(100vh - 80px)", border: "none", display: "block" }}
@@ -40,7 +40,7 @@ export default async function EmbedAIToolPage({ params }: Props) {
       </div>
       <div style={{ background: "#0f172a", color: "rgba(255,255,255,0.5)", padding: "8px 16px", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span>{tool.name} — AI-powered tool</span>
-        <a href={`https://quickfnd.com/ai-tools/${slug}`} target="_blank" rel="noopener" style={{ color: "#c4b5fd", textDecoration: "none" }}>
+        <a href={`https://quickfnd.com/ai-tools/${slug}?embed=1`} target="_blank" rel="noopener" style={{ color: "#c4b5fd", textDecoration: "none" }}>
           Open full version →
         </a>
       </div>

@@ -1,4 +1,4 @@
-/* Fonts loaded via next/font - no blocking request needed */
+﻿/* Fonts loaded via next/font - no blocking request needed */
 @import "tailwindcss";
 
 /* ─── QuickFnd Design System ─────────────────────────────────────────────── */
@@ -247,4 +247,29 @@ main { animation: fadeIn 0.3s ease-out; }
 .divider-gradient {
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--q-border), transparent);
+}
+/* ── Embed mode: hide site chrome when loaded inside QuickFnd embed iframe ── */
+/* Activated by ?embed=1 query parameter via EmbedModeDetector component */
+body.quickfnd-embed-mode header,
+body.quickfnd-embed-mode [data-site-header],
+body.quickfnd-embed-mode [data-site-footer],
+body.quickfnd-embed-mode .site-footer,
+body.quickfnd-embed-mode footer,
+body.quickfnd-embed-mode nav,
+body.quickfnd-embed-mode .detail-sidebar,
+body.quickfnd-embed-mode [class*="ListingSidebar"],
+body.quickfnd-embed-mode [class*="DetailSidebar"],
+body.quickfnd-embed-mode [class*="EmailCapture"],
+body.quickfnd-embed-mode [class*="AdSlot"],
+body.quickfnd-embed-mode [class*="SiteFooter"],
+body.quickfnd-embed-mode [class*="SiteHeader"] {
+  display: none !important;
+}
+body.quickfnd-embed-mode {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+body.quickfnd-embed-mode main {
+  padding-top: 0 !important;
+  max-width: 100% !important;
 }

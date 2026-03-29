@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getContentItem } from "@/lib/db";
 
@@ -32,7 +32,7 @@ export default async function EmbedCalculatorPage({ params }: Props) {
       </div>
       <div style={{ flex: 1 }}>
         <iframe
-          src={`https://quickfnd.com/calculators/${slug}`}
+          src={`https://quickfnd.com/calculators/${slug}?embed=1`}
           title={calc.name}
           sandbox="allow-scripts allow-same-origin allow-forms"
           style={{ width: "100%", height: "calc(100vh - 80px)", border: "none", display: "block" }}
@@ -40,7 +40,7 @@ export default async function EmbedCalculatorPage({ params }: Props) {
       </div>
       <div style={{ background: "#0f172a", color: "rgba(255,255,255,0.5)", padding: "8px 16px", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span>{calc.name} — Free online calculator</span>
-        <a href={`https://quickfnd.com/calculators/${slug}`} target="_blank" rel="noopener" style={{ color: "#86efac", textDecoration: "none" }}>
+        <a href={`https://quickfnd.com/calculators/${slug}?embed=1`} target="_blank" rel="noopener" style={{ color: "#86efac", textDecoration: "none" }}>
           Open full version →
         </a>
       </div>
