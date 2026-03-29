@@ -249,13 +249,11 @@ main { animation: fadeIn 0.3s ease-out; }
   background: linear-gradient(90deg, transparent, var(--q-border), transparent);
 }
 
-
 /* Embed mode — ?embed=1 strips page to tool-only */
 body.qf-embed header.sticky { display:none!important }
 body.qf-embed footer { display:none!important }
-body.qf-embed aside { display:none!important }
-body.qf-embed .breadcrumb-nav { display:none!important }
+body.qf-embed .xl\:grid-cols-\[minmax\(0\2c 1fr\)_320px\] { display:block!important }
+body.qf-embed .xl\:grid-cols-\[minmax\(0\2c 1fr\)_320px\] > :last-child { display:none!important }
 body.qf-embed [data-ad-slot] { display:none!important }
-body.qf-embed .lg\:col-span-1 { display:none!important }
-body.qf-embed .lg\:grid-cols-4 { display:block!important }
-body.qf-embed .lg\:col-span-3 { max-width:100%!important }
+body.qf-embed .border-b.border-q-border.py-4 { display:none!important }
+body.qf-embed nav.sticky { display:none!important }
