@@ -248,19 +248,3 @@ main { animation: fadeIn 0.3s ease-out; }
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--q-border), transparent);
 }
-
-
-/* ── Embed mode: hide site chrome when ?embed=1 ───────────────────────────── */
-body.quickfnd-embed-mode > div > div > header.sticky,
-body.quickfnd-embed-mode header.sticky,
-body.quickfnd-embed-mode > div footer.mt-16,
-body.quickfnd-embed-mode footer.mt-16,
-body.quickfnd-embed-mode [class*="border-b border-q-border py-4"],
-body.quickfnd-embed-mode aside,
-body.quickfnd-embed-mode .lg\:col-span-1,
-body.quickfnd-embed-mode [class*="sticky top-0 z-50"],
-body.quickfnd-embed-mode [data-ad-slot],
-body.quickfnd-embed-mode [class*="ADVERTISEMENT"] { display: none !important; }
-body.quickfnd-embed-mode { padding: 0 !important; margin: 0 !important; overflow-x: hidden; }
-body.quickfnd-embed-mode main { padding-top: 8px !important; }
-body.quickfnd-embed-mode .lg\:col-span-3 { grid-column: 1 / -1 !important; }
