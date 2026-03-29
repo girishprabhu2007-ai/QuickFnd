@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    QuickFnd — Glass Forge Design System
@@ -32,6 +32,7 @@
 
   --q-gradient-hero: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(168,85,247,0.06), rgba(14,165,233,0.05));
   --q-gradient-accent: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --q-logo-blue: #2563eb;
   --q-gradient-card: none;
 
   --q-glass-bg: rgba(255,255,255,0.6);
@@ -83,6 +84,7 @@
 
   --q-gradient-hero: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(168,85,247,0.08), rgba(14,165,233,0.06));
   --q-gradient-accent: linear-gradient(135deg, #818cf8, #a78bfa);
+  --q-logo-blue: #3b82f6;
   --q-gradient-card: none;
 
   --q-glass-bg: rgba(255,255,255,0.04);
@@ -172,7 +174,7 @@ body {
 
 /* ─── Gradient utilities ──────────────────────────────────────────────────── */
 .bg-q-gradient-hero { background: var(--q-gradient-hero); }
-.bg-q-gradient-blue { background: linear-gradient(135deg, var(--q-tool-color), #38bdf8); }
+.bg-q-gradient-blue { background: linear-gradient(135deg, #2563eb, #0ea5e9); }
 .bg-q-gradient-purple { background: linear-gradient(135deg, var(--q-ai-color), var(--q-primary)); }
 .bg-q-gradient-green { background: linear-gradient(135deg, var(--q-calc-color), #38bdf8); }
 
