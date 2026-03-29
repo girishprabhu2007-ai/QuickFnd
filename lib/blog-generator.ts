@@ -417,6 +417,161 @@ const SEED_BANK: BlogGenerationInput[] = [
   { keyword: "free salary calculator for every country 2026 us uk india", tool_slug: "salary-calculator", tool_name: "Salary Calculator", related_tool_slugs: ["income-tax-calculator", "hra-calculator", "mortgage-calculator"] },
   { keyword: "best free tools for freelancers and remote workers 2026", tool_slug: "ai-email-writer", tool_name: "AI Email Writer", related_tool_slugs: ["salary-calculator", "pdf-merger", "image-compressor", "ai-meeting-notes-summarizer"] },
   { keyword: "free tools for students 2026 calculators converters and ai", tool_slug: "percentage-calculator", tool_name: "Percentage Calculator", related_tool_slugs: ["word-counter", "ai-grammar-checker", "ai-paraphraser", "unit-converter", "bmi-calculator"] },
+// ═══════════════════════════════════════════════════════════════════════════════
+// SESSION 9 — GLOBAL BLOG SEED BANK EXPANSION
+// 150+ new topics covering worldwide search intent.
+// QuickFnd is a GLOBAL platform. India-specific topics are a SUBSET, not focus.
+// Paste these entries at the END of the existing SEED_BANK array (before the ];)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+  // ══ GLOBAL FINANCE — Mortgage, Loans, Banking ══════════════════════════════
+  { keyword: "how to calculate monthly mortgage payment formula", tool_slug: "mortgage-calculator", tool_name: "Mortgage Calculator", related_tool_slugs: ["compound-interest-calculator", "loan-calculator"] },
+  { keyword: "mortgage calculator explained how to plan your home purchase", tool_slug: "mortgage-calculator", tool_name: "Mortgage Calculator", related_tool_slugs: ["compound-interest-calculator"] },
+  { keyword: "fixed rate vs adjustable rate mortgage which is better 2026", tool_slug: "mortgage-calculator", tool_name: "Mortgage Calculator", related_tool_slugs: ["loan-calculator"] },
+  { keyword: "how much house can I afford on my salary", tool_slug: "mortgage-calculator", tool_name: "Mortgage Calculator", related_tool_slugs: ["salary-calculator"] },
+  { keyword: "mortgage amortization schedule explained simply", tool_slug: "mortgage-calculator", tool_name: "Mortgage Calculator", related_tool_slugs: ["compound-interest-calculator"] },
+  { keyword: "how to pay off mortgage faster with extra payments", tool_slug: "mortgage-calculator", tool_name: "Mortgage Calculator", related_tool_slugs: ["loan-calculator"] },
+  { keyword: "how to calculate loan interest rate from emi", tool_slug: "loan-calculator", tool_name: "Loan Calculator", related_tool_slugs: ["emi-calculator", "compound-interest-calculator"] },
+  { keyword: "personal loan vs line of credit which should you choose", tool_slug: "loan-calculator", tool_name: "Loan Calculator", related_tool_slugs: ["emi-calculator"] },
+  { keyword: "how to calculate compound interest with monthly deposits", tool_slug: "compound-interest-calculator", tool_name: "Compound Interest Calculator", related_tool_slugs: ["savings-calculator", "sip-calculator"] },
+  { keyword: "rule of 72 how to estimate when your money doubles", tool_slug: "compound-interest-calculator", tool_name: "Compound Interest Calculator", related_tool_slugs: ["roi-calculator"] },
+  { keyword: "simple interest vs compound interest real world examples", tool_slug: "simple-interest-calculator", tool_name: "Simple Interest Calculator", related_tool_slugs: ["compound-interest-calculator"] },
+  { keyword: "how to calculate annual percentage rate APR", tool_slug: "loan-calculator", tool_name: "Loan Calculator", related_tool_slugs: ["compound-interest-calculator"] },
+  { keyword: "best savings account interest rates how to compare them", tool_slug: "savings-calculator", tool_name: "Savings Calculator", related_tool_slugs: ["compound-interest-calculator", "fd-calculator"] },
+  { keyword: "how to build an emergency fund step by step", tool_slug: "savings-calculator", tool_name: "Savings Calculator", related_tool_slugs: ["retirement-calculator"] },
+
+  // ══ GLOBAL TAX — Sales Tax, VAT, Income Tax Worldwide ═════════════════════
+  { keyword: "how to calculate sales tax on a purchase", tool_slug: "sales-tax-calculator", tool_name: "Sales Tax Calculator", related_tool_slugs: ["vat-calculator", "discount-calculator"] },
+  { keyword: "sales tax by state usa complete guide 2026", tool_slug: "sales-tax-calculator", tool_name: "Sales Tax Calculator", related_tool_slugs: ["vat-calculator"] },
+  { keyword: "what is VAT and how does it work explained simply", tool_slug: "vat-calculator", tool_name: "VAT Calculator", related_tool_slugs: ["sales-tax-calculator", "gst-calculator"] },
+  { keyword: "vat vs sales tax vs gst what is the difference", tool_slug: "vat-calculator", tool_name: "VAT Calculator", related_tool_slugs: ["sales-tax-calculator", "gst-calculator"] },
+  { keyword: "how to calculate take home pay after taxes", tool_slug: "salary-calculator", tool_name: "Salary Calculator", related_tool_slugs: ["income-tax-calculator"] },
+  { keyword: "salary calculator how to estimate net pay in any country", tool_slug: "salary-calculator", tool_name: "Salary Calculator", related_tool_slugs: ["income-tax-calculator"] },
+  { keyword: "gross salary vs net salary what is the difference", tool_slug: "salary-calculator", tool_name: "Salary Calculator", related_tool_slugs: ["income-tax-calculator"] },
+  { keyword: "how to calculate hourly rate from annual salary", tool_slug: "salary-calculator", tool_name: "Salary Calculator", related_tool_slugs: ["percentage-calculator"] },
+  { keyword: "freelancer tax guide how to calculate self employment tax", tool_slug: "income-tax-calculator", tool_name: "Income Tax Calculator", related_tool_slugs: ["salary-calculator"] },
+  { keyword: "how to calculate tip on a restaurant bill", tool_slug: "tip-calculator", tool_name: "Tip Calculator", related_tool_slugs: ["percentage-calculator", "discount-calculator"] },
+  { keyword: "tipping etiquette around the world complete guide", tool_slug: "tip-calculator", tool_name: "Tip Calculator", related_tool_slugs: ["percentage-calculator"] },
+
+  // ══ GLOBAL INVESTMENT — Retirement, ROI, CAGR ═════════════════════════════
+  { keyword: "how much money do I need to retire calculator", tool_slug: "retirement-calculator", tool_name: "Retirement Calculator", related_tool_slugs: ["savings-calculator", "compound-interest-calculator"] },
+  { keyword: "retirement planning for beginners complete guide 2026", tool_slug: "retirement-calculator", tool_name: "Retirement Calculator", related_tool_slugs: ["compound-interest-calculator"] },
+  { keyword: "how to calculate return on investment ROI formula", tool_slug: "roi-calculator", tool_name: "ROI Calculator", related_tool_slugs: ["compound-interest-calculator", "percentage-calculator"] },
+  { keyword: "roi calculator how to measure any investment return", tool_slug: "roi-calculator", tool_name: "ROI Calculator", related_tool_slugs: ["cagr-calculator"] },
+  { keyword: "what is CAGR and how to calculate it with examples", tool_slug: "cagr-calculator", tool_name: "CAGR Calculator", related_tool_slugs: ["compound-interest-calculator", "roi-calculator"] },
+  { keyword: "how to calculate investment growth over time", tool_slug: "compound-interest-calculator", tool_name: "Compound Interest Calculator", related_tool_slugs: ["roi-calculator", "cagr-calculator"] },
+  { keyword: "dollar cost averaging explained does it really work", tool_slug: "sip-calculator", tool_name: "SIP Calculator", related_tool_slugs: ["compound-interest-calculator"] },
+  { keyword: "stock market returns vs real estate which is better long term", tool_slug: "roi-calculator", tool_name: "ROI Calculator", related_tool_slugs: ["compound-interest-calculator"] },
+  { keyword: "how to calculate profit margin for your business", tool_slug: "percentage-calculator", tool_name: "Percentage Calculator", related_tool_slugs: ["roi-calculator", "discount-calculator"] },
+  { keyword: "break even analysis how to calculate your break even point", tool_slug: "percentage-calculator", tool_name: "Percentage Calculator", related_tool_slugs: ["roi-calculator"] },
+
+  // ══ GLOBAL HEALTH — BMI, Calories, Fitness ════════════════════════════════
+  { keyword: "how to calculate calories burned during exercise", tool_slug: "calorie-calculator", tool_name: "Calorie Calculator", related_tool_slugs: ["bmi-calculator"] },
+  { keyword: "calorie deficit calculator how to lose weight safely", tool_slug: "calorie-calculator", tool_name: "Calorie Calculator", related_tool_slugs: ["bmi-calculator"] },
+  { keyword: "TDEE calculator what is total daily energy expenditure", tool_slug: "calorie-calculator", tool_name: "Calorie Calculator", related_tool_slugs: ["bmi-calculator"] },
+  { keyword: "macros calculator how to calculate protein carbs and fat", tool_slug: "calorie-calculator", tool_name: "Calorie Calculator", related_tool_slugs: ["bmi-calculator", "percentage-calculator"] },
+  { keyword: "bmi calculator for adults what your number really means", tool_slug: "bmi-calculator", tool_name: "BMI Calculator", related_tool_slugs: ["calorie-calculator"] },
+  { keyword: "ideal weight calculator based on height age and gender", tool_slug: "bmi-calculator", tool_name: "BMI Calculator", related_tool_slugs: ["calorie-calculator"] },
+  { keyword: "how many steps should you walk per day for weight loss", tool_slug: "calorie-calculator", tool_name: "Calorie Calculator", related_tool_slugs: ["bmi-calculator"] },
+  { keyword: "intermittent fasting calories guide what to eat and when", tool_slug: "calorie-calculator", tool_name: "Calorie Calculator", related_tool_slugs: ["bmi-calculator"] },
+
+  // ══ PRODUCTIVITY & EVERYDAY ═══════════════════════════════════════════════
+  { keyword: "how to calculate fuel cost for a road trip", tool_slug: "fuel-cost-calculator", tool_name: "Fuel Cost Calculator", related_tool_slugs: ["unit-converter", "currency-converter"] },
+  { keyword: "fuel economy calculator mpg vs liters per 100km explained", tool_slug: "fuel-cost-calculator", tool_name: "Fuel Cost Calculator", related_tool_slugs: ["unit-converter"] },
+  { keyword: "how to calculate percentage increase between two numbers", tool_slug: "percentage-calculator", tool_name: "Percentage Calculator", related_tool_slugs: ["roi-calculator"] },
+  { keyword: "percentage off calculator how to find sale price quickly", tool_slug: "discount-calculator", tool_name: "Discount Calculator", related_tool_slugs: ["percentage-calculator", "sales-tax-calculator"] },
+  { keyword: "how to calculate age from date of birth accurately", tool_slug: "age-calculator", tool_name: "Age Calculator", related_tool_slugs: ["timestamp-converter"] },
+  { keyword: "age calculator in years months and days", tool_slug: "age-calculator", tool_name: "Age Calculator", related_tool_slugs: ["timestamp-converter"] },
+  { keyword: "how to split a bill with friends fairly", tool_slug: "tip-calculator", tool_name: "Tip Calculator", related_tool_slugs: ["percentage-calculator"] },
+
+  // ══ IMAGE & PDF TOOLS — Global Search Volume ══════════════════════════════
+  { keyword: "how to compress images without losing quality", tool_slug: "image-compressor", tool_name: "Image Compressor", related_tool_slugs: ["image-resizer", "image-converter"] },
+  { keyword: "best image formats for web jpg vs png vs webp 2026", tool_slug: "image-converter", tool_name: "Image Format Converter", related_tool_slugs: ["image-compressor"] },
+  { keyword: "how to resize images for social media all platforms guide", tool_slug: "image-resizer", tool_name: "Image Resizer", related_tool_slugs: ["image-compressor", "image-cropper"] },
+  { keyword: "how to convert png to jpg without losing quality", tool_slug: "image-converter", tool_name: "Image Format Converter", related_tool_slugs: ["image-compressor"] },
+  { keyword: "how to merge pdf files online free without software", tool_slug: "pdf-merger", tool_name: "PDF Merger", related_tool_slugs: ["pdf-splitter", "text-to-pdf"] },
+  { keyword: "how to split pdf pages into separate files", tool_slug: "pdf-splitter", tool_name: "PDF Splitter", related_tool_slugs: ["pdf-merger"] },
+  { keyword: "how to convert images to pdf on any device", tool_slug: "image-to-pdf", tool_name: "Image to PDF Converter", related_tool_slugs: ["pdf-merger", "text-to-pdf"] },
+  { keyword: "how to reduce pdf file size for email attachment", tool_slug: "pdf-merger", tool_name: "PDF Merger", related_tool_slugs: ["image-compressor"] },
+  { keyword: "webp vs png which image format should you use", tool_slug: "image-converter", tool_name: "Image Format Converter", related_tool_slugs: ["image-compressor"] },
+  { keyword: "how to crop images to exact dimensions online", tool_slug: "image-cropper", tool_name: "Image Cropper", related_tool_slugs: ["image-resizer"] },
+  { keyword: "instagram photo size guide all dimensions 2026", tool_slug: "image-resizer", tool_name: "Image Resizer", related_tool_slugs: ["image-cropper"] },
+  { keyword: "how to convert webp to png or jpg online free", tool_slug: "image-converter", tool_name: "Image Format Converter", related_tool_slugs: ["image-compressor"] },
+
+  // ══ VIDEO & GIF ═══════════════════════════════════════════════════════════
+  { keyword: "how to convert video to gif online free", tool_slug: "video-to-gif", tool_name: "Video to GIF Converter", related_tool_slugs: ["gif-maker", "video-compressor"] },
+  { keyword: "how to make animated gifs from images step by step", tool_slug: "gif-maker", tool_name: "GIF Maker", related_tool_slugs: ["video-to-gif"] },
+  { keyword: "how to compress video files without losing quality", tool_slug: "video-compressor", tool_name: "Video Compressor", related_tool_slugs: ["image-compressor"] },
+  { keyword: "best video formats for web mp4 vs webm vs gif comparison", tool_slug: "video-to-gif", tool_name: "Video to GIF Converter", related_tool_slugs: ["video-compressor"] },
+
+  // ══ CURRENCY & UNIT CONVERSION — Global ═══════════════════════════════════
+  { keyword: "how to convert currency for international travel tips", tool_slug: "currency-converter", tool_name: "Currency Converter", related_tool_slugs: ["unit-converter"] },
+  { keyword: "best time to exchange currency money saving tips", tool_slug: "currency-converter", tool_name: "Currency Converter", related_tool_slugs: [] },
+  { keyword: "usd to eur exchange rate how it affects you", tool_slug: "currency-converter", tool_name: "Currency Converter", related_tool_slugs: [] },
+  { keyword: "metric to imperial conversion complete cheat sheet", tool_slug: "unit-converter", tool_name: "Unit Converter", related_tool_slugs: ["currency-converter"] },
+  { keyword: "how to convert ounces to grams for cooking and baking", tool_slug: "unit-converter", tool_name: "Unit Converter", related_tool_slugs: [] },
+  { keyword: "how to convert liters to gallons and back", tool_slug: "unit-converter", tool_name: "Unit Converter", related_tool_slugs: [] },
+  { keyword: "paper size guide a4 vs letter vs legal explained", tool_slug: "unit-converter", tool_name: "Unit Converter", related_tool_slugs: [] },
+
+  // ══ QR CODES & BARCODES ═══════════════════════════════════════════════════
+  { keyword: "how to create qr code for your business free", tool_slug: "qr-generator", tool_name: "QR Code Generator", related_tool_slugs: ["barcode-generator"] },
+  { keyword: "qr code uses for small business marketing guide 2026", tool_slug: "qr-generator", tool_name: "QR Code Generator", related_tool_slugs: [] },
+  { keyword: "how to generate barcode for products free online", tool_slug: "barcode-generator", tool_name: "Barcode Generator", related_tool_slugs: ["qr-generator"] },
+  { keyword: "qr code vs barcode what is the difference and when to use each", tool_slug: "qr-generator", tool_name: "QR Code Generator", related_tool_slugs: ["barcode-generator"] },
+
+  // ══ REAL ESTATE — Global ══════════════════════════════════════════════════
+  { keyword: "how to calculate rent vs buy decision in any city", tool_slug: "mortgage-calculator", tool_name: "Mortgage Calculator", related_tool_slugs: ["roi-calculator"] },
+  { keyword: "property investment ROI how to calculate rental yield", tool_slug: "roi-calculator", tool_name: "ROI Calculator", related_tool_slugs: ["mortgage-calculator"] },
+  { keyword: "down payment calculator how much do you really need", tool_slug: "mortgage-calculator", tool_name: "Mortgage Calculator", related_tool_slugs: ["savings-calculator"] },
+  { keyword: "closing costs explained what to expect when buying a home", tool_slug: "mortgage-calculator", tool_name: "Mortgage Calculator", related_tool_slugs: ["percentage-calculator"] },
+
+  // ══ SMALL BUSINESS & FREELANCE — Global ═══════════════════════════════════
+  { keyword: "how to calculate hourly rate as a freelancer", tool_slug: "salary-calculator", tool_name: "Salary Calculator", related_tool_slugs: ["roi-calculator"] },
+  { keyword: "markup vs margin calculator what is the difference", tool_slug: "percentage-calculator", tool_name: "Percentage Calculator", related_tool_slugs: ["roi-calculator", "discount-calculator"] },
+  { keyword: "invoice template how to create professional invoices free", tool_slug: "text-to-pdf", tool_name: "Text to PDF Converter", related_tool_slugs: ["pdf-merger"] },
+  { keyword: "cost per click calculator how to measure ad performance", tool_slug: "roi-calculator", tool_name: "ROI Calculator", related_tool_slugs: ["percentage-calculator"] },
+  { keyword: "how to price your services as a consultant", tool_slug: "salary-calculator", tool_name: "Salary Calculator", related_tool_slugs: ["roi-calculator", "percentage-calculator"] },
+
+  // ══ EDUCATION & MATH ══════════════════════════════════════════════════════
+  { keyword: "how to calculate GPA from grades step by step", tool_slug: "percentage-calculator", tool_name: "Percentage Calculator", related_tool_slugs: [] },
+  { keyword: "how to convert fractions to percentages easily", tool_slug: "percentage-calculator", tool_name: "Percentage Calculator", related_tool_slugs: [] },
+  { keyword: "math shortcuts every student should know 2026", tool_slug: "percentage-calculator", tool_name: "Percentage Calculator", related_tool_slugs: ["compound-interest-calculator"] },
+  { keyword: "how to calculate average mean median mode explained simply", tool_slug: "percentage-calculator", tool_name: "Percentage Calculator", related_tool_slugs: [] },
+
+  // ══ PRIVACY & SECURITY — Global ═══════════════════════════════════════════
+  { keyword: "online privacy tips how to protect your data in 2026", tool_slug: "password-generator", tool_name: "Password Generator", related_tool_slugs: ["password-strength-checker"] },
+  { keyword: "browser based tools vs cloud tools which is more private", tool_slug: "password-generator", tool_name: "Password Generator", related_tool_slugs: ["json-formatter"] },
+  { keyword: "vpn vs proxy vs tor which protects your privacy best", tool_slug: "ip-lookup", tool_name: "IP Address Lookup", related_tool_slugs: ["password-generator"] },
+  { keyword: "how to check if your email has been compromised", tool_slug: "password-generator", tool_name: "Password Generator", related_tool_slugs: ["sha256-generator"] },
+
+  // ══ COMPARISONS / PILLAR — Global Focus ═══════════════════════════════════
+  { keyword: "best free online calculators for every need 2026", tool_slug: "mortgage-calculator", tool_name: "Mortgage Calculator", related_tool_slugs: ["compound-interest-calculator", "bmi-calculator", "salary-calculator"] },
+  { keyword: "best free pdf tools online no signup needed 2026", tool_slug: "pdf-merger", tool_name: "PDF Merger", related_tool_slugs: ["pdf-splitter", "image-to-pdf", "text-to-pdf"] },
+  { keyword: "best free image editing tools online no download needed", tool_slug: "image-compressor", tool_name: "Image Compressor", related_tool_slugs: ["image-resizer", "image-cropper", "image-converter"] },
+  { keyword: "free browser tools that replace expensive software 2026", tool_slug: "json-formatter", tool_name: "JSON Formatter", related_tool_slugs: ["password-generator", "image-compressor", "pdf-merger"] },
+  { keyword: "top 10 free online tools every student needs in 2026", tool_slug: "word-counter", tool_name: "Word Counter", related_tool_slugs: ["percentage-calculator", "bmi-calculator", "pdf-merger"] },
+  { keyword: "essential free tools for remote workers complete guide", tool_slug: "word-counter", tool_name: "Word Counter", related_tool_slugs: ["json-formatter", "password-generator", "qr-generator"] },
+  { keyword: "best free calculators for small business owners", tool_slug: "roi-calculator", tool_name: "ROI Calculator", related_tool_slugs: ["percentage-calculator", "salary-calculator", "loan-calculator"] },
+  { keyword: "ultimate guide to free online tools for content creators", tool_slug: "word-counter", tool_name: "Word Counter", related_tool_slugs: ["image-compressor", "image-resizer", "video-to-gif"] },
+  { keyword: "complete guide to understanding compound interest", tool_slug: "compound-interest-calculator", tool_name: "Compound Interest Calculator", related_tool_slugs: ["savings-calculator", "retirement-calculator"] },
+  { keyword: "how to do your own taxes complete beginner guide 2026", tool_slug: "income-tax-calculator", tool_name: "Income Tax Calculator", related_tool_slugs: ["salary-calculator", "sales-tax-calculator"] },
+
+  // ══ SEASONAL & TRENDING — Global ══════════════════════════════════════════
+  { keyword: "black friday discount calculator how much are you really saving", tool_slug: "discount-calculator", tool_name: "Discount Calculator", related_tool_slugs: ["percentage-calculator", "sales-tax-calculator"] },
+  { keyword: "new year financial planning checklist budgeting guide", tool_slug: "savings-calculator", tool_name: "Savings Calculator", related_tool_slugs: ["retirement-calculator", "compound-interest-calculator"] },
+  { keyword: "back to school tools every student should bookmark free", tool_slug: "word-counter", tool_name: "Word Counter", related_tool_slugs: ["percentage-calculator", "bmi-calculator"] },
+  { keyword: "tax season preparation checklist everything you need", tool_slug: "income-tax-calculator", tool_name: "Income Tax Calculator", related_tool_slugs: ["salary-calculator"] },
+
+  // ══ GLOBAL FINANCE — India-specific subset ════════════════════════════════
+  { keyword: "how to calculate gratuity amount under payment of gratuity act", tool_slug: "gratuity-calculator", tool_name: "Gratuity Calculator", related_tool_slugs: ["salary-calculator", "income-tax-calculator"] },
+  { keyword: "rd calculator how recurring deposits work and how to calculate returns", tool_slug: "rd-calculator", tool_name: "RD Calculator", related_tool_slugs: ["fd-calculator", "compound-interest-calculator"] },
+  { keyword: "epf calculator how to check your provident fund balance", tool_slug: "compound-interest-calculator", tool_name: "Compound Interest Calculator", related_tool_slugs: ["retirement-calculator"] },
+
+  // ══ GLOBAL FINANCE — UK, EU, Australia subset ═════════════════════════════
+  { keyword: "uk stamp duty calculator how much tax on property purchase", tool_slug: "percentage-calculator", tool_name: "Percentage Calculator", related_tool_slugs: ["mortgage-calculator"] },
+  { keyword: "how national insurance is calculated uk explained simply", tool_slug: "salary-calculator", tool_name: "Salary Calculator", related_tool_slugs: ["income-tax-calculator"] },
+  { keyword: "hecs help repayment calculator australia student debt guide", tool_slug: "loan-calculator", tool_name: "Loan Calculator", related_tool_slugs: ["salary-calculator"] },
+  { keyword: "how to calculate superannuation australia complete guide", tool_slug: "retirement-calculator", tool_name: "Retirement Calculator", related_tool_slugs: ["compound-interest-calculator"] },
 ];
 
 // ─── Supabase client ───────────────────────────────────────────────────────────
