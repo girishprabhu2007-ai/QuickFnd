@@ -183,28 +183,38 @@ export async function POST(req: Request) {
       const completion = await openai.chat.completions.create({
         model: "gpt-4.1-mini",
         temperature: 0.8,
-        max_tokens: 2000,
+        max_tokens: 2500,
         messages: [
           {
             role: "system",
-            content: `You are an SEO backlink strategist. Generate specific, actionable backlink opportunities. For each opportunity, provide the EXACT URL to submit/post, what to write/post, and why it will work. Focus on realistic, free opportunities. Return ONLY a JSON array with no markdown or preamble.`,
+            content: `You are an SEO backlink strategist. Generate specific backlink opportunities for a free online tools website. 
+
+CRITICAL RULES for the "url" field:
+- ONLY use the HOMEPAGE or a well-known, verified page of the platform (e.g. "https://www.g2.com" not "https://www.g2.com/products/new")
+- NEVER guess or fabricate submission page URLs — they will 404
+- Use the root domain or a commonly known path (e.g. "https://github.com" or "https://stackshare.io")
+- If unsure of the exact submission URL, use the platform homepage
+
+Return ONLY a JSON array with no markdown, backticks, or preamble.`,
           },
           {
             role: "user",
             content: `${context}
 
 Generate 10 specific backlink opportunities for QuickFnd. For each, return a JSON object with:
-- "url": the exact page/submission URL to visit
+- "url": the platform HOMEPAGE URL (e.g. "https://www.g2.com", "https://stackshare.io") — NOT a guessed submission page
 - "source_name": the platform name
-- "strategy": what specifically to post/submit (2-3 sentences)
+- "strategy": detailed instructions on what to do — where exactly to navigate on the site, what to post/submit, and what content to write (3-4 sentences, be very specific)
 - "expected_da": estimated domain authority (number)
 - "type": "directory" | "guest-post" | "social" | "forum" | "resource-page"
 - "effort": "low" | "medium" | "high"
 - "impact": "low" | "medium" | "high"
 
-Focus on opportunities NOT in this list: Product Hunt, AlternativeTo, Hacker News, Reddit, Dev.to, Indie Hackers, BetaList, SaaSHub. Find NEW opportunities.
+Focus on opportunities NOT already in this list: Product Hunt, AlternativeTo, Hacker News, Reddit, Dev.to, Indie Hackers, BetaList, SaaSHub, GitHub Awesome Lists, Free For Dev, There's An AI For That, LinkedIn, YouTube, Twitter.
 
-Return ONLY the JSON array, no other text.`,
+Find NEW platforms, communities, directories, and resource pages. Think about: tool comparison sites, developer communities, finance forums (for Indian calculators), Slack/Discord communities, niche directories, curated lists, Q&A sites, and resource roundup blogs.
+
+Return ONLY the JSON array.`,
           },
         ],
       });
@@ -216,7 +226,35 @@ Return ONLY the JSON array, no other text.`,
       try { suggestions = JSON.parse(cleaned); }
       catch { suggestions = []; }
 
-      return NextResponse.json({ suggestions });
+      // Validate each suggestion URL is reachable (filter out 404s)
+      const validated: typeof suggestions = [];
+      for (const s of suggestions) {
+        try {
+          const res = await fetch(s.url, {
+            method: "HEAD",
+            redirect: "follow",
+            signal: AbortSignal.timeout(6000),
+            headers: { "User-Agent": "QuickFnd-Bot/1.0" },
+          });
+          if (res.ok) {
+            validated.push(s);
+          } else {
+            // Try with GET if HEAD fails
+            const getRes = await fetch(s.url, {
+              method: "GET",
+              redirect: "follow",
+              signal: AbortSignal.timeout(6000),
+              headers: { "User-Agent": "QuickFnd-Bot/1.0" },
+            });
+            if (getRes.ok) validated.push(s);
+          }
+        } catch {
+          // Skip URLs that can't be reached at all
+        }
+        await new Promise(r => setTimeout(r, 300));
+      }
+
+      return NextResponse.json({ suggestions: validated, total_generated: suggestions.length, validated_count: validated.length });
     } catch (err) {
       return NextResponse.json({ error: err instanceof Error ? err.message : "AI suggestion failed" }, { status: 500 });
     }

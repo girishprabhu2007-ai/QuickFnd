@@ -307,6 +307,9 @@ function AISuggestions() {
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Failed"); return; }
       setSuggestions(data.suggestions || []);
+      if (data.total_generated && data.validated_count !== undefined) {
+        setError(`Generated ${data.total_generated}, verified ${data.validated_count} live URLs`);
+      }
     } catch (e) { setError(e instanceof Error ? e.message : "Failed"); }
     finally { setLoading(false); }
   }
@@ -314,10 +317,10 @@ function AISuggestions() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div><h2 className="text-xl font-bold text-q-text">🤖 AI Backlink Suggestions</h2><p className="mt-1 text-xs text-q-muted">AI generates targeted backlink opportunities specific to QuickFnd.</p></div>
-        <button onClick={generate} disabled={loading} className="rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-purple-700 transition disabled:opacity-60">{loading ? "Generating..." : "✨ Generate Suggestions"}</button>
+        <div><h2 className="text-xl font-bold text-q-text">🤖 AI Backlink Suggestions</h2><p className="mt-1 text-xs text-q-muted">AI finds new backlink opportunities and verifies each URL is live before showing.</p></div>
+        <button onClick={generate} disabled={loading} className="rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-purple-700 transition disabled:opacity-60">{loading ? "Generating & verifying..." : "✨ Generate Suggestions"}</button>
       </div>
-      {error && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">{error}</div>}
+      {error && <div className={`rounded-xl border p-3 text-xs ${error.startsWith("Generated") ? "border-blue-200 bg-blue-50 text-blue-700" : "border-red-200 bg-red-50 text-red-700"}`}>{error}</div>}
       {suggestions.length > 0 && (
         <div className="space-y-3">
           {suggestions.map((s, i) => (
