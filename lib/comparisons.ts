@@ -43,3 +43,4 @@ export async function getComparisonsForTool(
   if (error || !data) return [];
   return data as { slug: string; title: string }[];
 }
+
