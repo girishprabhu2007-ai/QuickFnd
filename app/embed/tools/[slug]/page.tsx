@@ -21,51 +21,29 @@ export default async function EmbedToolPage({ params }: Props) {
   if (!tool) notFound();
 
   return (
-    <html lang="en">
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="robots" content="noindex" />
-        <style>{`
-          * { box-sizing: border-box; margin: 0; padding: 0; }
-          body { font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; }
-          .wrapper { display: flex; flex-direction: column; min-height: 100vh; }
-          .header { background: #0f172a; color: white; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; }
-          .logo { font-size: 14px; font-weight: 700; text-decoration: none; color: white; }
-          .logo span { color: #3b82f6; }
-          .attribution { font-size: 11px; color: rgba(255,255,255,0.5); }
-          .attribution a { color: #60a5fa; text-decoration: none; }
-          .content { flex: 1; padding: 0; }
-          iframe { width: 100%; height: calc(100vh - 80px); border: none; display: block; }
-          .footer { background: #0f172a; color: rgba(255,255,255,0.5); padding: 8px 16px; font-size: 11px; display: flex; align-items: center; justify-content: space-between; }
-          .footer a { color: #60a5fa; text-decoration: none; }
-        `}</style>
-      </head>
-      <body>
-        <div className="wrapper">
-          <div className="header">
-            <a href="https://quickfnd.com" target="_blank" rel="noopener" className="logo">
-              Quick<span>Fnd</span>
-            </a>
-            <span className="attribution">
-              Powered by <a href="https://quickfnd.com" target="_blank" rel="noopener">QuickFnd</a>
-            </span>
-          </div>
-          <div className="content">
-            <iframe
-              src={`https://quickfnd.com/tools/${slug}`}
-              title={tool.name}
-              sandbox="allow-scripts allow-same-origin allow-forms"
-            />
-          </div>
-          <div className="footer">
-            <span>{tool.name} — Free browser-based tool</span>
-            <a href={`https://quickfnd.com/tools/${slug}`} target="_blank" rel="noopener">
-              Open full version →
-            </a>
-          </div>
-        </div>
-      </body>
-    </html>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <div style={{ background: "#0f172a", color: "white", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <a href="https://quickfnd.com" target="_blank" rel="noopener" style={{ fontSize: 14, fontWeight: 700, textDecoration: "none", color: "white" }}>
+          Quick<span style={{ color: "#3b82f6" }}>Fnd</span>
+        </a>
+        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>
+          Powered by <a href="https://quickfnd.com" target="_blank" rel="noopener" style={{ color: "#60a5fa", textDecoration: "none" }}>QuickFnd</a>
+        </span>
+      </div>
+      <div style={{ flex: 1 }}>
+        <iframe
+          src={`https://quickfnd.com/tools/${slug}`}
+          title={tool.name}
+          sandbox="allow-scripts allow-same-origin allow-forms"
+          style={{ width: "100%", height: "calc(100vh - 80px)", border: "none", display: "block" }}
+        />
+      </div>
+      <div style={{ background: "#0f172a", color: "rgba(255,255,255,0.5)", padding: "8px 16px", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span>{tool.name} — Free browser-based tool</span>
+        <a href={`https://quickfnd.com/tools/${slug}`} target="_blank" rel="noopener" style={{ color: "#60a5fa", textDecoration: "none" }}>
+          Open full version →
+        </a>
+      </div>
+    </div>
   );
 }
