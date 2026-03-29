@@ -1,10 +1,51 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-import AdminTabs from "@/components/admin/AdminTabs";
+import AdminSidebar from "@/components/admin/AdminSidebar";
 
 const AUTH_PAGES = new Set(["/admin/login", "/admin/reset-password"]);
+
+// Map pathname to readable page title
+function getPageTitle(pathname: string): string {
+  const map: Record<string, string> = {
+    "/admin": "Dashboard",
+    "/admin/seo-dashboard": "SEO dashboard",
+    "/admin/operations": "Operations",
+    "/admin/diagnostics": "Diagnostics",
+    "/admin/recently-added": "Recently added",
+    "/admin/tools": "Tools",
+    "/admin/calculators": "Calculators",
+    "/admin/ai-tools": "AI tools",
+    "/admin/blog": "Blog",
+    "/admin/topics": "Topics",
+    "/admin/generate": "Generate",
+    "/admin/bulk-generate": "Bulk generate",
+    "/admin/placeholders": "Placeholders",
+    "/admin/requests": "Requests",
+    "/admin/backlinks": "Backlinks",
+    "/admin/seo-content": "SEO content",
+    "/admin/intelligence": "Intelligence",
+    "/admin/authors": "Authors",
+    "/admin/guest-posts": "Guest posts",
+    "/admin/ads": "Ad settings",
+    "/admin/affiliates": "Affiliates",
+    "/admin/subscribers": "Subscribers",
+    "/admin/site-settings": "Site settings",
+    "/admin/applications": "Applications",
+  };
+
+  // Exact match
+  if (map[pathname]) return map[pathname];
+
+  // Partial match (for nested routes like /admin/blog/something)
+  for (const [key, value] of Object.entries(map)) {
+    if (key !== "/admin" && pathname.startsWith(key)) return value;
+  }
+
+  return "Admin";
+}
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -14,70 +55,66 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     return <>{children}</>;
   }
 
+  const pageTitle = getPageTitle(pathname);
+
   return (
-    <div className="flex min-h-screen flex-col bg-q-bg text-q-text">
-      <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
-        <section className="mx-auto max-w-7xl">
-          <div className="mb-8 rounded-3xl border border-q-border bg-q-card p-6 shadow-sm md:p-8 lg:p-10">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <div className="inline-flex items-center rounded-full border border-q-border bg-q-bg px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-q-muted">
-                  Admin Workspace
-                </div>
-                <h1 className="mt-4 text-3xl font-bold tracking-tight md:text-5xl">
-                  QuickFnd Admin
-                </h1>
-                <p className="mt-4 max-w-3xl text-base leading-7 text-q-muted md:text-lg md:leading-8">
-                  Manage publishing, requests, and analytics from one place.
-                </p>
-              </div>
+    <div className="flex h-screen overflow-hidden bg-q-bg text-q-text">
 
-              <div className="flex flex-col items-start gap-3 lg:items-end">
-                <div className="rounded-2xl border border-q-border bg-q-bg px-4 py-3 text-sm text-q-muted">
-                  Live control panel for tools, calculators, AI tools, and request handling.
-                </div>
-                <form action="/api/admin/logout" method="POST">
-                  <button
-                    type="submit"
-                    className="rounded-2xl border border-q-border bg-q-bg px-4 py-3 text-sm font-medium text-q-text transition hover:bg-q-card-hover"
-                  >
-                    Logout
-                  </button>
-                </form>
-              </div>
-            </div>
+      {/* ── Sidebar ─────────────────────────────────────────────────────── */}
+      <AdminSidebar />
+
+      {/* ── Main area ───────────────────────────────────────────────────── */}
+      <div className="flex min-w-0 flex-1 flex-col">
+
+        {/* ── Top bar ─────────────────────────────────────────────────── */}
+        <header className="flex h-12 shrink-0 items-center justify-between border-b border-q-border bg-q-card px-5">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-sm">
+            <Link href="/" className="font-semibold text-q-text transition hover:text-blue-500" style={{ fontSize: "14px" }}>
+              QuickFnd
+            </Link>
+            <span className="text-q-muted">/</span>
+            <Link href="/admin" className="text-q-muted transition hover:text-q-text" style={{ fontSize: "13px" }}>
+              Admin
+            </Link>
+            {pathname !== "/admin" && (
+              <>
+                <span className="text-q-muted">/</span>
+                <span className="text-q-text" style={{ fontSize: "13px" }}>
+                  {pageTitle}
+                </span>
+              </>
+            )}
           </div>
 
-          <AdminTabs />
-
-          <div className="mt-8">{children}</div>
-        </section>
-      </main>
-
-      {/* Admin-only footer — no ads, no public links */}
-      <footer className="mt-8 border-t border-q-border bg-q-card">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2 text-xs text-q-muted">
-            <span className="inline-flex h-5 w-5 items-center justify-center rounded text-[10px] font-black text-white" style={{ background: "var(--q-gradient-blue)" }}>Q</span>
-            <span className="font-medium text-q-text">QuickFnd</span>
-            <span className="text-q-border">·</span>
-            <span>Admin Panel</span>
-            <span className="text-q-border">·</span>
-            <span>Internal use only</span>
+          {/* Right actions */}
+          <div className="flex items-center gap-2">
+            <a
+              href="https://quickfnd.com"
+              target="_blank"
+              rel="noopener"
+              className="rounded-lg bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-600 transition hover:bg-blue-500/15 dark:text-blue-400"
+            >
+              View live site
+            </a>
+            <form action="/api/admin/logout" method="POST">
+              <button
+                type="submit"
+                className="rounded-lg border border-q-border bg-q-bg px-3 py-1.5 text-xs font-medium text-q-muted transition hover:bg-q-card-hover hover:text-q-text"
+              >
+                Logout
+              </button>
+            </form>
           </div>
-          <div className="flex items-center gap-4 text-xs text-q-muted">
-            <a href="https://quickfnd.com" target="_blank" rel="noopener" className="hover:text-blue-500 transition">
-              View Live Site →
-            </a>
-            <a href="/blog" target="_blank" rel="noopener" className="hover:text-blue-500 transition">
-              Blog
-            </a>
-            <a href="/admin" className="hover:text-blue-500 transition">
-              Dashboard
-            </a>
+        </header>
+
+        {/* ── Page content ────────────────────────────────────────────── */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-7xl px-5 py-6 lg:px-8 lg:py-8">
+            {children}
           </div>
-        </div>
-      </footer>
+        </main>
+      </div>
     </div>
   );
 }
