@@ -20,6 +20,8 @@ const dmMono = DM_Mono({
 import ThemeProvider from "@/components/theme/ThemeProvider";
 import SiteHeader from "@/components/layout/SiteHeader";
 import ServiceWorkerRegistrar from "@/components/pwa/ServiceWorkerRegistrar";
+import { Suspense } from "react";
+import EmbedModeDetector from "@/components/embed/EmbedModeDetector";
 
 import { getSiteUrl } from "@/lib/site-url";
 import { createClient } from "@supabase/supabase-js";
@@ -273,6 +275,7 @@ export default async function RootLayout({
         <ThemeProvider>
           <div className="min-h-screen bg-q-bg text-q-text">
             <SiteHeader />
+            <Suspense fallback={null}><EmbedModeDetector /></Suspense>
             {children}
           </div>
         </ThemeProvider>

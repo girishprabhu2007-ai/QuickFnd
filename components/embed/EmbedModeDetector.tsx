@@ -3,12 +3,12 @@ import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 
 export default function EmbedModeDetector() {
-  const searchParams = useSearchParams();
+  const params = useSearchParams();
   useEffect(() => {
-    if (searchParams.get("embed") === "1") {
-      document.body.classList.add("quickfnd-embed-mode");
+    if (params.get("embed") === "1") {
+      document.body.classList.add("qf-embed");
     }
-    return () => { document.body.classList.remove("quickfnd-embed-mode"); };
-  }, [searchParams]);
+    return () => { document.body.classList.remove("qf-embed"); };
+  }, [params]);
   return null;
 }
