@@ -21,7 +21,7 @@ export default async function EmbedAIToolPage({ params }: Props) {
   if (!tool) notFound();
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <div data-embed-wrapper style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <div style={{ background: "#0f172a", color: "white", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <a href="https://quickfnd.com" target="_blank" rel="noopener" style={{ fontSize: 14, fontWeight: 700, textDecoration: "none", color: "white" }}>
           Quick<span style={{ color: "#a78bfa" }}>Fnd</span>

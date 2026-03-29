@@ -258,3 +258,9 @@ body.qf-embed .max-w-4xl.space-y-8 > * { display:none!important }
 body.qf-embed .max-w-4xl.space-y-8 > div.max-w-4xl { display:block!important }
 body.qf-embed section.px-4 { padding-top:0!important; padding-bottom:0!important }
 body.qf-embed .lg\:py-12 { padding-top:8px!important; padding-bottom:8px!important }
+
+/* Embed wrapper pages — hide site chrome on /embed/* routes too */
+body:has(div[data-embed-wrapper]) header.sticky { display:none!important }
+body:has(div[data-embed-wrapper]) footer { display:none!important }
+body:has(div[data-embed-wrapper]) .px-4.py-8 { padding:0!important }
+body:has(div[data-embed-wrapper]) .lg\:py-12 { padding:0!important }
