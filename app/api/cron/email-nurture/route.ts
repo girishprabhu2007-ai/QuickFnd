@@ -1,4 +1,4 @@
-﻿/**
+/**
  * app/api/cron/email-nurture/route.ts
  * Sends automated nurture emails to subscribers based on how they joined.
  * Day 1: Welcome + top tools for their category
@@ -7,6 +7,8 @@
  *
  * Requires RESEND_API_KEY in Vercel env vars.
  * Schedule: runs daily at 9am UTC (2:30pm IST)
+ *
+ * Session 9: Added cron_runs logging (was missing since Session 8).
  */
 
 import { NextResponse } from "next/server";
@@ -186,6 +188,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
 }
 
 export async function GET(req: Request) {
+  const startedAt = new Date();
   const isVercelCron = req.headers.get("x-vercel-cron") === "1";
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = req.headers.get("authorization");
@@ -197,78 +200,106 @@ export async function GET(req: Request) {
   const now = new Date();
   const results = { day1: 0, day3: 0, weekly: 0, errors: 0 };
 
-  // Fetch recent blog articles for day3 / weekly
-  const { data: articles } = await supabase
-    .from("blog_posts")
-    .select("slug,title,excerpt")
-    .eq("status", "published")
-    .order("published_at", { ascending: false })
-    .limit(10);
+  try {
+    // Fetch recent blog articles for day3 / weekly
+    const { data: articles } = await supabase
+      .from("blog_posts")
+      .select("slug,title,excerpt")
+      .eq("status", "published")
+      .order("published_at", { ascending: false })
+      .limit(10);
 
-  // Get subscribers who need nurture emails
-  const { data: subscribers } = await supabase
-    .from("email_subscribers")
-    .select("email, source, subscribed_at, nurture_day1_sent, nurture_day3_sent, nurture_weekly_sent")
-    .eq("status", "active")
-    .order("subscribed_at", { ascending: true })
-    .limit(50);
+    // Get subscribers who need nurture emails
+    const { data: subscribers } = await supabase
+      .from("email_subscribers")
+      .select("email, source, subscribed_at, nurture_day1_sent, nurture_day3_sent, nurture_weekly_sent")
+      .eq("status", "active")
+      .order("subscribed_at", { ascending: true })
+      .limit(50);
 
-  for (const sub of (subscribers || [])) {
-    const subscribedAt = new Date(sub.subscribed_at);
-    const daysSince = Math.floor((now.getTime() - subscribedAt.getTime()) / 86400000);
+    for (const sub of (subscribers || [])) {
+      const subscribedAt = new Date(sub.subscribed_at);
+      const daysSince = Math.floor((now.getTime() - subscribedAt.getTime()) / 86400000);
 
-    try {
-      // Day 1 email — send within first 2 days if not sent
-      if (!sub.nurture_day1_sent && daysSince >= 0 && daysSince <= 2) {
-        const html = buildDay1Email(sub.email, sub.source || "homepage");
-        const sent = await sendEmail(sub.email, "Your QuickFnd tools are ready 🚀", html);
-        if (sent) {
-          await supabase.from("email_subscribers")
-            .update({ nurture_day1_sent: now.toISOString() })
-            .eq("email", sub.email);
-          results.day1++;
-        }
-        await new Promise(r => setTimeout(r, 500));
-        continue;
-      }
-
-      // Day 3 email — articles
-      if (!sub.nurture_day3_sent && daysSince >= 3 && daysSince <= 5) {
-        const html = buildDay3Email(sub.email, articles || []);
-        if (html) {
-          const sent = await sendEmail(sub.email, "3 articles to help you get more from QuickFnd", html);
+      try {
+        // Day 1 email — send within first 2 days if not sent
+        if (!sub.nurture_day1_sent && daysSince >= 0 && daysSince <= 2) {
+          const html = buildDay1Email(sub.email, sub.source || "homepage");
+          const sent = await sendEmail(sub.email, "Your QuickFnd tools are ready 🚀", html);
           if (sent) {
             await supabase.from("email_subscribers")
-              .update({ nurture_day3_sent: now.toISOString() })
+              .update({ nurture_day1_sent: now.toISOString() })
               .eq("email", sub.email);
-            results.day3++;
+            results.day1++;
           }
           await new Promise(r => setTimeout(r, 500));
+          continue;
         }
-        continue;
-      }
 
-      // Weekly digest — send every 7 days after day 7
-      if (daysSince >= 7) {
-        const lastWeekly = sub.nurture_weekly_sent ? new Date(sub.nurture_weekly_sent) : null;
-        const daysSinceWeekly = lastWeekly
-          ? Math.floor((now.getTime() - lastWeekly.getTime()) / 86400000)
-          : daysSince;
-
-        if (daysSinceWeekly >= 7 && now.getDay() === 1) { // Monday only
-          const html = buildWeeklyDigestEmail(sub.email, articles || []);
-          const sent = await sendEmail(sub.email, `QuickFnd Weekly: ${(articles || []).slice(0, 1)[0]?.title || "This week's best guides"}`, html);
-          if (sent) {
-            await supabase.from("email_subscribers")
-              .update({ nurture_weekly_sent: now.toISOString() })
-              .eq("email", sub.email);
-            results.weekly++;
+        // Day 3 email — articles
+        if (!sub.nurture_day3_sent && daysSince >= 3 && daysSince <= 5) {
+          const html = buildDay3Email(sub.email, articles || []);
+          if (html) {
+            const sent = await sendEmail(sub.email, "3 articles to help you get more from QuickFnd", html);
+            if (sent) {
+              await supabase.from("email_subscribers")
+                .update({ nurture_day3_sent: now.toISOString() })
+                .eq("email", sub.email);
+              results.day3++;
+            }
+            await new Promise(r => setTimeout(r, 500));
           }
-          await new Promise(r => setTimeout(r, 500));
+          continue;
         }
-      }
-    } catch { results.errors++; }
+
+        // Weekly digest — send every 7 days after day 7
+        if (daysSince >= 7) {
+          const lastWeekly = sub.nurture_weekly_sent ? new Date(sub.nurture_weekly_sent) : null;
+          const daysSinceWeekly = lastWeekly
+            ? Math.floor((now.getTime() - lastWeekly.getTime()) / 86400000)
+            : daysSince;
+
+          if (daysSinceWeekly >= 7 && now.getDay() === 1) { // Monday only
+            const html = buildWeeklyDigestEmail(sub.email, articles || []);
+            const sent = await sendEmail(sub.email, `QuickFnd Weekly: ${(articles || []).slice(0, 1)[0]?.title || "This week's best guides"}`, html);
+            if (sent) {
+              await supabase.from("email_subscribers")
+                .update({ nurture_weekly_sent: now.toISOString() })
+                .eq("email", sub.email);
+              results.weekly++;
+            }
+            await new Promise(r => setTimeout(r, 500));
+          }
+        }
+      } catch { results.errors++; }
+    }
+
+    // ── Log to cron_runs ──────────────────────────────────────────────
+    const durationMs = Date.now() - startedAt.getTime();
+    const totalSent = results.day1 + results.day3 + results.weekly;
+    await supabase.from("cron_runs").insert({
+      job_name: "email-nurture",
+      status: results.errors > 0 ? "partial" : "success",
+      items_published: totalSent,
+      error_message: results.errors > 0 ? `${results.errors} send failures` : null,
+      started_at: startedAt.toISOString(),
+      duration_ms: durationMs,
+    });
+
+    return NextResponse.json({ success: true, ...results, duration_ms: durationMs, timestamp: now.toISOString() });
+  } catch (err: unknown) {
+    // ── Log failure to cron_runs ────────────────────────────────────
+    const durationMs = Date.now() - startedAt.getTime();
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    await supabase.from("cron_runs").insert({
+      job_name: "email-nurture",
+      status: "error",
+      items_published: 0,
+      error_message: errorMsg.slice(0, 500),
+      started_at: startedAt.toISOString(),
+      duration_ms: durationMs,
+    }).catch(() => {});
+
+    return NextResponse.json({ error: errorMsg }, { status: 500 });
   }
-
-  return NextResponse.json({ success: true, ...results, timestamp: now.toISOString() });
 }

@@ -12,16 +12,22 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/(.*)",
+        // All pages EXCEPT embed — keep existing security headers
+        source: "/((?!embed).*)",
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          // REMOVED: Cross-Origin-Embedder-Policy: require-corp
-          // Reason: breaks Google AdSense scripts in all browsers
-          // SOFTENED: COOP to same-origin-allow-popups
-          // Reason: strict same-origin blocks AdSense click-through popups
           { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
+        ],
+      },
+      {
+        // Embed pages — ALLOW iframing (the whole point of embeds)
+        source: "/embed/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          // No X-Frame-Options here — embeds MUST be iframeable
         ],
       },
       {
@@ -35,8 +41,25 @@ const nextConfig: NextConfig = {
 
   async redirects() {
     return [
-      // 301 redirects: deleted duplicate tools → canonical tools
-      // Preserves all SEO equity from deleted pages
+      // ═══════════════════════════════════════════════════════════════════
+      // DUPLICATE TOOL SLUG REDIRECTS — SEO deduplication
+      // Shorter canonical slug wins. Longer variant 301s to it.
+      // Prevents keyword cannibalization between near-identical pages.
+      // ═══════════════════════════════════════════════════════════════════
+
+      // Image/PDF converter duplicates (short slug is canonical)
+      { source: "/tools/text-to-pdf-converter", destination: "/tools/text-to-pdf", permanent: true },
+      { source: "/tools/image-to-pdf-converter", destination: "/tools/image-to-pdf", permanent: true },
+      { source: "/tools/svg-to-png-converter", destination: "/tools/svg-to-png", permanent: true },
+      { source: "/tools/image-to-base64-converter", destination: "/tools/image-to-base64", permanent: true },
+      { source: "/tools/png-to-pdf-converter", destination: "/tools/image-to-pdf", permanent: true },
+      { source: "/tools/jpg-to-pdf-converter", destination: "/tools/image-to-pdf", permanent: true },
+      { source: "/tools/split-pdf-online", destination: "/tools/pdf-splitter", permanent: true },
+      { source: "/tools/merge-pdf-online", destination: "/tools/pdf-merger", permanent: true },
+
+      // ═══════════════════════════════════════════════════════════════════
+      // LEGACY REDIRECTS — carried forward from earlier sessions
+      // ═══════════════════════════════════════════════════════════════════
       { source: "/tools/binary-to-text-calculator", destination: "/tools/binary-to-text-converter", permanent: true },
       { source: "/tools/blog-post-slug-builder", destination: "/tools/seo-slug-generator", permanent: true },
       { source: "/tools/case-style-converter", destination: "/tools/text-case-converter", permanent: true },
