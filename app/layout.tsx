@@ -20,7 +20,6 @@ const dmMono = DM_Mono({
 import ThemeProvider from "@/components/theme/ThemeProvider";
 import SiteHeader from "@/components/layout/SiteHeader";
 import ServiceWorkerRegistrar from "@/components/pwa/ServiceWorkerRegistrar";
-import MeshBackground from "@/components/effects/MeshBackground";
 import { Suspense } from "react";
 import EmbedModeDetector from "@/components/embed/EmbedModeDetector";
 
@@ -274,7 +273,6 @@ export default async function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
 
         <ThemeProvider>
-          <MeshBackground />
           <div className="min-h-screen bg-q-bg text-q-text">
             <SiteHeader />
             <Suspense fallback={null}><EmbedModeDetector /></Suspense>
