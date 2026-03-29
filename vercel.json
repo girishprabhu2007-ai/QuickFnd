@@ -43,6 +43,10 @@
     {
       "path": "/api/admin/seo-backfill?run=true&limit=10",
       "schedule": "0 5 * * 0"
+    },
+    {
+      "path": "/api/cron/broken-tool-detector",
+      "schedule": "30 6 * * 0"
     }
   ]
 }

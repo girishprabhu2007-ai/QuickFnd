@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import SiteFooter from "@/components/site/SiteFooter";
 import DetailSidebar from "@/components/layout/DetailSidebar";
 import PageSEOSections from "@/components/seo/PageSEOSections";
@@ -9,6 +9,7 @@ import type { ReactNode } from "react";
 import AffiliateCard from "@/components/monetisation/AffiliateCard";
 import EmailCapture from "@/components/email/EmailCapture";
 import ToolHistoryTracker from "@/components/history/ToolHistoryTracker";
+import EmbedCodeButton from "@/components/embed/EmbedCodeButton";
 import type { PublicContentItem } from "@/lib/content-pages";
 import { getDisplayDescription } from "@/lib/display-content";
 import { getSiteUrl } from "@/lib/site-url";
@@ -230,6 +231,7 @@ export default function PublicDetailPage({
                       Share
                     </span>
                     <ShareMenu title={item.name} url={canonicalUrl} />
+                    <EmbedCodeButton slug={item.slug} name={item.name} section={section} />
                   </div>
                 </section>
 
