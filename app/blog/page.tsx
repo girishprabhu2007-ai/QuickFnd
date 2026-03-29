@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { getPublishedPosts, CATEGORY_LABELS, type BlogCategory } from "@/lib/blog";
 import { getAuthorById } from "@/lib/authors";
@@ -41,7 +41,7 @@ type Props = { searchParams: Promise<{ page?: string; category?: string }> };
 export default async function BlogPage({ searchParams }: Props) {
   const { page: pageParam, category: catParam } = await searchParams;
   const page = Math.max(1, parseInt(pageParam || "1"));
-  const PER_PAGE = 24;
+  const PER_PAGE = 12;
   const offset = (page - 1) * PER_PAGE;
   const category = (catParam as import("@/lib/blog").BlogCategory) || undefined;
 

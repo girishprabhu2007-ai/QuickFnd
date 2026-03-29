@@ -52,8 +52,17 @@ function typeIcon(type: string): string {
   return "🔧";
 }
 
-export default async function CompareIndexPage() {
-  const comparisons = await getAllComparisons();
+type PageProps = { searchParams: Promise<{ page?: string }> };
+
+export default async function CompareIndexPage({ searchParams }: PageProps) {
+  const { page: pageParam } = await searchParams;
+  const page = Math.max(1, parseInt(pageParam || "1"));
+  const PER_PAGE = 12;
+
+  const allComparisons = await getAllComparisons();
+  const total = allComparisons.length;
+  const totalPages = Math.ceil(total / PER_PAGE);
+  const comparisons = allComparisons.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   return (
     <main className="min-h-screen bg-q-bg text-q-text">
@@ -80,7 +89,7 @@ export default async function CompareIndexPage() {
               and AI utilities. No fluff — just pros, cons, and a clear verdict.
             </p>
             <p className="mt-3 text-sm text-q-muted">
-              {comparisons.length} comparison{comparisons.length !== 1 ? "s" : ""} published
+              {total} comparison{total !== 1 ? "s" : ""} published
             </p>
           </section>
 
@@ -116,6 +125,36 @@ export default async function CompareIndexPage() {
               ))}
             </div>
           )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+              {page > 1 && (
+                <a href={`/compare?page=${page - 1}`}
+                  className="rounded-xl border border-q-border bg-q-card px-4 py-2 text-sm font-medium text-q-text transition hover:bg-q-card-hover">
+                  ← Previous
+                </a>
+              )}
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+                .map((p) => (
+                  <a key={p} href={`/compare?page=${p}`}
+                    className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-medium transition ${p === page ? "bg-q-primary text-white" : "border border-q-border bg-q-card text-q-text hover:bg-q-card-hover"}`}>
+                    {p}
+                  </a>
+                ))
+              }
+              {page < totalPages && (
+                <a href={`/compare?page=${page + 1}`}
+                  className="rounded-xl border border-q-border bg-q-card px-4 py-2 text-sm font-medium text-q-text transition hover:bg-q-card-hover">
+                  Next →
+                </a>
+              )}
+            </div>
+          )}
+          <p className="mt-4 text-center text-xs text-q-muted">
+            Showing {Math.min((page - 1) * PER_PAGE + 1, total)}–{Math.min(page * PER_PAGE, total)} of {total} comparisons
+          </p>
         </div>
       </section>
 
