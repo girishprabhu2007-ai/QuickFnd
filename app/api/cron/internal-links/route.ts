@@ -139,79 +139,118 @@ export async function GET(req: Request) {
 
   const supabase = getSupabase();
 
-  // Get all published posts
-  const { data: allPosts } = await supabase
-    .from("blog_posts")
-    .select("id, slug, title, content, target_keyword, tags, category, published_at")
-    .eq("status", "published")
-    .order("published_at", { ascending: false })
-    .limit(100);
+  // Log run start
+  const { data: run } = await supabase
+    .from("cron_runs")
+    .insert({ job_name: "internal-links", status: "running" })
+    .select("id")
+    .single();
+  const runId = run?.id;
 
-  if (!allPosts?.length) {
-    return NextResponse.json({ success: true, message: "No posts to process", linked: 0 });
+  try {
+    // Get all published posts
+    const { data: allPosts } = await supabase
+      .from("blog_posts")
+      .select("id, slug, title, content, target_keyword, tags, category, published_at")
+      .eq("status", "published")
+      .order("published_at", { ascending: false })
+      .limit(100);
+
+    if (!allPosts?.length) {
+      await supabase.from("cron_runs").update({
+        status: "success", items_published: 0,
+        error_message: "No posts to process",
+        completed_at: new Date().toISOString(),
+        duration_ms: Date.now() - startTime,
+      }).eq("id", runId);
+      return NextResponse.json({ success: true, message: "No posts to process", linked: 0 });
+    }
+
+    // Focus on posts from last 48h that don't have many internal links yet
+    const cutoff = new Date(Date.now() - 48 * 3600 * 1000).toISOString();
+    const recentPosts = allPosts.filter(p =>
+      p.published_at >= cutoff &&
+      (p.content.match(/\[.*?\]\(.*?quickfnd\.com\/blog/g) || []).length < 2
+    );
+
+    if (!recentPosts.length) {
+      await supabase.from("cron_runs").update({
+        status: "success", items_published: 0,
+        error_message: "No recent posts need internal links",
+        completed_at: new Date().toISOString(),
+        duration_ms: Date.now() - startTime,
+      }).eq("id", runId);
+      return NextResponse.json({ success: true, message: "No recent posts need internal links", linked: 0 });
+    }
+
+    let totalLinked = 0;
+    const results: { slug: string; links_added: number }[] = [];
+
+    for (const post of recentPosts.slice(0, 5)) {
+      try {
+        // Find related posts by keyword/tag overlap
+        const related = allPosts
+          .filter(p => p.slug !== post.slug)
+          .map(p => ({ ...p, score: keywordOverlap(post, p) }))
+          .filter(p => p.score > 10)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 5);
+
+        if (!related.length) continue;
+
+        // Find existing links in content
+        const existingLinks = (post.content.match(/quickfnd\.com\/blog\/([a-z0-9-]+)/g) || [])
+          .map((m: string) => m.replace("quickfnd.com/blog/", ""));
+
+        // Ask GPT to find natural anchor text opportunities
+        const opportunities = await findLinkOpportunities(
+          post.content,
+          related,
+          existingLinks
+        );
+
+        if (!opportunities.length) continue;
+
+        // Inject links into content
+        const { content: updatedContent, count } = injectLinks(post.content, opportunities);
+
+        if (count > 0) {
+          await supabase
+            .from("blog_posts")
+            .update({ content: updatedContent, updated_at: new Date().toISOString() })
+            .eq("id", post.id);
+
+          totalLinked += count;
+          results.push({ slug: post.slug, links_added: count });
+        }
+
+        await new Promise(r => setTimeout(r, 2000));
+      } catch { /* continue to next post */ }
+    }
+
+    // Log success
+    await supabase.from("cron_runs").update({
+      status: "success",
+      items_published: totalLinked,
+      error_message: results.length > 0 ? results.map(r => `${r.slug}:+${r.links_added}`).join(", ") : "No link opportunities found",
+      completed_at: new Date().toISOString(),
+      duration_ms: Date.now() - startTime,
+    }).eq("id", runId);
+
+    return NextResponse.json({
+      success: true,
+      posts_processed: recentPosts.slice(0, 5).length,
+      total_links_added: totalLinked,
+      results,
+      duration_ms: Date.now() - startTime,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    await supabase.from("cron_runs").update({
+      status: "failed", error_message: message,
+      completed_at: new Date().toISOString(),
+      duration_ms: Date.now() - startTime,
+    }).eq("id", runId);
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
-
-  // Focus on posts from last 48h that don't have many internal links yet
-  const cutoff = new Date(Date.now() - 48 * 3600 * 1000).toISOString();
-  const recentPosts = allPosts.filter(p =>
-    p.published_at >= cutoff &&
-    (p.content.match(/\[.*?\]\(.*?quickfnd\.com\/blog/g) || []).length < 2
-  );
-
-  if (!recentPosts.length) {
-    return NextResponse.json({ success: true, message: "No recent posts need internal links", linked: 0 });
-  }
-
-  let totalLinked = 0;
-  const results: { slug: string; links_added: number }[] = [];
-
-  for (const post of recentPosts.slice(0, 5)) {
-    try {
-      // Find related posts by keyword/tag overlap
-      const related = allPosts
-        .filter(p => p.slug !== post.slug)
-        .map(p => ({ ...p, score: keywordOverlap(post, p) }))
-        .filter(p => p.score > 10)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 5);
-
-      if (!related.length) continue;
-
-      // Find existing links in content
-      const existingLinks = (post.content.match(/quickfnd\.com\/blog\/([a-z0-9-]+)/g) || [])
-        .map((m: string) => m.replace("quickfnd.com/blog/", ""));
-
-      // Ask GPT to find natural anchor text opportunities
-      const opportunities = await findLinkOpportunities(
-        post.content,
-        related,
-        existingLinks
-      );
-
-      if (!opportunities.length) continue;
-
-      // Inject links into content
-      const { content: updatedContent, count } = injectLinks(post.content, opportunities);
-
-      if (count > 0) {
-        await supabase
-          .from("blog_posts")
-          .update({ content: updatedContent, updated_at: new Date().toISOString() })
-          .eq("id", post.id);
-
-        totalLinked += count;
-        results.push({ slug: post.slug, links_added: count });
-      }
-
-      await new Promise(r => setTimeout(r, 2000));
-    } catch { /* continue to next post */ }
-  }
-
-  return NextResponse.json({
-    success: true,
-    posts_processed: recentPosts.slice(0, 5).length,
-    total_links_added: totalLinked,
-    results,
-    duration_ms: Date.now() - startTime,
-  });
 }

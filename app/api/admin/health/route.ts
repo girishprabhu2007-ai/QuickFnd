@@ -1,16 +1,7 @@
 /**
  * app/api/admin/health/route.ts
  * ═══════════════════════════════════════════════════════════════════════════════
- * System Health Monitor API
- *
- * Checks:
- *  - Supabase connectivity + row counts
- *  - Cron job status (last runs, failures in 24h)
- *  - Environment variables (all required keys present)
- *  - OpenAI API health (quick test call)
- *  - Resend API health
- *  - IndexNow key file
- *  - Supabase resource warnings
+ * System Health Monitor API — fixed job name matching
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
@@ -40,17 +31,12 @@ export async function GET() {
   try {
     const t = Date.now();
     const supabase = getSupabaseAdmin();
-    const { count: toolCount, error: toolErr } = await supabase
-      .from("tools").select("id", { count: "exact", head: true });
-    const { count: calcCount } = await supabase
-      .from("calculators").select("id", { count: "exact", head: true });
-    const { count: blogCount } = await supabase
-      .from("blog_posts").select("id", { count: "exact", head: true }).eq("status", "published");
-    const { count: subCount } = await supabase
-      .from("email_subscribers").select("id", { count: "exact", head: true }).eq("status", "active");
+    const { count: toolCount, error: toolErr } = await supabase.from("tools").select("id", { count: "exact", head: true });
+    const { count: calcCount } = await supabase.from("calculators").select("id", { count: "exact", head: true });
+    const { count: blogCount } = await supabase.from("blog_posts").select("id", { count: "exact", head: true }).eq("status", "published");
+    const { count: subCount } = await supabase.from("email_subscribers").select("id", { count: "exact", head: true }).eq("status", "active");
 
     if (toolErr) throw new Error(toolErr.message);
-
     const latency = Date.now() - t;
     checks.push({
       name: "Supabase Database",
@@ -66,35 +52,47 @@ export async function GET() {
   // ── 2. Cron job health ─────────────────────────────────────────────────────
   try {
     const supabase = getSupabaseAdmin();
-    const now = new Date();
-    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
     const { data: recentRuns } = await supabase
       .from("cron_runs")
       .select("job_name, status, error_message, started_at, duration_ms")
       .gte("started_at", yesterday)
       .order("started_at", { ascending: false })
-      .limit(30);
+      .limit(50);
 
     const runs = recentRuns || [];
     const failures = runs.filter(r => r.status === "failed" || r.status === "error");
     const uniqueJobs = [...new Set(runs.map(r => r.job_name))];
 
-    // Check which expected jobs ran
-    const expectedJobs = ["intelligence", "auto-screen-queue", "auto-publish", "blog-publish", "internal-links", "email-nurture"];
+    // Expected job names — MUST match the exact job_name each cron route uses in its insert
+    const expectedJobs = [
+      "intelligence-pipeline",  // from /api/cron/intelligence
+      "auto-screen-queue",      // from /api/cron/auto-screen-queue
+      "auto-publish",           // from /api/cron/auto-publish
+      "blog-publish",           // from /api/cron/blog-publish
+      "internal-links",         // from /api/cron/internal-links
+      "email-nurture",          // from /api/cron/email-nurture
+    ];
+
     const missingJobs = expectedJobs.filter(j => !uniqueJobs.includes(j));
 
-    const cronStatus = failures.length > 3 ? "degraded" : failures.length > 0 ? "healthy" : "healthy";
+    // Determine status
+    let cronStatus: "healthy" | "degraded" = "healthy";
+    if (failures.length > 5) cronStatus = "degraded";
+    if (missingJobs.length > 3) cronStatus = "degraded";
+
     checks.push({
       name: "Cron Jobs (24h)",
-      status: missingJobs.length > 2 ? "degraded" : cronStatus,
-      message: `${runs.length} runs, ${failures.length} failures, ${missingJobs.length} missing jobs`,
+      status: cronStatus,
+      message: `${runs.length} runs, ${failures.length} failures, ${missingJobs.length} missing`,
       details: {
         total_runs: runs.length,
         failures: failures.length,
         failed_jobs: failures.slice(0, 5).map(f => ({ job: f.job_name, error: f.error_message?.slice(0, 100) })),
         missing_jobs: missingJobs,
         jobs_that_ran: uniqueJobs,
+        expected_jobs: expectedJobs,
       },
     });
   } catch {
@@ -124,7 +122,7 @@ export async function GET() {
 
   checks.push({
     name: "Environment Variables",
-    status: missing.length > 2 ? "degraded" : missing.length > 0 ? "healthy" : "healthy",
+    status: missing.length > 2 ? "degraded" : "healthy",
     message: `${present.length}/${requiredEnvVars.length} configured`,
     details: { present, missing },
   });
@@ -133,21 +131,18 @@ export async function GET() {
   try {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error("OPENAI_API_KEY not set");
-
     const t = Date.now();
     const res = await fetch("https://api.openai.com/v1/models", {
       headers: { Authorization: `Bearer ${apiKey}` },
       signal: AbortSignal.timeout(8000),
     });
     const latency = Date.now() - t;
-
-    if (res.ok) {
-      checks.push({ name: "OpenAI API", status: latency > 3000 ? "degraded" : "healthy", message: `Connected (${latency}ms)`, latency_ms: latency });
-    } else if (res.status === 429) {
-      checks.push({ name: "OpenAI API", status: "degraded", message: "Rate limited (429)", latency_ms: latency });
-    } else {
-      checks.push({ name: "OpenAI API", status: "down", message: `HTTP ${res.status}`, latency_ms: latency });
-    }
+    checks.push({
+      name: "OpenAI API",
+      status: !res.ok ? (res.status === 429 ? "degraded" : "down") : latency > 3000 ? "degraded" : "healthy",
+      message: res.ok ? `Connected (${latency}ms)` : `HTTP ${res.status}${res.status === 429 ? " (rate limited)" : ""}`,
+      latency_ms: latency,
+    });
   } catch (err) {
     checks.push({ name: "OpenAI API", status: "down", message: err instanceof Error ? err.message : "Failed" });
   }
@@ -156,7 +151,6 @@ export async function GET() {
   try {
     const resendKey = process.env.RESEND_API_KEY;
     if (!resendKey) throw new Error("RESEND_API_KEY not set");
-
     const t = Date.now();
     const res = await fetch("https://api.resend.com/domains", {
       headers: { Authorization: `Bearer ${resendKey}` },
