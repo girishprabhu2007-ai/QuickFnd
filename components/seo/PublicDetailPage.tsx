@@ -23,6 +23,8 @@ type Props = {
   primaryContent?: ReactNode;
   secondaryContent?: ReactNode;
   showRelatedItemsSection?: boolean;
+  categoryLabel?: string | null;
+  categoryHref?: string | null;
 };
 
 type FaqItem = {
@@ -138,6 +140,8 @@ export default function PublicDetailPage({
   primaryContent,
   secondaryContent,
   showRelatedItemsSection = true,
+  categoryLabel,
+  categoryHref,
 }: Props) {
   const pageDescription = getDisplayDescription(table, item);
   const faqs = getItemFaqs(item);
@@ -182,6 +186,17 @@ export default function PublicDetailPage({
                   >
                     {label}
                   </Link>
+                  {categoryLabel && categoryHref && (
+                    <>
+                      <span className="mx-2">/</span>
+                      <Link
+                        href={categoryHref}
+                        className="transition hover:text-q-text"
+                      >
+                        {categoryLabel}
+                      </Link>
+                    </>
+                  )}
                   <span className="mx-2">/</span>
                   <span className="text-q-text">{item.name}</span>
                 </nav>

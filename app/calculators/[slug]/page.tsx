@@ -212,6 +212,8 @@ export default async function CalculatorPage({ params }: Props) {
         primaryContent={<BuiltInCalculatorClient item={item} />}
         secondaryContent={secondaryContent}
         showRelatedItemsSection={false}
+        categoryLabel={primaryTopic ? primaryTopic.label : null}
+        categoryHref={primaryTopic ? `/topics/${primaryTopic.key}` : null}
       />
     </>
   );

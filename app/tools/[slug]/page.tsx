@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
 import JsonLd from "@/components/seo/JsonLd";
 import PublicDetailPage from "@/components/seo/PublicDetailPage";
@@ -259,6 +259,8 @@ export default async function ToolDetailPage({ params }: Props) {
         primaryContent={<BuiltInToolClient item={item} />}
         secondaryContent={secondaryContent}
         showRelatedItemsSection={false}
+        categoryLabel={primaryTopic ? primaryTopic.label : null}
+        categoryHref={primaryTopic ? `/topics/${primaryTopic.key}` : null}
       />
     </>
   );
