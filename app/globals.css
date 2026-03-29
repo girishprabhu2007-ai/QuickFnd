@@ -254,12 +254,7 @@ body.qf-embed header.sticky { display:none!important }
 body.qf-embed footer { display:none!important }
 body.qf-embed .xl\:grid-cols-\[minmax\(0\2c 1fr\)_320px\] { display:block!important }
 body.qf-embed .xl\:grid-cols-\[minmax\(0\2c 1fr\)_320px\] > :last-child { display:none!important }
-body.qf-embed [data-ad-slot] { display:none!important }
-body.qf-embed nav.sticky { display:none!important }
-body.qf-embed .border-b.border-q-border.py-4 { display:none!important }
-body.qf-embed nav[aria-label="Breadcrumb"] { display:none!important }
-body.qf-embed .text-xs.text-q-muted.flex.items-center.gap-1 { display:none!important }
-body.qf-embed section > div > div > .rounded-3xl:first-child { display:none!important }
-body.qf-embed .rounded-3xl:has(h1) { display:none!important }
-body.qf-embed .text-center:has(.ADVERTISEMENT) { display:none!important }
-body.qf-embed .text-center.text-xs.uppercase { display:none!important }
+body.qf-embed .max-w-4xl.space-y-8 > * { display:none!important }
+body.qf-embed .max-w-4xl.space-y-8 > div.max-w-4xl { display:block!important }
+body.qf-embed section.px-4 { padding-top:0!important; padding-bottom:0!important }
+body.qf-embed .lg\:py-12 { padding-top:8px!important; padding-bottom:8px!important }
